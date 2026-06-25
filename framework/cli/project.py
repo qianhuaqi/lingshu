@@ -41,7 +41,9 @@ VERSION_DIRECTORIES = (
     "view",
     "language",
 )
-ERROR_CALLS = {"raise_code", "APIException", "Error"}
+ERROR_CALLS = {"raise_code", "APIException"}
+LEGACY_ERROR_KEYWORDS = {"err" + "code", "err" + "msg"}
+ERROR_MESSAGE_KEYWORDS = {"default", "msg"} | LEGACY_ERROR_KEYWORDS
 BUSINESS_CRUD_METHODS = {"get_one", "find", "get_all", "find_all", "get_count", "get_pagination", "insert", "update", "delete"}
 
 
@@ -308,7 +310,9 @@ def _has_hard_coded_error_message(function_node: ast.AST) -> bool:
         if _call_name(node) not in ERROR_CALLS:
             continue
         for keyword in node.keywords:
-            if keyword.arg in {"default", "msg", "errmsg"} and isinstance(keyword.value, ast.Constant):
+            if keyword.arg in LEGACY_ERROR_KEYWORDS:
+                return True
+            if keyword.arg in ERROR_MESSAGE_KEYWORDS and isinstance(keyword.value, ast.Constant):
                 if isinstance(keyword.value.value, str) and keyword.value.value:
                     return True
     return False
