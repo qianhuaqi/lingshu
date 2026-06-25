@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import dataclass
 from contextvars import ContextVar
+from uuid import uuid4
 
 from lingshu.system.errors import NoAppContextError, NoRequestContextError
 
@@ -79,6 +80,8 @@ async def async_app_context(raw_app):
 def request_context(raw_app, raw_request, request_id=None, user=None):
     context = _ContextTokens()
     try:
+        if request_id is None:
+            request_id = uuid4().hex
         context.enter(raw_app, raw_request, request_id=request_id, user=user)
         yield raw_request
     finally:
@@ -87,5 +90,7 @@ def request_context(raw_app, raw_request, request_id=None, user=None):
 
 def bind_request_context(raw_app, raw_request, request_id=None, user=None) -> _ContextTokens:
     context = _ContextTokens()
+    if request_id is None:
+        request_id = uuid4().hex
     context.enter(raw_app, raw_request, request_id=request_id, user=user)
     return context

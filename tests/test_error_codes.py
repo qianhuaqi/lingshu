@@ -74,9 +74,11 @@ def test_language_roots_do_not_include_legacy_top_level_language(tmp_path, monke
     (tmp_path / "framework" / "language").mkdir(parents=True)
     monkeypatch.chdir(tmp_path)
 
-    roots = [path.relative_to(tmp_path).as_posix() for path in language_roots("v1")]
+    roots = [path.as_posix() for path in language_roots("v1")]
 
-    assert roots == ["app/v1/language", "app/language"]
+    assert roots[0].endswith("app/v1/language")
+    assert roots[1].endswith("app/language")
+    assert roots[2].endswith("src/lingshu/language")
 
 
 def test_version_from_path_supports_unified_version_names():
@@ -111,6 +113,13 @@ def test_get_error_message_uses_version_and_public_language_packages(tmp_path, m
 
 
 def test_get_error_message_reads_language_package():
+    assert get_error_message(_request("/v1/demo"), 991111) == "请求参数不能为空"
+
+
+def test_get_error_message_falls_back_to_builtin_language_when_project_language_is_absent(tmp_path, monkeypatch):
+    (tmp_path / "app" / "language").mkdir(parents=True)
+    monkeypatch.chdir(tmp_path)
+
     assert get_error_message(_request("/v1/demo"), 991111) == "请求参数不能为空"
 
 

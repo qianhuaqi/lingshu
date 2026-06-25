@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from lingshu.system.context import bind_request_context
 from lingshu.system.errors import ResourceNotConfiguredError
 
@@ -62,7 +64,8 @@ def get_request_id(raw_request):
     if request_id:
         return request_id
     headers = getattr(raw_request, "headers", {}) or {}
-    return headers.get("X-Request-ID") or headers.get("x-request-id")
+    request_id = headers.get("X-Request-ID") or headers.get("x-request-id")
+    return request_id or uuid4().hex
 
 
 def get_request_context(raw_request):

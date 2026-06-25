@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from lingshu import app, db, logger, request
+from lingshu.system.context import get_current_app
+from lingshu.system.errors import NoRequestContextError
 
 
 class BusinessModel:
@@ -11,7 +13,11 @@ class BusinessModel:
 
     @property
     def request(self):
-        return request.raw
+        get_current_app()
+        try:
+            return request.raw
+        except NoRequestContextError:
+            return None
 
     @property
     def app(self):

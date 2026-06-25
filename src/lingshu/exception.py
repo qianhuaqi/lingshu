@@ -31,22 +31,15 @@ def language_roots(version: str = "") -> list[Path]:
     return [item for item in roots if item.exists()]
 
 
-def module_map_path(version: str = "") -> Path | None:
+def module_map_paths(version: str = "") -> list[Path]:
     root = _project_root()
-    candidates = []
-    if version:
-        version = normalize_version(version)
-        candidates.append(root / "app" / version / "language" / "modules.ini")
-    candidates.extend(
-        [
-            root / "app" / "language" / "modules.ini",
-            Path(__file__).resolve().parent / "modules.ini",
-        ]
-    )
-    for candidate in candidates:
-        if candidate.exists():
-            return candidate
-    return None
+    candidates = [root / "app" / "language" / "modules.ini", Path(__file__).resolve().parent / "resources" / "error_codes" / "modules.ini"]
+    return [candidate for candidate in candidates if candidate.exists()]
+
+
+def module_map_path(version: str = "") -> Path | None:
+    candidates = module_map_paths(version)
+    return candidates[0] if candidates else None
 
 
 def get_error_message(request, code, default=None) -> str:
@@ -56,10 +49,10 @@ def get_error_message(request, code, default=None) -> str:
     config = get_app_config(raw_app) if raw_app is not None else None
     locale = getattr(config, "language", "zh-CN")
     roots = language_roots(_request_version(request))
-    map_path = module_map_path(_request_version(request))
-    if not roots or map_path is None:
+    map_paths = module_map_paths(_request_version(request))
+    if not roots or not map_paths:
         return str(code)
-    return resolve_error_message(code, roots, locale=locale, module_map_path=map_path, default=default)
+    return resolve_error_message(code, roots, locale=locale, module_map_path=map_paths, default=default)
 
 
 def raise_code(request, code, status_code=400, data=None, default=None):

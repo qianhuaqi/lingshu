@@ -32,6 +32,9 @@ def test_initializer_renders_no_database_project(tmp_path):
     assert "MYSQL_MASTER_HOST=localhost" not in env_example
     assert (tmp_path / "README.md").exists()
     assert (tmp_path / "run.py").exists()
+    run_text = (tmp_path / "run.py").read_text(encoding="utf-8")
+    assert "from lingshu.runtime import run_app" in run_text
+    assert "lingshu.system" not in run_text
     assert (tmp_path / "app" / "bootstrap.py").exists()
     assert (tmp_path / "app" / "helper.py").exists()
     assert (tmp_path / "app" / "route.py").exists()

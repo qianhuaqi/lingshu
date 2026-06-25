@@ -2,6 +2,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from importlib import import_module
 import os
+from types import MappingProxyType
 from types import ModuleType
 
 from dotenv import load_dotenv
@@ -264,6 +265,18 @@ def load_config(env_file: str | None = None, load_env: bool = True) -> AppConfig
     )
 
 
+def _freeze_value(value):
+    if isinstance(value, dict):
+        return MappingProxyType({key: _freeze_value(item) for key, item in value.items()})
+    if isinstance(value, list):
+        return tuple(_freeze_value(item) for item in value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_value(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_freeze_value(item) for item in value)
+    return value
+
+
 class _ConfigModule(ModuleType):
     def _facade_config(self):
         from lingshu.system.context import get_current_app
@@ -274,10 +287,10 @@ class _ConfigModule(ModuleType):
     def __getattr__(self, name):
         if name.startswith("__"):
             raise AttributeError(name)
-        return getattr(self._facade_config(), name)
+        return _freeze_value(getattr(self._facade_config(), name))
 
     def __getitem__(self, key):
-        return getattr(self._facade_config(), str(key).lower())
+        return _freeze_value(getattr(self._facade_config(), str(key).lower()))
 
     def __setattr__(self, name, value):
         if name.startswith("_"):

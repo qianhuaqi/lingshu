@@ -7,6 +7,8 @@ from typing import Any
 from lingshu.middleware.json import CustomJSONEncoder
 from lingshu.model.base import BaseModel
 from lingshu import db, request
+from lingshu.system.context import get_current_app
+from lingshu.system.errors import NoRequestContextError
 
 
 def return_fields(row, fields=None):
@@ -42,9 +44,10 @@ class Model(BaseModel):
 
     @property
     def request(self):
+        get_current_app()
         try:
             return request.raw
-        except Exception:
+        except NoRequestContextError:
             return None
 
     @property

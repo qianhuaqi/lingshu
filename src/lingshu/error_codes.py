@@ -83,6 +83,13 @@ def _normalize_locale_roots(locale_root: str | Path | Iterable[str | Path]) -> l
     return [Path(root) for root in locale_root]
 
 
+def _project_root_from_locale_root(locale_root: Path) -> Path | None:
+    for parent in [locale_root, *locale_root.parents]:
+        if parent.name == "app":
+            return parent.parent
+    return None
+
+
 def _format_source(locale_root: Path, ini_file: Path, section: str) -> str:
     relative_file = ini_file.relative_to(locale_root).as_posix()
     try:
@@ -113,7 +120,8 @@ def _parse_module_range(expr: str) -> tuple[int, int]:
 
 
 def _is_internal_module_map(path: Path) -> bool:
-    return path.as_posix().endswith("/src/lingshu/resources/error_codes/modules.ini") or path.as_posix().endswith("\\src\\lingshu\\resources\\error_codes\\modules.ini")
+    normalized = path.as_posix()
+    return normalized.endswith("/lingshu/resources/error_codes/modules.ini")
 
 
 def parse_module_ranges(module_map_path: str | Path, *, reserved: bool = False) -> list[ModuleRange]:
@@ -203,7 +211,20 @@ def parse_error_code_catalog(
         return []
 
     if module_map_path is None:
-        module_map_path = [Path(__file__).with_name("resources") / "error_codes" / "modules.ini"]
+        module_map_paths: list[Path] = []
+        seen_paths: set[Path] = set()
+        for root in roots:
+            project_root = _project_root_from_locale_root(root)
+            if project_root is None:
+                continue
+            candidate = project_root / "app" / "language" / "modules.ini"
+            if candidate.exists() and candidate not in seen_paths:
+                module_map_paths.append(candidate)
+                seen_paths.add(candidate)
+        internal_map = Path(__file__).with_name("resources") / "error_codes" / "modules.ini"
+        if internal_map.exists():
+            module_map_paths.append(internal_map)
+        module_map_path = module_map_paths
     module_ranges = parse_module_ranges_from_paths(module_map_path)
 
     records: dict[str, ErrorCodeRecord] = {}
@@ -293,7 +314,20 @@ def build_error_code_index(
 ) -> dict[str, object]:
     records = parse_error_code_catalog_cached(locale_root, module_map_path=module_map_path)
     if module_map_path is None:
-        module_map_path = [Path(__file__).with_name("resources") / "error_codes" / "modules.ini"]
+        module_map_path = []
+        roots = _normalize_locale_roots(locale_root)
+        seen_paths: set[Path] = set()
+        for root in roots:
+            project_root = _project_root_from_locale_root(root)
+            if project_root is None:
+                continue
+            candidate = project_root / "app" / "language" / "modules.ini"
+            if candidate.exists() and candidate not in seen_paths:
+                module_map_path.append(candidate)
+                seen_paths.add(candidate)
+        internal_map = Path(__file__).with_name("resources") / "error_codes" / "modules.ini"
+        if internal_map.exists():
+            module_map_path.append(internal_map)
     module_ranges = parse_module_ranges_from_paths(module_map_path)
     module_buckets = {
         module_range.module: {

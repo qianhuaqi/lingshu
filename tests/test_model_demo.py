@@ -4,9 +4,11 @@ import pytest
 
 from app.v1.model.table.catalog import CatalogModel
 from app.v1.model.table.orders import OrderModel
+from lingshu.model.model import Model
 from lingshu.model.business import BusinessModel
 from lingshu.system.context import app_context
 from lingshu.system import sanic_adapter
+from lingshu.system.errors import NoAppContextError
 
 
 class FakeRedis:
@@ -102,3 +104,14 @@ def test_legacy_model_demo_keeps_old_style_and_master_default():
 def test_business_model_rejects_table_name():
     with pytest.raises(TypeError, match="must not declare table_name"):
         type("InvalidBusinessModel", (BusinessModel,), {"table_name": "demo"})
+
+
+def test_model_request_requires_app_context_but_not_http_request():
+    model = Model()
+
+    with pytest.raises(NoAppContextError):
+        _ = model.request
+
+    app = FakeApp()
+    with app_context(app):
+        assert model.request is None

@@ -355,6 +355,20 @@ def test_check_project_detects_phase_b_forbidden_app_access(tmp_path):
     assert any("direct request.app.ctx/app.ctx access is forbidden" in issue for issue in issues)
 
 
+def test_check_project_detects_forbidden_run_py_internal_import(tmp_path):
+    _render_project(tmp_path)
+    (tmp_path / "run.py").write_text(
+        "from lingshu.app import create_app\n"
+        "from lingshu.system import sanic_adapter\n"
+        "app = create_app()\n",
+        encoding="utf-8",
+    )
+
+    issues = check_project(tmp_path)
+
+    assert any("run.py" in issue and "must not import lingshu.system" in issue for issue in issues)
+
+
 def test_check_project_resource_controller_route_contract(tmp_path):
     _render_project(tmp_path)
     add_version("v1", root=tmp_path)
