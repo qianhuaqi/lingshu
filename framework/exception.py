@@ -9,18 +9,21 @@ def _project_root() -> Path:
     return Path.cwd()
 
 
-def _request_version(request) -> str:
-    if request is None:
-        return ""
-    parts = [part for part in request.path.split("/") if part]
+def version_from_path(path: str = "") -> str:
+    parts = [part for part in str(path).split("/") if part]
     if parts and parts[0].startswith("v") and parts[0][1:].isdigit():
         return parts[0]
     return ""
 
 
-def _language_roots(request=None) -> list[Path]:
+def _request_version(request) -> str:
+    if request is None:
+        return ""
+    return version_from_path(getattr(request, "path", ""))
+
+
+def language_roots(version: str = "") -> list[Path]:
     root = _project_root()
-    version = _request_version(request)
     roots = []
     if version:
         roots.append(root / "app" / version / "language")
@@ -30,9 +33,8 @@ def _language_roots(request=None) -> list[Path]:
     return [item for item in roots if item.exists()]
 
 
-def _module_map_path(request=None) -> Path | None:
+def module_map_path(version: str = "") -> Path | None:
     root = _project_root()
-    version = _request_version(request)
     candidates = []
     if version:
         candidates.append(root / "app" / version / "language" / "modules.ini")
@@ -53,11 +55,11 @@ def get_error_message(request, code, default=None) -> str:
     config = getattr(getattr(request, "app", None), "ctx", None)
     config = getattr(config, "config", None)
     locale = getattr(config, "language", "zh-CN")
-    roots = _language_roots(request)
-    module_map_path = _module_map_path(request)
-    if not roots or module_map_path is None:
+    roots = language_roots(_request_version(request))
+    map_path = module_map_path(_request_version(request))
+    if not roots or map_path is None:
         return default or str(code)
-    return resolve_error_message(code, roots, locale=locale, module_map_path=module_map_path, default=default)
+    return resolve_error_message(code, roots, locale=locale, module_map_path=map_path, default=default)
 
 
 def raise_code(request, code, status_code=400, data=None, default=None):

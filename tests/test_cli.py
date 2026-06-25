@@ -1,5 +1,7 @@
 from framework.cli.main import add_version
 from framework.cli.main import main
+from framework.cli.main import make_business_model
+from framework.cli.main import make_model
 from framework.cli.main import make_module
 from framework.cli.main import normalize_module_name
 from framework.cli.main import normalize_version
@@ -13,6 +15,8 @@ def test_cli_add_version_scaffolds_mvc_layout(tmp_path):
     assert tmp_path / "app" / "v2" in created
     assert (tmp_path / "app" / "v2" / "controller").exists()
     assert (tmp_path / "app" / "v2" / "model").exists()
+    assert (tmp_path / "app" / "v2" / "model" / "table").exists()
+    assert (tmp_path / "app" / "v2" / "model" / "business").exists()
     assert (tmp_path / "app" / "v2" / "view").exists()
     assert not (tmp_path / "app" / "v2" / "controller" / "index.py").exists()
     assert (tmp_path / "app" / "v2" / "language" / "zh-CN" / "ERROR").exists()
@@ -32,7 +36,7 @@ def test_cli_add_version_rejects_invalid_names():
 
 def test_cli_make_module_scaffolds_restful_module(tmp_path):
     controller = tmp_path / "app" / "v1" / "controller" / "demo.py"
-    model = tmp_path / "app" / "v1" / "model" / "demo.py"
+    model = tmp_path / "app" / "v1" / "model" / "table" / "demo.py"
     view = tmp_path / "app" / "v1" / "view" / "demo" / "index.html"
     docs = tmp_path / "public" / "docs" / "v1" / "demo.md"
     route = tmp_path / "app" / "route.py"
@@ -57,7 +61,8 @@ def test_cli_make_module_scaffolds_restful_module(tmp_path):
     assert '@bp.get("/")' in controller_text
     assert '@bp.get("/<data_id>")' in controller_text
     assert '@bp.post("/")' in controller_text
-    assert '@bp.put("/<data_id>")' in controller_text
+    assert '@bp.put("/<data_id>", name="update_put")' in controller_text
+    assert '@bp.patch("/<data_id>", name="update_patch")' in controller_text
     assert '@bp.delete("/<data_id>")' in controller_text
     assert "async def index(request):" in controller_text
     assert "async def info(request, data_id):" in controller_text
@@ -67,9 +72,9 @@ def test_cli_make_module_scaffolds_restful_module(tmp_path):
     assert '"/add"' not in controller_text
     assert '"/edit"' not in controller_text
     assert '"/del"' not in controller_text
-    assert "@bp.patch" not in controller_text
     assert "partial_update" not in controller_text
     assert "raise_code(request, 990202" in controller_text
+    assert "default=" not in controller_text
     assert "require_payload(request)" in controller_text
     assert 'request.app.ctx.logger.debug("demo.index' in controller_text
     assert 'request.app.ctx.logger.info("demo.create' in controller_text
@@ -106,6 +111,26 @@ def test_cli_make_module_rejects_invalid_module_names():
         assert "Module name" in str(exc)
     else:
         raise AssertionError("invalid module name should fail")
+
+
+def test_cli_make_model_scaffolds_physical_table_model(tmp_path):
+    created = make_model("v1", "a_b_c", root=tmp_path)
+    path = tmp_path / "app" / "v1" / "model" / "table" / "a_b_c.py"
+
+    assert path in created
+    text = path.read_text(encoding="utf-8")
+    assert "class ABCModel(Model):" in text
+    assert 'table_name = "a_b_c"' in text
+
+
+def test_cli_make_business_model_scaffolds_business_model(tmp_path):
+    created = make_business_model("v1", "permission_assign", root=tmp_path)
+    path = tmp_path / "app" / "v1" / "model" / "business" / "permission_assign.py"
+
+    assert path in created
+    text = path.read_text(encoding="utf-8")
+    assert "class PermissionAssignBusinessModel(BusinessModel):" in text
+    assert "table_name" not in text
 
 
 def test_cli_check_command_reports_project_contract(tmp_path, capsys):

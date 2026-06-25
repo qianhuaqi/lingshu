@@ -40,6 +40,14 @@ def normalize_module_name(module: str) -> str:
     return normalized
 
 
+def normalize_table_name(table: str) -> str:
+    return normalize_module_name(table)
+
+
+def normalize_business_name(name: str) -> str:
+    return normalize_module_name(name)
+
+
 def _pascal_case(value: str) -> str:
     return "".join(part.capitalize() for part in value.split("_") if part)
 
@@ -88,6 +96,8 @@ def add_version(version: str, root: str | Path = ".") -> list[Path]:
         version_root,
         version_root / "controller",
         version_root / "model",
+        version_root / "model" / "table",
+        version_root / "model" / "business",
         version_root / "view",
     ):
         existed = directory.exists()
@@ -127,7 +137,7 @@ def make_module(version: str, module: str, root: str | Path = ".") -> list[Path]
 
 from sanic import Blueprint
 
-from app.{version_name}.model.{module_name} import {model_class}
+from app.{version_name}.model.table.{module_name} import {model_class}
 from framework.controller import require_mysql, require_payload
 from framework.exception import raise_code
 from framework.response import json_response
@@ -155,7 +165,7 @@ async def info(request, data_id):
     request.app.ctx.logger.debug("{module_name}.info id=%s use_cache=%s use_master=%s", data_id, use_cache, use_master)
     item = await {model_class}(request).get_one(data_id, use_master=use_master, use_cache=use_cache)
     if item is None:
-        raise_code(request, 990202, status_code=404, default="{module_name} row not found")
+        raise_code(request, 990202, status_code=404)
     return json_response(item)
 
 
@@ -168,7 +178,8 @@ async def create(request):
     return json_response({{"id": data_id, "payload": payload}}, status=201)
 
 
-@bp.put("/<data_id>")
+@bp.put("/<data_id>", name="update_put")
+@bp.patch("/<data_id>", name="update_patch")
 async def update(request, data_id):
     require_mysql(request)
     payload = require_payload(request)
@@ -209,11 +220,12 @@ RESTful routes:
 - `GET /{version_name}/{module_name}/<id>`
 - `POST /{version_name}/{module_name}`
 - `PUT /{version_name}/{module_name}/<id>`
+- `PATCH /{version_name}/{module_name}/<id>`
 - `DELETE /{version_name}/{module_name}/<id>`
 '''
     files = {
         version_root / "controller" / f"{module_name}.py": controller,
-        version_root / "model" / f"{module_name}.py": model,
+        version_root / "model" / "table" / f"{module_name}.py": model,
         view_dir / "index.html": view,
         docs_root / f"{module_name}.md": docs,
     }
@@ -222,6 +234,46 @@ RESTful routes:
             created.append(path)
     if _register_module_route(root_path, version_name, module_name):
         created.append(root_path / "app" / "route.py")
+    return created
+
+
+def make_model(version: str, table: str, root: str | Path = ".") -> list[Path]:
+    root_path = Path(root).resolve()
+    version_name = normalize_version(version)
+    table_name = normalize_table_name(table)
+    model_class = f"{_pascal_case(table_name)}Model"
+    created = add_version(version_name, root_path)
+    model = f'''from framework.model.model import Model
+
+
+class {model_class}(Model):
+    table_name = "{table_name}"
+    read_source = "auto"
+    cache_enabled = True
+'''
+    path = root_path / "app" / version_name / "model" / "table" / f"{table_name}.py"
+    if _write_if_missing(path, model):
+        created.append(path)
+    return created
+
+
+def make_business_model(version: str, business: str, root: str | Path = ".") -> list[Path]:
+    root_path = Path(root).resolve()
+    version_name = normalize_version(version)
+    business_name = normalize_business_name(business)
+    model_class = f"{_pascal_case(business_name)}BusinessModel"
+    created = add_version(version_name, root_path)
+    model = f'''from framework.model.business import BusinessModel
+
+
+class {model_class}(BusinessModel):
+    async def get_detail(self, data_id):
+        self.logger.debug("{business_name}.get_detail id=%s", data_id)
+        return {{"id": data_id}}
+'''
+    path = root_path / "app" / version_name / "model" / "business" / f"{business_name}.py"
+    if _write_if_missing(path, model):
+        created.append(path)
     return created
 
 
@@ -250,6 +302,14 @@ def build_parser() -> argparse.ArgumentParser:
     module_parser.add_argument("version", help="Version name, for example v1")
     module_parser.add_argument("module", help="Module name, for example demo")
     module_parser.add_argument("--root", default=".", help="Project root directory")
+    model_parser = make_subparsers.add_parser("model", help="Create a table model")
+    model_parser.add_argument("version", help="Version name, for example v1")
+    model_parser.add_argument("table", help="Physical table name, for example a_b")
+    model_parser.add_argument("--root", default=".", help="Project root directory")
+    business_model_parser = make_subparsers.add_parser("business-model", help="Create a business model")
+    business_model_parser.add_argument("version", help="Version name, for example v1")
+    business_model_parser.add_argument("business", help="Business model name, for example permission_assign")
+    business_model_parser.add_argument("--root", default=".", help="Project root directory")
 
     check_parser = subparsers.add_parser("check", help="Check required project files")
     check_parser.add_argument("--root", default=".", help="Project root directory")
@@ -282,6 +342,16 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if args.command == "make" and args.make_command == "module":
         created = make_module(args.version, args.module, args.root)
+        for path in created:
+            print(path)
+        return 0
+    if args.command == "make" and args.make_command == "model":
+        created = make_model(args.version, args.table, args.root)
+        for path in created:
+            print(path)
+        return 0
+    if args.command == "make" and args.make_command == "business-model":
+        created = make_business_model(args.version, args.business, args.root)
         for path in created:
             print(path)
         return 0

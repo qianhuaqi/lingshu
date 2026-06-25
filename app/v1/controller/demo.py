@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sanic import Blueprint
 
-from app.v1.model.demo import DemoModel
+from app.v1.model.table.demo import DemoModel
 from framework.controller import require_mysql, require_payload
 from framework.exception import raise_code
 from framework.response import json_response
@@ -30,7 +30,7 @@ async def info(request, data_id):
     request.app.ctx.logger.debug("demo.info id=%s use_cache=%s use_master=%s", data_id, use_cache, use_master)
     item = await DemoModel(request).get_one(data_id, use_master=use_master, use_cache=use_cache)
     if item is None:
-        raise_code(request, 990202, status_code=404, default="demo row not found")
+        raise_code(request, 990202, status_code=404)
     return json_response(item)
 
 
@@ -43,7 +43,8 @@ async def create(request):
     return json_response({"id": data_id, "payload": payload}, status=201)
 
 
-@bp.put("/<data_id>")
+@bp.put("/<data_id>", name="update_put")
+@bp.patch("/<data_id>", name="update_patch")
 async def update(request, data_id):
     require_mysql(request)
     payload = require_payload(request)

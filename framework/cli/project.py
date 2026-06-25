@@ -13,6 +13,7 @@ REQUIRED_FILES = [
     "README.md",
     "app/bootstrap.py",
     "app/route.py",
+    "app/helper.py",
     "config/defaults.py",
     "app/language/modules.ini",
     "public/docs/index.md",
@@ -67,11 +68,6 @@ def _write_if_missing(path: Path, content: str = ""):
 def _render_project_skeleton(target_dir: Path, options: ProjectOptions):
     directories = (
         "app/controller",
-        "app/v1/controller",
-        "app/v1/model",
-        "app/v1/view",
-        "app/v1/language/zh-CN/ERROR",
-        "app/v1/language/en-US/ERROR",
         "config",
         "app/language/zh-CN/ERROR",
         "app/language/en-US/ERROR",
@@ -133,6 +129,13 @@ def _render_project_skeleton(target_dir: Path, options: ProjectOptions):
         "    return json_response({\"status\": \"ok\"})\n",
     )
     _write_if_missing(target_dir / "app" / "common.py", "__all__ = []\n")
+    _write_if_missing(
+        target_dir / "app" / "helper.py",
+        "def mask_mobile(mobile: str) -> str:\n"
+        "    if not mobile or len(mobile) < 7:\n"
+        "        return mobile\n"
+        "    return f\"{mobile[:3]}****{mobile[-4:]}\"\n",
+    )
     _write_if_missing(target_dir / "app" / "event.py", "__all__ = []\n")
     _write_if_missing(
         target_dir / "config" / "defaults.py",

@@ -33,6 +33,7 @@ def test_initializer_renders_no_database_project(tmp_path):
     assert (tmp_path / "README.md").exists()
     assert (tmp_path / "run.py").exists()
     assert (tmp_path / "app" / "bootstrap.py").exists()
+    assert (tmp_path / "app" / "helper.py").exists()
     assert (tmp_path / "app" / "route.py").exists()
     assert (tmp_path / "app" / "controller" / "health.py").exists()
     assert (tmp_path / "config" / "defaults.py").exists()
@@ -40,6 +41,7 @@ def test_initializer_renders_no_database_project(tmp_path):
     assert not (tmp_path / "config" / "settings.py").exists()
     assert not (tmp_path / "app" / "language" / "__init__.py").exists()
     assert not (tmp_path / "app" / "language" / "zh-CN" / "ERROR" / "__init__.py").exists()
+    assert not (tmp_path / "app" / "v1").exists()
     assert (tmp_path / "public" / "docs" / "index.md").exists()
 
 

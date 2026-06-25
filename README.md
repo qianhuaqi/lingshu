@@ -25,6 +25,7 @@ The generated module exposes:
 - `GET /v1/demo/<id>`
 - `POST /v1/demo`
 - `PUT /v1/demo/<id>`
+- `PATCH /v1/demo/<id>`
 - `DELETE /v1/demo/<id>`
 
 Generated controllers keep only five methods: `index`, `info`, `create`, `update`, and `delete`.
@@ -35,13 +36,15 @@ Generated controllers keep only five methods: `index`, `info`, `create`, `update
 app/                    Business application code
   bootstrap.py          Project extension and blueprint bootstrap
   route.py              Project route registration
-  common.py             Project-level common functions
+  helper.py             Project-level common functions
+  common.py             Project-level constants, enums, and static definitions
   event.py              Project event definitions
   controller/           Project-level controllers, such as health and meta
   language/             Shared language package and error-code catalog
   v1/                   Versioned MVC app
     controller/         v1 API controllers
-    model/              v1 models
+    model/table/        v1 physical table models
+    model/business/     v1 multi-table business models
     view/               v1 views or lightweight API pages
     language/           v1 language overrides
 config/
@@ -125,7 +128,7 @@ The generated demo controller shows normal usage:
 
 ## MVC Development
 
-Use `app/common.py` for small project-level common functions:
+Use `app/helper.py` for small project-level common functions:
 
 ```python
 def mask_mobile(mobile: str) -> str:
@@ -138,7 +141,8 @@ Use version-level files when behavior is version-specific:
 
 ```text
 app/v1/controller/demo.py
-app/v1/model/demo.py
+app/v1/model/table/demo.py
+app/v1/model/business/
 app/v1/view/demo/index.html
 app/v1/language/
 ```
