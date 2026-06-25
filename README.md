@@ -280,6 +280,82 @@ python -m pytest tests -q
 
 The test suite checks project initialization, RESTful module generation, language packages, response format, database configuration, logging, CORS, and framework boundary rules.
 
+## 双机开发交接
+
+同一阶段分支同一时间只允许一台电脑写入。开始修改前先确认 GitHub PR 最新评论中没有未结束的 `[WORKING]` 锁；只有最新评论为 `[HANDOFF]` 且远程分支已更新后，另一台电脑才可以接手。
+
+工作地点只使用 `office` 或 `home`，不要在文档、提交信息或 PR 评论中写入真实地点、账号、网络地址、凭据或本地绝对路径。
+
+### 离开当前电脑前
+
+```powershell
+git status
+# 运行本次相关测试
+git add -A
+git commit -m "chore: checkpoint current work"
+git push github <当前分支>
+# 更新并再次提交 HANDOFF 后重新 push
+.\scripts\verify-handoff.ps1 -Branch <当前分支>
+```
+
+为避免 `HANDOFF.md` 记录自身提交 SHA 造成循环追写，交接采用两步提交：
+
+1. 提交并推送实际功能或治理代码。
+2. 获取已推送的工作基线 SHA。
+3. 更新 `docs/codex/HANDOFF.md`。
+4. 单独创建 handoff 提交并推送。
+5. 在 `HANDOFF.md` 中用 `Work commit`、`Handoff commit`、`Remote HEAD` 明确区分本次工作成果、交接文档提交和最终远程 HEAD。
+
+### 到另一台电脑后
+
+```powershell
+git status
+.\scripts\resume-work.ps1 -Branch <当前分支>
+```
+
+然后按顺序确认：
+
+1. 阅读 `AGENTS.md`。
+2. 阅读 `docs/codex/CURRENT_PHASE.md`。
+3. 阅读 `docs/codex/HANDOFF.md`。
+4. 阅读当前 PR 最新评论。
+5. 核对本地 HEAD 与远程 HEAD。
+6. 再开始修改代码。
+
+### PR 工作锁协议
+
+开始工作时，在当前 PR 评论：
+
+```text
+[WORKING]
+Location: office
+Branch: codex/phase-b-lingshu-context
+Start SHA: <完整SHA>
+Tasks:
+- ...
+```
+
+结束或换电脑前，在当前 PR 评论：
+
+```text
+[HANDOFF]
+Location: office
+Branch: codex/phase-b-lingshu-context
+Work commit: <完整SHA>
+Remote HEAD: <完整SHA>
+Worktree: clean
+Tests:
+- ...
+Completed:
+- ...
+Remaining:
+- ...
+Next action:
+- ...
+```
+
+`[WORKING]` 和 `[HANDOFF]` 评论只记录通用开发状态，不记录凭据、本地用户名、网络地址或真实地点名称。
+
 ## Security Notes
 
 Do not commit `.env`.
