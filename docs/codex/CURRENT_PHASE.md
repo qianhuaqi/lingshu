@@ -13,15 +13,15 @@ Next phase allowed: no
 
 ## Remaining Blockers
 
-- Third independent acceptance did not pass.
-- Local rework for third-round blockers has been completed and pushed in this branch.
-- Await Xiao Gu's fourth independent acceptance.
+- Fourth independent acceptance did not pass.
+- Local rework for fourth-round blockers has been completed and pushed in this branch.
+- Await Xiao Gu's fifth independent acceptance.
 - Do not treat local Codex chat state as evidence; use PR #8 comments, remote branch state, and this repository documentation.
 
 ## Latest Xiao Gu Acceptance
 
-- Latest recorded conclusion: phase B third independent acceptance did not pass.
-- Third-round rework status: completed locally; waiting for fourth independent validation.
+- Latest recorded conclusion: phase B fourth independent acceptance did not pass.
+- Fourth-round rework status: completed locally; waiting for fifth independent validation.
 - Handoff documents now use `Work commit` as an ancestor baseline and do not require self-referential HEAD fields.
 
 ## Current Prohibitions

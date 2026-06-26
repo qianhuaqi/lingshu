@@ -4,32 +4,36 @@ Updated at: 2026-06-26
 Location: office
 Branch: codex/phase-b-lingshu-context
 Worktree: clean
-Work commit: d3f9d13295d848ce507c2f11ed10349c8dc6cf0c
+Work commit: cfb4847ae84efe7b7d1e3bfdb2d592608ef3a671
 
 ## Completed
 
 - Error-code registry validation is included in `lingshu check`.
 - Generated project `app/language/modules.ini` is an empty business registry with commented examples only.
+- Generated projects now include `pyproject.toml`; the documented `python -m pip install -e ".[dev]"` command succeeds in a fresh venv after the framework wheel/editable dependency is available.
 - The single `module_map_path()` API was removed; runtime uses merged registry paths.
-- Request context cleanup is bound to Sanic response and exception lifecycle signals with idempotent reset.
+- Request context cleanup is bound to Sanic response and exception lifecycle signals, plus an idempotent task completion callback for cancellation/disconnect paths.
+- Wheel package data now includes LingShu built-in language files, the framework internal error-code registry, an internal manifest, and scaffold templates.
 - `scripts/setup-dev.ps1` was added and smoke-tested.
 - Root and generated `run.py` print an editable install hint when LingShu is not installed.
 - Handoff scripts use a non-self-referential `Work commit` contract and pass real PowerShell behavior tests.
 
 ## Remaining
 
-- Wait for Xiao Gu's fourth independent phase B acceptance after fixes are pushed.
+- Wait for Xiao Gu's fifth independent phase B acceptance after fourth-round fixes are pushed.
 
 ## Last verification
 
 - editable install: passed with `.venv\Scripts\python.exe -m pip install -e ".[dev]"`
-- pytest: 122 passed, 0 failed
+- pytest: 124 passed, 0 failed, 1 skipped
 - contract check: Project check passed
 - build: successfully built wheel and sdist
 - diff check: passed
-- verify handoff: exited 0 and printed `Handoff verification passed`
-- resume handoff: temporary clone exited 0 and printed current HEAD plus HANDOFF
-- wheel smoke: passed import, CLI, command absence, and wheel-content checks
+- cancellation cleanup: `tests\test_context_facade.py::test_request_context_clears_when_handler_task_is_cancelled` passed
+- generated-project install smoke: `tests\test_init_project.py::test_initialized_project_editable_install_in_fresh_venv_without_pythonpath` passed with no `PYTHONPATH`
+- wheel smoke: passed import, CLI, command absence, and wheel-content checks for language, registry, manifest, scaffold, and no `framework` package
+- verify handoff: pending final handoff document commit
+- resume handoff: pending final handoff document commit
 - run.py smoke: missing-install environment printed the editable install hint
 
 ## Known risks
@@ -40,9 +44,9 @@ Work commit: d3f9d13295d848ce507c2f11ed10349c8dc6cf0c
 
 ## Next exact action
 
-- Publish the final PR `[HANDOFF]` comment and wait for Xiao Gu's fourth independent phase B acceptance.
+- Run final handoff/resume verification, publish the final PR `[HANDOFF]` comment, and wait for Xiao Gu's fifth independent phase B acceptance.
 
 ## Current PR
 
 - PR: #8
-- Latest instruction: wait for fourth independent phase B acceptance after final handoff.
+- Latest instruction: execute the latest two fourth-round independent acceptance comments; fourth-round blockers have been addressed locally and pushed.
