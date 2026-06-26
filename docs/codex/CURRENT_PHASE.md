@@ -4,7 +4,7 @@ Project: LingShu Framework
 Current phase: C1 - request execution foundation and lifecycle
 Current branch: codex/phase-c1-request-runtime
 Current issue: #12
-Current PR: pending
+Current PR: #13
 Status: implementation allowed within C1 scope
 Next phase allowed: no
 
@@ -161,4 +161,4 @@ Codex must not merge the PR.
 
 - Branch: `codex/phase-c1-request-runtime`
 - Issue: `#12`
-- Pull request: pending
+- Pull request: `#13`

@@ -18,9 +18,6 @@ Work commit: 1b2aa0ee0c1f73d2700fe6d4053094beee025a5d
 
 ## Remaining
 
-- Push the C1 branch.
-- Create the Phase C1 pull request for Issue #12.
-- Update `docs/codex/CURRENT_PHASE.md`, this handoff file and the PR body/comment with the final PR number and remote HEAD.
 - Wait for Xiao Gu independent Phase C1 acceptance.
 
 ## Last verification
@@ -42,9 +39,9 @@ Work commit: 1b2aa0ee0c1f73d2700fe6d4053094beee025a5d
 
 ## Next exact action
 
-- Push the branch, create the C1 PR, fill the PR evidence, then wait for Xiao Gu's Phase C1 review.
+- Wait for Xiao Gu's Phase C1 review on PR #13.
 
 ## Current PR
 
-- PR: not opened
+- PR: #13
 - Latest instruction: start Phase C1 from Issue #12; implement request execution foundation only, do not start Phase C2 or later.
