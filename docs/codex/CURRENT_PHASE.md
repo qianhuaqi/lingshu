@@ -13,15 +13,15 @@ Next phase allowed: no
 
 ## Remaining Blockers
 
-- Fourth independent acceptance did not pass.
-- Local rework for fourth-round blockers has been completed and pushed in this branch.
-- Await Xiao Gu's fifth independent acceptance.
+- Fifth independent acceptance passed after directed rework, with one finalizer cleanup requested.
+- Directed cleanup for cancellation finalizer semantics, effective tests, and unused manifest removal has been completed and pushed in this branch.
+- Await Xiao Gu's final Phase B confirmation.
 - Do not treat local Codex chat state as evidence; use PR #8 comments, remote branch state, and this repository documentation.
 
 ## Latest Xiao Gu Acceptance
 
-- Latest recorded conclusion: phase B fourth independent acceptance did not pass.
-- Fourth-round rework status: completed locally; waiting for fifth independent validation.
+- Latest recorded conclusion: phase B fifth independent acceptance passed after directed finalizer cleanup.
+- Fifth-round directed cleanup status: completed locally; waiting for final confirmation.
 - Handoff documents now use `Work commit` as an ancestor baseline and do not require self-referential HEAD fields.
 
 ## Current Prohibitions
