@@ -14,15 +14,10 @@ current_request_id: ContextVar[str | None] = ContextVar("lingshu_current_request
 current_user: ContextVar[object | None] = ContextVar("lingshu_current_user", default=None)
 
 
-def _reset_or_clear(variable: ContextVar, token):
-    try:
-        variable.reset(token)
-    except ValueError:
-        variable.set(None)
-
-
 @dataclass
 class _ContextTokens:
+    raw_app: object | None = None
+    raw_request: object | None = None
     app_token: object | None = None
     request_token: object | None = None
     request_id_token: object | None = None
@@ -33,6 +28,8 @@ class _ContextTokens:
     def enter(self, raw_app, raw_request, request_id=None, user=None):
         if self.entered:
             return raw_request
+        self.raw_app = raw_app
+        self.raw_request = raw_request
         self.app_token = current_app.set(raw_app)
         self.request_token = current_request.set(raw_request)
         self.request_id_token = current_request_id.set(request_id)
@@ -44,14 +41,34 @@ class _ContextTokens:
         if not self.entered or self.reset_done:
             return
         if self.user_token is not None:
-            _reset_or_clear(current_user, self.user_token)
+            current_user.reset(self.user_token)
         if self.request_id_token is not None:
-            _reset_or_clear(current_request_id, self.request_id_token)
+            current_request_id.reset(self.request_id_token)
         if self.request_token is not None:
-            _reset_or_clear(current_request, self.request_token)
+            current_request.reset(self.request_token)
         if self.app_token is not None:
-            _reset_or_clear(current_app, self.app_token)
+            current_app.reset(self.app_token)
         self.reset_done = True
+        self._clear_refs()
+
+    def detach_after_task(self):
+        """Drop request-owned references when the request task is already done."""
+        if self.reset_done:
+            return
+        self.reset_done = True
+        self._clear_refs()
+
+    @property
+    def completed(self):
+        return self.reset_done
+
+    def _clear_refs(self):
+        self.raw_app = None
+        self.raw_request = None
+        self.app_token = None
+        self.request_token = None
+        self.request_id_token = None
+        self.user_token = None
 
 
 def get_current_app():

@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import contextvars
 from uuid import uuid4
 
 from lingshu.system.context import bind_request_context
@@ -85,6 +84,19 @@ def reset_request_context(raw_request):
         setattr(ctx, "lingshu_context", None)
 
 
+def detach_request_context_after_task(raw_request):
+    context = get_request_context(raw_request)
+    if context is None:
+        return
+    # A done callback may run after cancellation/disconnect, when the owning
+    # asyncio task context is gone. Do not reset ContextVar tokens there;
+    # just detach request references so the completed task does not retain them.
+    context.detach_after_task()
+    ctx = getattr(raw_request, "ctx", None)
+    if ctx is not None:
+        setattr(ctx, "lingshu_context", None)
+
+
 def install_context_middleware(raw_app):
     @raw_app.middleware("request")
     async def bind_lingshu_context(request):
@@ -100,8 +112,7 @@ def install_context_middleware(raw_app):
             # Covers cancellation/disconnect paths that do not produce a response
             # and may bypass Sanic's ordinary exception lifecycle.
             task.add_done_callback(
-                lambda _task, raw_request=request: reset_request_context(raw_request),
-                context=contextvars.copy_context(),
+                lambda _task, raw_request=request: detach_request_context_after_task(raw_request),
             )
 
     @raw_app.middleware("response")

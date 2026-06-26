@@ -32,11 +32,9 @@ def test_pyproject_packages_lingshu_scaffold_templates():
     assert pyproject["tool"]["setuptools"]["packages"]["find"]["where"] == ["src"]
     assert pyproject["tool"]["setuptools"]["packages"]["find"]["include"] == ["lingshu*"]
     assert "resources/error_codes/*.ini" in package_data
-    assert "system/error_codes/*.json" in package_data
     assert "language/**/*.ini" in package_data
     assert "scaffold/*.j2" in package_data
     assert (ROOT / "src" / "lingshu" / "resources" / "error_codes" / "modules.ini").exists()
-    assert (ROOT / "src" / "lingshu" / "system" / "error_codes" / "internal_manifest.json").exists()
     assert (SCAFFOLD_DIR / "pyproject.toml.j2").exists()
     assert (SCAFFOLD_DIR / "env.example.j2").exists()
     assert (SCAFFOLD_DIR / "README.md.j2").exists()
@@ -59,7 +57,6 @@ def test_built_wheel_contains_lingshu_package_data_and_no_legacy_framework(tmp_p
         names = set(archive.namelist())
 
     assert "lingshu/resources/error_codes/modules.ini" in names
-    assert "lingshu/system/error_codes/internal_manifest.json" in names
     assert "lingshu/scaffold/pyproject.toml.j2" in names
     assert "lingshu/scaffold/README.md.j2" in names
     assert "lingshu/scaffold/env.example.j2" in names

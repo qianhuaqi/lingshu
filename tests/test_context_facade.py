@@ -310,10 +310,13 @@ def test_request_context_clears_when_handler_task_is_cancelled(tmp_path):
     )
     sanic_adapter.set_app_logger(raw_app, logging.getLogger("cancelled-request"))
     sanic_adapter.install_context_middleware(raw_app)
+    captured = {}
 
     @raw_app.get("/cancel")
     async def cancel(request_):
         assert request.id
+        captured["request"] = request_
+        captured["context"] = request_.ctx.lingshu_context
         raise asyncio.CancelledError()
 
     async def scenario():
@@ -327,5 +330,63 @@ def test_request_context_clears_when_handler_task_is_cancelled(tmp_path):
             _ = request.raw
         with pytest.raises(NoRequestContextError):
             _ = request.id
+        captured_request = captured["request"]
+        captured_context = captured["context"]
+        assert captured_request.ctx.lingshu_context is None
+        assert captured_context.completed is True
+        assert captured_context.raw_app is None
+        assert captured_context.raw_request is None
+        assert captured_context.app_token is None
+        assert captured_context.request_token is None
+        assert captured_context.request_id_token is None
+        assert captured_context.user_token is None
+
+    asyncio.run(scenario())
+
+
+def test_request_context_done_callback_is_noop_after_normal_reset(tmp_path):
+    raw_app = Sanic("normal-reset-done-callback")
+    sanic_adapter.set_app_config(
+        raw_app,
+        SimpleNamespace(
+            app_name="normal-reset-done-callback",
+            debug=False,
+            language="zh-CN",
+            log_level="INFO",
+            log_to_file=False,
+            log_path=str(tmp_path / "logs"),
+            log_file="app.log",
+            log_formatter="%(message)s",
+            log_max_bytes=1024,
+            log_backup_count=1,
+        ),
+    )
+    sanic_adapter.set_app_logger(raw_app, logging.getLogger("normal-reset-done-callback"))
+    sanic_adapter.install_context_middleware(raw_app)
+    captured = {}
+
+    outer_app = _app("outer", debug=True)
+
+    @raw_app.get("/probe")
+    async def probe(request_):
+        captured["context"] = request_.ctx.lingshu_context
+        assert app.raw is raw_app
+        return json_response({"ok": True})
+
+    async def scenario():
+        with app_context(outer_app):
+            _, response_ = await raw_app.asgi_client.get("/probe")
+            assert response_.status == 200
+            assert app.raw is outer_app
+            with pytest.raises(NoRequestContextError):
+                _ = request.raw
+        await asyncio.sleep(0)
+
+        captured_context = captured["context"]
+        assert captured_context.completed is True
+        assert captured_context.raw_app is None
+        assert captured_context.raw_request is None
+        assert captured_context.app_token is None
+        assert captured_context.request_token is None
 
     asyncio.run(scenario())
