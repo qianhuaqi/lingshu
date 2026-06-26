@@ -159,23 +159,38 @@ class RoutePolicyCompiler:
             from lingshu.system.sanic_adapter import finalize_request_context
 
             execution = current_execution_context()
+            remaining = execution.remaining
+
+            if remaining <= 0:
+                execution.cancel(CancellationReason.REQUEST_TIMEOUT)
+                await finalize_request_context(request)
+                return json_response(
+                    {"request_id": execution.request_id},
+                    code=990002,
+                    msg="Request deadline exceeded",
+                    status=504,
+                )
+
+            handler_task = asyncio.ensure_future(handler(request, *args, **kwargs))
             try:
-                async with asyncio.timeout_at(execution.deadline):
-                    return await handler(request, *args, **kwargs)
-            except TimeoutError:
-                now = execution.monotonic()
-                if now >= execution.deadline:
-                    execution.cancel(CancellationReason.REQUEST_TIMEOUT)
-                    return json_response(
-                        {"request_id": execution.request_id},
-                        code=990002,
-                        msg="Request deadline exceeded",
-                        status=504,
-                    )
-                raise
+                done, _pending = await asyncio.wait((handler_task,), timeout=remaining)
+                if handler_task in done:
+                    return await handler_task
+                execution.cancel(CancellationReason.REQUEST_TIMEOUT)
+                handler_task.cancel()
+                await asyncio.gather(handler_task, return_exceptions=True)
+                return json_response(
+                    {"request_id": execution.request_id},
+                    code=990002,
+                    msg="Request deadline exceeded",
+                    status=504,
+                )
             except asyncio.CancelledError:
                 if execution.cancel_reason is None:
                     execution.cancel(CancellationReason.CLIENT_DISCONNECT)
+                if not handler_task.done():
+                    handler_task.cancel()
+                    await asyncio.gather(handler_task, return_exceptions=True)
                 raise
             finally:
                 await finalize_request_context(request)
