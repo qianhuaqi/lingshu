@@ -108,3 +108,101 @@ def test_task_registry_rejects_missing_owner():
 
     with pytest.raises(ValueError, match="owner"):
         registry.spawn(job(), name="bad", owner="")
+
+
+def test_task_result_string_is_truncated():
+    async def scenario():
+        registry = TaskRegistry()
+        big_string = "x" * 10000
+
+        async def job():
+            return big_string
+
+        task_id = registry.spawn(job(), name="big", owner="application", scope="application")
+        await registry.shutdown_and_wait(timeout=1.0)
+
+        record = registry.get_record(task_id)
+        assert isinstance(record.result, str)
+        assert len(record.result) < 10000
+        assert "truncated" in record.result
+
+    asyncio.run(scenario())
+
+
+def test_task_result_large_object_not_retained():
+    async def scenario():
+        registry = TaskRegistry()
+
+        class BigObject:
+            pass
+
+        async def job():
+            return BigObject()
+
+        task_id = registry.spawn(job(), name="big-obj", owner="application", scope="application")
+        await registry.shutdown_and_wait(timeout=1.0)
+
+        record = registry.get_record(task_id)
+        assert isinstance(record.result, str)
+        assert "BigObject" in record.result
+
+    asyncio.run(scenario())
+
+
+def test_task_exception_sensitive_data_is_redacted():
+    async def scenario():
+        registry = TaskRegistry()
+
+        async def job():
+            raise RuntimeError("token=abc123 password=secret456 api_key=mykey789")
+
+        task_id = registry.spawn(job(), name="leak", owner="application", scope="application")
+        await registry.shutdown_and_wait(timeout=1.0)
+
+        record = registry.get_record(task_id)
+        assert record.exception_type == "RuntimeError"
+        assert "abc123" not in record.exception_message
+        assert "secret456" not in record.exception_message
+        assert "mykey789" not in record.exception_message
+        assert "***" in record.exception_message
+
+    asyncio.run(scenario())
+
+
+def test_task_exception_object_not_retained():
+    async def scenario():
+        registry = TaskRegistry()
+
+        original_exc = RuntimeError("boom")
+
+        async def job():
+            raise original_exc
+
+        task_id = registry.spawn(job(), name="exc-ref", owner="application", scope="application")
+        await registry.shutdown_and_wait(timeout=1.0)
+
+        record = registry.get_record(task_id)
+        assert record.exception_type == "RuntimeError"
+        assert "boom" in record.exception_message
+
+    asyncio.run(scenario())
+
+
+def test_task_record_captures_execution_id():
+    async def scenario():
+        registry = TaskRegistry()
+
+        async def job():
+            await asyncio.Event().wait()
+
+        with bind_execution_context(_context()):
+            task_id = registry.spawn(job(), name="exec-test", owner="request", scope="request")
+
+        record = registry.get_record(task_id)
+        assert record.execution_id is not None
+        assert record.execution_id != ""
+
+        await registry.cancel_all()
+        await asyncio.sleep(0.01)
+
+    asyncio.run(scenario())
