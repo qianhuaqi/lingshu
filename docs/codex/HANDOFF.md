@@ -2,53 +2,49 @@
 
 Updated at: 2026-06-26
 Location: office
-Branch: codex/phase-b-lingshu-context
+Branch: codex/phase-c1-request-runtime
 Worktree: clean
-Work commit: f512b44c41ad20e319aaf12dfd5eec9a7099f9a6
+Work commit: 1b2aa0ee0c1f73d2700fe6d4053094beee025a5d
 
 ## Completed
 
-- Error-code registry validation is included in `lingshu check`.
-- Generated project `app/language/modules.ini` is an empty business registry with commented examples only.
-- Generated projects now include `pyproject.toml`; the documented `python -m pip install -e ".[dev]"` command succeeds in a fresh venv after the framework wheel/editable dependency is available.
-- The single `module_map_path()` API was removed; runtime uses merged registry paths.
-- Request context cleanup separates strict response/exception reset from task-end cancellation/disconnect detach.
-- Cancellation/disconnect detach clears `request.ctx.lingshu_context`, marks the context completed, and releases token/raw request references without cross-context token reset.
-- Wheel package data includes LingShu built-in language files, the framework internal error-code registry, and scaffold templates; the unused duplicate JSON manifest was removed.
-- `scripts/setup-dev.ps1` was added and smoke-tested.
-- Root and generated `run.py` print an editable install hint when LingShu is not installed.
-- Handoff scripts use a non-self-referential `Work commit` contract and pass real PowerShell behavior tests.
+- Implemented C1 request execution context with request id, trace id hook, optional operation id, compiled route policy, absolute monotonic deadline, cancellation reason, lifecycle state, ContextVar binding and explicit reset/detach paths.
+- Implemented deadline helpers: `current_deadline()`, `remaining_time()`, `cancel()`, and `raise_if_cancelled()`.
+- Implemented RoutePolicy definition, compiled immutable policy, registry and compiler skeleton with global to blueprint to route precedence and legacy RoutePolicy compatibility.
+- Implemented managed `TaskRegistry` with owner-required spawn, strong references, list, cancel, cancel_all, shutdown_and_wait, completion cleanup and exception consumption.
+- Implemented lifecycle state machine, `/live`, `/ready`, basic `/health`, drain rejection for business routes and `ShutdownCoordinator` with reverse cleanup, errors and idempotency.
+- Added deterministic C1 contract tests for execution context isolation, policy precedence, managed tasks and lifecycle/drain/shutdown behavior.
+- Updated governance files from Phase B to Phase C1 boundaries and added packaging assertion that the old unused internal manifest JSON is absent from wheels.
 
 ## Remaining
 
-- Wait for Xiao Gu's final confirmation after the fifth-round directed finalizer cleanup is pushed.
+- Push the C1 branch.
+- Create the Phase C1 pull request for Issue #12.
+- Update `docs/codex/CURRENT_PHASE.md`, this handoff file and the PR body/comment with the final PR number and remote HEAD.
+- Wait for Xiao Gu independent Phase C1 acceptance.
 
 ## Last verification
 
 - editable install: passed with `.venv\Scripts\python.exe -m pip install -e ".[dev]"`
-- pytest: 125 passed, 0 failed, 1 skipped
+- pytest: 145 passed, 0 failed, 1 skipped
 - contract check: Project check passed
 - build: successfully built wheel and sdist
 - diff check: passed
-- cancellation cleanup: `tests\test_context_facade.py::test_request_context_clears_when_handler_task_is_cancelled` passed and asserts captured Sanic request/context detach state
-- normal reset/no-op callback: `tests\test_context_facade.py::test_request_context_done_callback_is_noop_after_normal_reset` passed
-- generated-project install smoke: `tests\test_init_project.py::test_initialized_project_editable_install_in_fresh_venv_without_pythonpath` passed with no `PYTHONPATH`
-- wheel smoke: passed import, CLI, command absence, and wheel-content checks for language, registry, scaffold, no `framework` package, and no unused internal manifest JSON
-- verify handoff: will be rerun after this handoff update commit
-- resume handoff: last temporary clone smoke passed; rerun is not required for this directed code-only finalizer cleanup
-- run.py smoke: missing-install environment printed the editable install hint
+- wheel content smoke: passed for built-in languages, internal registry manifest, scaffold, no unused internal manifest JSON and no `framework` package
+- wheel install smoke: passed for `import lingshu`, failed `import framework`, `lingshu --help`, and absent `sanic-framework`
+- generated project smoke: passed with generated `c1_smoke` app `/health` returning 200 after disabling DB extensions through environment flags
 
 ## Known risks
 
-- GitHub has no CI configured; evidence is from local and temporary-venv verification.
-- Direct `.ps1` execution is blocked by local execution policy; smoke uses `powershell -NoProfile -ExecutionPolicy Bypass`.
-- Final remote HEAD must be recorded in the PR `[HANDOFF]` comment after this directed handoff update is pushed.
+- GitHub has no CI configured; evidence is from local Windows verification and temporary-venv smoke checks.
+- Scaffold bootstrap still imports extension modules broadly; generated-project smoke disables DB extensions through environment flags to avoid external services.
+- Sanic ASGI test client triggers server stop listeners between requests, so extension teardown remains listener-based while full shutdown coordination is explicit through `ShutdownCoordinator`.
 
 ## Next exact action
 
-- Run final handoff verification, publish the final PR `[HANDOFF]` comment, and wait for Xiao Gu's final Phase B confirmation.
+- Push the branch, create the C1 PR, fill the PR evidence, then wait for Xiao Gu's Phase C1 review.
 
 ## Current PR
 
-- PR: #8
-- Latest instruction: execute the fifth-round directed finalizer cleanup; scope limited to cancellation finalizer semantics, effective tests, and unused manifest removal.
+- PR: not opened
+- Latest instruction: start Phase C1 from Issue #12; implement request execution foundation only, do not start Phase C2 or later.
