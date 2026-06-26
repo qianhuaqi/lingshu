@@ -3,10 +3,11 @@ from __future__ import annotations
 import asyncio
 from uuid import uuid4
 
+from lingshu.response import json_response
 from lingshu.system.context import bind_request_context
 from lingshu.system.execution import RequestExecutionContext, bind_execution_context
 from lingshu.system.errors import ResourceNotConfiguredError
-from lingshu.system.policy import CompiledRoutePolicy, RoutePolicyError
+from lingshu.system.policy import CompiledRoutePolicy
 
 
 def set_app_config(raw_app, config):
@@ -102,6 +103,21 @@ def reset_request_context(raw_request):
         setattr(ctx, "lingshu_execution_context", None)
 
 
+async def finish_request_context(raw_request):
+    ctx = getattr(raw_request, "ctx", None)
+    execution_context = get_request_execution_context(raw_request)
+    if execution_context is not None:
+        registry = getattr(raw_request.app.ctx, "task_registry", None)
+        if registry is not None:
+            await registry.finish_request(execution_context.request_id, timeout=max(0.0, execution_context.remaining))
+    if ctx is not None and getattr(ctx, "lingshu_in_flight_entered", False):
+        tracker = getattr(raw_request.app.ctx, "in_flight_tracker", None)
+        if tracker is not None:
+            tracker.exit()
+        setattr(ctx, "lingshu_in_flight_entered", False)
+    reset_request_context(raw_request)
+
+
 def detach_request_context_after_task(raw_request):
     context = get_request_context(raw_request)
     ctx = getattr(raw_request, "ctx", None)
@@ -137,23 +153,42 @@ def _request_route_name(raw_app, request):
     return route_name
 
 
+def _is_health_path(request) -> bool:
+    return getattr(request, "path", "") in {"/live", "/ready", "/health"}
+
+
+def _is_static_route(request) -> bool:
+    route = getattr(request, "route", None)
+    extra = getattr(route, "extra", None)
+    return bool(getattr(extra, "static", False))
+
+
 def _route_policy_for_request(raw_app, request) -> CompiledRoutePolicy:
     route_name = _request_route_name(raw_app, request)
+    if not route_name:
+        return CompiledRoutePolicy(
+            route_name="not_found",
+            public=True,
+            auth_required=False,
+            maintenance_check=False,
+            timeout=10.0,
+            body_limit=None,
+            audit_level="none",
+        )
+    if _is_static_route(request):
+        return CompiledRoutePolicy(
+            route_name=route_name or "static",
+            public=True,
+            auth_required=False,
+            maintenance_check=False,
+            timeout=10.0,
+            body_limit=None,
+            audit_level="none",
+        )
     compiled = getattr(raw_app.ctx, "route_policies", None)
     if compiled is not None and route_name:
-        try:
-            return compiled.for_route(route_name)
-        except RoutePolicyError:
-            pass
-    return CompiledRoutePolicy(
-        route_name=route_name or "unknown",
-        public=False,
-        auth_required=True,
-        maintenance_check=True,
-        timeout=10.0,
-        body_limit=None,
-        audit_level="none",
-    )
+        return compiled.for_route(route_name)
+    raise LookupError(f"No compiled route policy for {route_name or 'unknown'}")
 
 
 def _lifecycle_state(raw_app) -> str:
@@ -165,9 +200,21 @@ def _lifecycle_state(raw_app) -> str:
 def install_context_middleware(raw_app):
     @raw_app.middleware("request")
     async def bind_lingshu_context(request):
-        route_policy = _route_policy_for_request(raw_app, request)
+        request_id = get_request_id(request)
+        try:
+            route_policy = _route_policy_for_request(raw_app, request)
+        except Exception:
+            logger = get_optional_resource(raw_app, "logger")
+            if logger is not None:
+                logger.error("Missing compiled route policy", extra={"route_name": _request_route_name(raw_app, request), "request_id": request_id})
+            return json_response(
+                {"request_id": request_id},
+                code=990001,
+                msg="Route policy is not compiled",
+                status=500,
+            )
         execution_context = RequestExecutionContext.child(
-            request_id=get_request_id(request),
+            request_id=request_id,
             trace_id=request.headers.get("traceparent") or request.headers.get("X-Trace-ID") or uuid4().hex,
             operation_id=request.headers.get("X-Operation-ID"),
             route_policy=route_policy,
@@ -184,6 +231,12 @@ def install_context_middleware(raw_app):
         request.ctx.lingshu_execution_context = execution_context
         request.ctx.lingshu_execution_token = bind_execution_context(execution_context)
         request.ctx.lingshu_execution_token.__enter__()
+        lifecycle = getattr(raw_app.ctx, "lifecycle", None)
+        if not _is_health_path(request) and not _is_static_route(request) and getattr(lifecycle, "ready", False):
+            tracker = getattr(raw_app.ctx, "in_flight_tracker", None)
+            if tracker is not None:
+                tracker.enter()
+                request.ctx.lingshu_in_flight_entered = True
         task = asyncio.current_task()
         if task is not None:
             # Covers cancellation/disconnect paths that do not produce a response
@@ -194,13 +247,13 @@ def install_context_middleware(raw_app):
 
     @raw_app.middleware("response")
     async def reset_lingshu_context(request, response):
-        reset_request_context(request)
+        await finish_request_context(request)
 
     @raw_app.signal("http.lifecycle.response")
     async def reset_lingshu_context_after_response(request, response, **_):
-        reset_request_context(request)
+        await finish_request_context(request)
 
     @raw_app.signal("http.lifecycle.exception")
     async def reset_lingshu_context_after_exception(request, exception, **_):
         if request is not None:
-            reset_request_context(request)
+            await finish_request_context(request)

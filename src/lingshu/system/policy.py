@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+import asyncio
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any
+
+from lingshu.response import json_response
+from lingshu.system.execution import CancellationReason, current_execution_context
 
 
 class RoutePolicyError(ValueError):
@@ -97,6 +101,9 @@ class CompiledRoutePolicies:
     def items(self):
         return self._policies.items()
 
+    def __contains__(self, route_name: str) -> bool:
+        return route_name in self._policies
+
 
 class RoutePolicyRegistry:
     def __init__(self, defaults: RoutePolicyDefinition | None = None):
@@ -122,11 +129,15 @@ class RoutePolicyCompiler:
 
     def compile_app(self, app) -> CompiledRoutePolicies:
         policies: dict[str, CompiledRoutePolicy] = {}
-        for route in app.router.routes_all.values():
+        for route in app.router.routes:
             if getattr(route, "extra", None) and route.extra.static:
                 continue
             handler = getattr(route, "handler", None)
             route_name = self._normalized_route_name(app, route, handler)
+            if not route_name:
+                raise RoutePolicyError("Route policy route_name cannot be empty")
+            if route_name in policies:
+                raise RoutePolicyError(f"Duplicate route policy route_name: {route_name}")
             blueprint = self._blueprint_for_route(app, route)
             blueprint_policy = _normalize_definition(getattr(getattr(blueprint, "ctx", None), "route_policy", None))
             route_policy = _normalize_definition(getattr(handler, "__lingshu_route_policy__", None))
@@ -135,10 +146,37 @@ class RoutePolicyCompiler:
             policies[route_name] = compiled
             if handler is not None:
                 setattr(handler, "__lingshu_compiled_policy__", compiled)
+                self._wrap_handler(route, handler, compiled)
         return CompiledRoutePolicies(policies)
 
+    def _wrap_handler(self, route, handler, compiled: CompiledRoutePolicy):
+        if getattr(handler, "__lingshu_deadline_wrapped__", False):
+            return
+
+        async def deadline_wrapper(request, *args, **kwargs):
+            execution = current_execution_context()
+            try:
+                return await asyncio.wait_for(handler(request, *args, **kwargs), timeout=execution.remaining)
+            except TimeoutError:
+                execution.cancel(CancellationReason.REQUEST_TIMEOUT)
+                return json_response(
+                    {"request_id": execution.request_id},
+                    code=990002,
+                    msg="Request deadline exceeded",
+                    status=504,
+                )
+
+        deadline_wrapper.__name__ = getattr(handler, "__name__", "deadline_wrapper")
+        deadline_wrapper.__module__ = getattr(handler, "__module__", __name__)
+        deadline_wrapper.__lingshu_deadline_wrapped__ = True
+        deadline_wrapper.__lingshu_route_policy__ = getattr(handler, "__lingshu_route_policy__", None)
+        deadline_wrapper.__lingshu_compiled_policy__ = compiled
+        route.handler = deadline_wrapper
+
     def _normalized_route_name(self, app, route, handler) -> str:
-        route_name = getattr(route, "name", "") or getattr(handler, "__name__", "")
+        route_name = getattr(route, "name", None)
+        if route_name is None:
+            route_name = getattr(handler, "__name__", "")
         prefix = f"{app.name}."
         if route_name.startswith(prefix):
             return route_name[len(prefix) :]
