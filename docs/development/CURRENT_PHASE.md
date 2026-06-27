@@ -1,10 +1,11 @@
 # Current Phase
 
 Project: LingShu Framework
-Current phase: C2-RC - Development Constitution V1 and Machine Boundary Tests
-Current branch: qwen/phase-c2-rc-development-constitution
+Current phase: C2-R1 - Auth Entry Dedup and Legacy Convergence
+Phase type: implementation
+Current branch: qwen/phase-c2-r1-auth-legacy-convergence
 Current writer: qwen
-Current issue: #21
+Current issue: #23
 Status: in progress
 Next phase allowed: no
 
@@ -16,45 +17,39 @@ Next phase allowed: no
 - Phase C1 accepted and merged through PR #13.
 - Phase C2.1 accepted and merged through PR #16.
 - Phase C2.2A accepted and merged through PR #18.
-- Phase C2-R0 accepted and merged through PR #20 (merge commit: `ed3ff04`).
+- Phase C2-R0 accepted and merged through PR #20.
+- Phase C2-RC accepted and merged through PR #22 (merge commit: `4132e4b`).
+
+## Base Commit
+
+- Base commit: 4132e4bec85cc09fedeed55f930e6f8faac31986
+- Previous phase: C2-RC merged by PR #22
 
 ## Test Baseline
 
 - `tests/test_c2_auth.py`: 111 passed.
 - `tests/test_c2_tenant.py`: 127 passed.
-- Full suite: 446 passed, 1 skipped, 0 failed.
+- Full suite: 526 passed, 1 skipped, 0 failed.
 - `pip check`: no broken requirements.
 
-## Phase C2-RC Goal
+## Phase C2-R1 Goal
 
-Establish Development Constitution V1 and machine-executable architecture
-boundary tests. Freeze the rules that govern all developers (human and AI)
-so that repository rules do not change when developers change.
+Consolidate the dual-track authentication system into a single implementation
+chain with a clear Legacy compatibility facade. This phase is NOT about adding
+new auth capabilities — it is about convergence and controlled deprecation.
 
-This is a documentation and test phase — no production code changes.
+## Current Stage
 
-## Scope
+- Audit Gate A: read-only dual-track authentication audit.
+- Implementation Gate B: compat layer + legacy forwarding (blocked on Gate A
+  approval by Xiao Gu).
 
-### In scope
+## Frozen Phases
 
-- Rewrite `AGENTS.md` as a model-agnostic entry point.
-- Create `docs/development/DEVELOPMENT_CONSTITUTION.md`.
-- Create model-agnostic phase documents under `docs/development/`.
-- Create architecture contract documents under `docs/architecture/`.
-- Create ADRs under `docs/decisions/`.
-- Create `docs/architecture/architecture-contract.json`.
-- Create machine boundary tests under `tests/architecture/`.
-- Update `tests/test_handoff_workflow.py` to use new fact sources.
+- R2, R3, R6, C2.2B, C3 remain frozen until R1 is accepted.
 
-### Out of scope
-
-- Moving `src/lingshu` production directories.
-- Modifying auth, tenant, RoutePolicy, database, Model, or Sanic adapter behavior.
-- Starting R1–R6, C2.2B, or C3.
-- Adding third-party dependencies.
-
-## CLI Exception (Issue #21 approved)
+## CLI Exception (Issue #21 approved, carried forward)
 
 - Baseline `ed3ff04` lacks `app/v1/language/` directory.
-- This phase adds `app/v1/language/.gitkeep` as a minimal placeholder.
-- No runtime behavior change. No other `app/**` files modified.
+- `app/v1/language/.gitkeep` was added in C2-RC as a minimal placeholder.
+- No runtime behavior change.

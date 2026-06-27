@@ -402,10 +402,10 @@ def test_current_phase_and_handoff_docs_exist_with_current_context():
     current_phase = _read("docs/development/CURRENT_PHASE.md")
     handoff = _read("docs/development/HANDOFF.md")
 
-    assert "Current phase: C2-RC" in current_phase
-    assert "qwen/phase-c2-rc-development-constitution" in current_phase
+    assert "Current phase: C2-R1" in current_phase
+    assert "qwen/phase-c2-r1-auth-legacy-convergence" in current_phase
     assert "Current writer: qwen" in current_phase
-    assert "Current issue: #21" in current_phase
+    assert "Current issue: #23" in current_phase
     assert "Next phase allowed: no" in current_phase
     assert "Branch:" in handoff
     assert "Writer:" in handoff

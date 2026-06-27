@@ -48,14 +48,14 @@ def test_agents_md_references_github_remote():
     assert "fast-forward" in text.lower()
 
 
-def test_current_phase_is_c2_rc():
+def test_current_phase_is_c2_r1():
     text = _read("docs/development/CURRENT_PHASE.md")
-    assert "Current phase: C2-RC" in text
-    assert "Current issue: #21" in text
+    assert "Current phase: C2-R1" in text
+    assert "Current issue: #23" in text
     assert "Current writer: qwen" in text
-    assert "qwen/phase-c2-rc-development-constitution" in text
+    assert "qwen/phase-c2-r1-auth-legacy-convergence" in text
     assert "Next phase allowed: no" in text
-    assert "ed3ff04" in text
+    assert "4132e4b" in text
 
 
 def test_handoff_doc_exists_and_is_model_agnostic():
@@ -187,7 +187,7 @@ def test_current_phase_contains_writer_and_branch():
     """CURRENT_PHASE must contain the dynamic writer and branch state."""
     text = _read("docs/development/CURRENT_PHASE.md")
     assert "Current writer: qwen" in text
-    assert "Current branch: qwen/phase-c2-rc-development-constitution" in text
+    assert "Current branch: qwen/phase-c2-r1-auth-legacy-convergence" in text
 
 
 def test_handoff_writer_matches_current_phase():
