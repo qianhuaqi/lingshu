@@ -922,7 +922,10 @@ class TestPrincipalCleanupLifecycle:
         install_authentication_middleware(app)
 
         async def scenario():
+            cleanup_done = asyncio.Event()
+
             request_task = asyncio.ensure_future(app.asgi_client.get("/cc/cancel"))
+            request_task.add_done_callback(lambda _t: cleanup_done.set())
             await handler_entered.wait()
 
             # The handler is running; a principal binding must exist on the request.
@@ -933,18 +936,16 @@ class TestPrincipalCleanupLifecycle:
 
             # Cancel the in-flight request.
             request_task.cancel()
-            try:
-                await request_task
-            except (asyncio.CancelledError, Exception):
-                pass
 
-            # The cleanup path must have reset/detached the binding.
-            # Done callbacks run after the task is cancelled but may need
-            # a couple of loop iterations to execute.
-            await asyncio.sleep(0.05)
+            # CancelledError must propagate — it must NOT be swallowed.
+            with pytest.raises(asyncio.CancelledError):
+                await request_task
+
+            # Wait deterministically for all done-callbacks (including the
+            # context-middleware cleanup callback) to finish.
+            await asyncio.wait_for(cleanup_done.wait(), timeout=5.0)
+
             assert captured["request"].ctx.lingshu_principal_binding is None
-            # The binding's reset() must have run (reset_done=True means
-            # the ContextVar token was reset, unbinding the principal).
             assert captured["binding"].reset_done is True
 
             # 4. A subsequent request must not inherit the cancelled identity.
@@ -1126,3 +1127,127 @@ class TestPublicAuthAPI:
         # import lingshu.system
         assert hasattr(auth_module, "Principal")
         assert hasattr(auth_module, "AuthenticatorChain")
+
+
+# ---------------------------------------------------------------------------
+# 15. Integration regressions via real create_app()
+# ---------------------------------------------------------------------------
+
+class TestCreateAppFailClosedIntegration:
+    """Verify that the real create_app() installs fail-closed middleware."""
+
+    def test_protected_route_401_when_chain_not_registered(self):
+        from lingshu.app import create_app
+
+        app = create_app()
+        bp = Blueprint("fail-closed-integ", url_prefix="/fci")
+
+        @bp.get("/protected", name="protected")
+        async def protected(request):
+            from lingshu.response import json_response
+            return json_response({"ok": True})
+
+        set_route_policy(protected, RoutePolicyDefinition())
+        app.blueprint(bp)
+        compile_route_policies(app)
+
+        _, response = asyncio.run(app.asgi_client.get("/fci/protected"))
+        assert response.status == 401
+        assert response.json["code"] == 990116
+
+    def test_public_route_200_when_chain_not_registered(self):
+        from lingshu.app import create_app
+
+        app = create_app()
+        bp = Blueprint("fail-closed-public-integ", url_prefix="/fcpi")
+
+        @bp.get("/open", name="open")
+        async def open_endpoint(request):
+            from lingshu.response import json_response
+            return json_response({"ok": True})
+
+        set_route_policy(open_endpoint, RoutePolicyDefinition(public=True))
+        app.blueprint(bp)
+        compile_route_policies(app)
+
+        _, response = asyncio.run(app.asgi_client.get("/fcpi/open"))
+        assert response.status == 200
+
+
+# ---------------------------------------------------------------------------
+# 16. Idempotent middleware / configure_authentication
+# ---------------------------------------------------------------------------
+
+class TestIdempotentMiddleware:
+    """configure_authentication replaces chain; middleware installs once."""
+
+    def test_double_configure_single_authentication_per_request(self):
+        from lingshu.system import sanic_adapter
+        from lingshu.system.auth.middleware import (
+            install_authentication_middleware,
+            set_authenticator_chain,
+        )
+
+        app = Sanic("idempotent-config")
+        sanic_adapter.install_context_middleware(app)
+        bp = Blueprint("idempotent-bp", url_prefix="/id")
+
+        @bp.get("/secure", name="secure")
+        async def secure(request):
+            from lingshu.response import json_response
+            p = current_principal.get()
+            return json_response({"subject": p.subject if p else None})
+
+        set_route_policy(secure, RoutePolicyDefinition())
+        app.blueprint(bp)
+        compile_route_policies(app)
+
+        stub1 = StubAuthenticator("first", mode="success", subject="user-1")
+        chain1 = AuthenticatorChain()
+        chain1.register(stub1)
+        set_authenticator_chain(app, chain1)
+        install_authentication_middleware(app)
+
+        # Second install must be a no-op.
+        install_authentication_middleware(app)
+
+        # Replace chain.
+        stub2 = StubAuthenticator("second", mode="success", subject="user-2")
+        chain2 = AuthenticatorChain()
+        chain2.register(stub2)
+        set_authenticator_chain(app, chain2)
+
+        _, response = asyncio.run(app.asgi_client.get("/id/secure"))
+        assert response.status == 200
+        assert response.json["data"]["subject"] == "user-2"
+        assert stub2.call_count == 1
+        assert stub1.call_count == 0
+        assert current_principal.get() is None
+
+
+# ---------------------------------------------------------------------------
+# 17. Import order stability
+# ---------------------------------------------------------------------------
+
+class TestImportOrderStability:
+    """lingshu.auth must be stable regardless of import order."""
+
+    def test_import_lingshu_then_auth(self):
+        import lingshu
+        import lingshu.auth
+        assert lingshu.auth.Principal is not None
+        assert lingshu.auth.AuthenticatorChain is not None
+        assert lingshu.auth.configure_authentication is not None
+
+    def test_import_auth_then_lingshu(self):
+        import lingshu.auth
+        import lingshu
+        assert lingshu.auth.Principal is not None
+        assert lingshu.auth.AuthenticatorChain is not None
+
+    def test_from_lingshu_import_auth(self):
+        import lingshu.auth
+        from lingshu import auth
+        assert auth is lingshu.auth
+        assert auth.Principal is not None
+        assert auth.AuthenticatorChain is not None
