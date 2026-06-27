@@ -7,6 +7,7 @@ there are no files to check.
 """
 
 import json
+import sys
 from pathlib import Path
 
 from tests.architecture.import_scan import extract_imports, collect_py_files
@@ -22,21 +23,7 @@ def _read_contract():
     return json.loads(raw)
 
 
-_STDLIB_TOP_LEVEL = frozenset({
-    "abc", "argparse", "ast", "asyncio", "base64", "bisect",
-    "calendar", "collections", "concurrent", "configparser",
-    "contextlib", "copy", "csv", "datetime", "decimal", "difflib",
-    "enum", "errno", "faulthandler", "fcntl", "fnmatch", "functools",
-    "gc", "getopt", "getpass", "glob", "hashlib", "heapq", "hmac",
-    "html", "http", "importlib", "inspect", "io", "ipaddress",
-    "itertools", "json", "logging", "math", "mimetypes", "multiprocessing",
-    "operator", "os", "pathlib", "pickle", "platform", "pprint",
-    "queue", "random", "re", "shlex", "shutil", "signal", "socket",
-    "sqlite3", "ssl", "statistics", "string", "struct", "subprocess",
-    "sys", "tempfile", "textwrap", "threading", "time", "traceback",
-    "typing", "unittest", "urllib", "uuid", "warnings", "weakref",
-    "xml", "zipfile", "zlib", "__future__",
-})
+_STDLIB_TOP_LEVEL = frozenset(sys.stdlib_module_names) | frozenset(sys.builtin_module_names)
 
 
 def _is_stdlib_import(imp: str) -> bool:
@@ -253,3 +240,18 @@ def test_contract_target_layers_have_allowlist_fields():
         assert "allowed_stdlib" in layer_def, f"{layer_key} missing allowed_stdlib"
         assert "allowed_lingshu_prefixes" in layer_def, f"{layer_key} missing allowed_lingshu_prefixes"
         assert "allowed_third_party_prefixes" in layer_def, f"{layer_key} missing allowed_third_party_prefixes"
+
+
+def test_stdlib_detection_uses_real_python_set():
+    """Stdlib detection must use sys.stdlib_module_names, not a hand-maintained list."""
+    assert _is_stdlib_import("dataclasses")
+    assert _is_stdlib_import("contextvars")
+    assert _is_stdlib_import("secrets")
+    assert _is_stdlib_import("types")
+    assert _is_stdlib_import("zoneinfo")
+    assert _is_stdlib_import("collections.abc")
+    assert _is_stdlib_import("importlib.metadata")
+    # Third-party must NOT be classified as stdlib
+    assert not _is_stdlib_import("sanic")
+    assert not _is_stdlib_import("jwt")
+    assert not _is_stdlib_import("aiomysql")

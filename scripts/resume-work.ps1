@@ -195,26 +195,29 @@ function Assert-WriterBranchCrossCheck {
     }
     $prefix = $prefixEntry.Value
 
-    if ($prefix -match "<name>") {
-        $prefixBase = $prefix -replace "<name>", ""
-        if (-not $BranchName.StartsWith($prefixBase)) {
-            throw "Branch '$BranchName' does not start with human prefix '$prefix'."
+    # Research branch type — special non-implementation branch
+    if ($BranchName -match "^research/") {
+        if ($BranchName -notmatch "^research/[^/]+$") {
+            throw "Research branch '$BranchName' must match research/<non-empty slug>."
         }
-        $rest = $BranchName.Substring($prefixBase.Length)
-        $namePart = ($rest -split "/")[0]
-        if (-not $namePart -or $namePart -like "phase-*") {
-            throw "Human branch '$BranchName' is missing the <name> segment."
+        $phaseType = $PhaseFields["Phase type"]
+        if (-not $phaseType) {
+            throw "Research branch '$BranchName' requires CURRENT_PHASE field 'Phase type: non-implementation research'. Field is missing."
+        }
+        if ($phaseType -ne "non-implementation research") {
+            throw "Research branch '$BranchName' requires CURRENT_PHASE 'Phase type: non-implementation research'. Got '$phaseType'."
+        }
+        return
+    }
+
+    # Non-research branch: must match writer's implementation prefix
+    if ($prefix -match "<name>") {
+        if ($BranchName -notmatch "^human/[^/]+/phase-[^/]+$") {
+            throw "Human branch '$BranchName' must match human/<name>/phase-<phase>-<slug>. Name must be non-empty and not start with 'phase-'."
         }
     } else {
         if (-not $BranchName.StartsWith($prefix)) {
             throw "Branch '$BranchName' does not start with prefix '$prefix' for writer '$writer'."
-        }
-    }
-
-    if ($BranchName -match "^research/") {
-        $phaseType = $PhaseFields["Phase type"]
-        if ($phaseType -ne "non-implementation research") {
-            throw "Research branch '$BranchName' requires CURRENT_PHASE 'Phase type: non-implementation research'."
         }
     }
 }

@@ -463,3 +463,199 @@ def test_old_codex_docs_are_compatibility_pointers():
     assert "docs/development/HANDOFF.md" in codex_handoff
     assert "Compatibility Pointer" in codex_phase
     assert "Compatibility Pointer" in codex_handoff
+
+
+# ---------------------------------------------------------------------------
+# Human branch regression tests
+# ---------------------------------------------------------------------------
+
+HUMAN_BRANCH = "human/alice/phase-c2-r1-auth"
+
+
+def _prepare_human_repo(tmp_path: Path, branch: str = HUMAN_BRANCH) -> Path:
+    remote = tmp_path / "remote.git"
+    work = tmp_path / "work"
+    _run(["git", "init", "--bare", str(remote)], cwd=tmp_path)
+    _run(["git", "clone", str(remote), str(work)], cwd=tmp_path)
+    _run(["git", "remote", "rename", "origin", "github"], cwd=work)
+    _run(["git", "config", "user.email", "test@example.invalid"], cwd=work)
+    _run(["git", "config", "user.name", "Handoff Test"], cwd=work)
+    _run(["git", "switch", "-c", branch], cwd=work)
+    (work / "README.md").write_text("handoff test\n", encoding="utf-8")
+    _run(["git", "add", "README.md"], cwd=work)
+    _run(["git", "commit", "-m", "initial"], cwd=work)
+
+    (work / "scripts").mkdir()
+    shutil.copy2(ROOT / "scripts" / "resume-work.ps1", work / "scripts" / "resume-work.ps1")
+    shutil.copy2(ROOT / "scripts" / "verify-handoff.ps1", work / "scripts" / "verify-handoff.ps1")
+
+    (work / "docs" / "development").mkdir(parents=True, exist_ok=True)
+    phase_content = (
+        "# Current Phase\n\n"
+        f"Current branch: {branch}\n"
+        "Current writer: human\n"
+        "Current issue: #99\n"
+        "Status: in progress\n"
+        "Next phase allowed: no\n"
+    )
+    (work / "docs" / "development" / "CURRENT_PHASE.md").write_text(phase_content, encoding="utf-8")
+    _write_codex_pointers(work)
+    _write_contract(work)
+    _run(["git", "add", "scripts", "docs"], cwd=work)
+    _run(["git", "commit", "-m", "add docs"], cwd=work)
+    work_commit = _run(["git", "rev-parse", "HEAD"], cwd=work).stdout.strip()
+    _write_handoff(work, work_commit, branch=branch, writer="human")
+    _run(["git", "add", "docs/development/HANDOFF.md"], cwd=work)
+    _run(["git", "commit", "-m", "handoff"], cwd=work)
+    _run(["git", "push", "-u", "github", branch], cwd=work)
+    return work
+
+
+def test_human_branch_with_valid_name_passes(tmp_path):
+    """human/alice/phase-c2-r1-auth must pass."""
+    work = _prepare_human_repo(tmp_path)
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=HUMAN_BRANCH)
+    assert result.returncode == 0, result.stderr
+    assert "Handoff verification passed" in result.stdout
+
+
+def test_human_branch_empty_name_rejected_by_regex():
+    """human//phase-c2-r1-auth must fail the regex check.
+
+    Git itself rejects double-slash branch names, so we test the script's
+    regex logic directly instead of creating a real branch.
+    """
+    verify = _read("scripts/verify-handoff.ps1")
+    resume = _read("scripts/resume-work.ps1")
+
+    # Both scripts must use the strict regex, NOT a -replace approach
+    assert '"^human/[^/]+/phase-[^/]+$"' in verify
+    assert '"^human/[^/]+/phase-[^/]+$"' in resume
+    # Must NOT use the old -replace approach
+    assert '-replace "<name>", ""' not in verify
+    assert '-replace "<name>", ""' not in resume
+
+    # The regex ^human/[^/]+/phase-[^/]+$ does NOT match:
+    import re
+    pattern = r"^human/[^/]+/phase-[^/]+$"
+    assert not re.match(pattern, "human//phase-c2-r1-auth")  # empty name
+    assert not re.match(pattern, "human/phase-c2-r1-auth")   # missing name
+    assert not re.match(pattern, "human/alice/not-phase-x")  # no phase-
+    # But DOES match valid:
+    assert re.match(pattern, "human/alice/phase-c2-r1-auth")
+
+
+def test_human_branch_missing_name_segment_fails(tmp_path):
+    """human/phase-c2-r1-auth (missing name) must fail."""
+    bad_branch = "human/phase-c2-r1-auth"
+    work = _prepare_human_repo(tmp_path, branch=bad_branch)
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=bad_branch)
+    assert result.returncode != 0
+    assert "must match human/" in result.stderr
+
+
+def test_human_branch_no_phase_segment_fails(tmp_path):
+    """human/alice/not-phase-x must fail (no /phase- segment)."""
+    bad_branch = "human/alice/not-phase-x"
+    work = _prepare_human_repo(tmp_path, branch=bad_branch)
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=bad_branch)
+    assert result.returncode != 0
+    assert "must match human/" in result.stderr
+
+
+# ---------------------------------------------------------------------------
+# Research branch regression tests
+# ---------------------------------------------------------------------------
+
+RESEARCH_BRANCH = "research/src-audit"
+
+
+def _prepare_research_repo(
+    tmp_path: Path,
+    branch: str = RESEARCH_BRANCH,
+    phase_type: str = "non-implementation research",
+) -> Path:
+    remote = tmp_path / "remote.git"
+    work = tmp_path / "work"
+    _run(["git", "init", "--bare", str(remote)], cwd=tmp_path)
+    _run(["git", "clone", str(remote), str(work)], cwd=tmp_path)
+    _run(["git", "remote", "rename", "origin", "github"], cwd=work)
+    _run(["git", "config", "user.email", "test@example.invalid"], cwd=work)
+    _run(["git", "config", "user.name", "Handoff Test"], cwd=work)
+    _run(["git", "switch", "-c", branch], cwd=work)
+    (work / "README.md").write_text("research test\n", encoding="utf-8")
+    _run(["git", "add", "README.md"], cwd=work)
+    _run(["git", "commit", "-m", "initial"], cwd=work)
+
+    (work / "scripts").mkdir()
+    shutil.copy2(ROOT / "scripts" / "resume-work.ps1", work / "scripts" / "resume-work.ps1")
+    shutil.copy2(ROOT / "scripts" / "verify-handoff.ps1", work / "scripts" / "verify-handoff.ps1")
+
+    (work / "docs" / "development").mkdir(parents=True, exist_ok=True)
+    phase_lines = [
+        "# Current Phase\n\n",
+        f"Current branch: {branch}\n",
+        "Current writer: qwen\n",
+        "Current issue: #88\n",
+        "Status: in progress\n",
+        "Next phase allowed: no\n",
+    ]
+    if phase_type is not None:
+        phase_lines.append(f"Phase type: {phase_type}\n")
+    (work / "docs" / "development" / "CURRENT_PHASE.md").write_text(
+        "".join(phase_lines), encoding="utf-8"
+    )
+    _write_codex_pointers(work)
+    _write_contract(work)
+    _run(["git", "add", "scripts", "docs"], cwd=work)
+    _run(["git", "commit", "-m", "add docs"], cwd=work)
+    work_commit = _run(["git", "rev-parse", "HEAD"], cwd=work).stdout.strip()
+    _write_handoff(work, work_commit, branch=branch, writer="qwen")
+    _run(["git", "add", "docs/development/HANDOFF.md"], cwd=work)
+    _run(["git", "commit", "-m", "handoff"], cwd=work)
+    _run(["git", "push", "-u", "github", branch], cwd=work)
+    return work
+
+
+def test_research_branch_with_correct_phase_type_passes(tmp_path):
+    """writer=qwen + research/src-audit + correct Phase type must pass."""
+    work = _prepare_research_repo(tmp_path)
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=RESEARCH_BRANCH)
+    assert result.returncode == 0, result.stderr
+    assert "Handoff verification passed" in result.stdout
+
+
+def test_research_branch_missing_phase_type_fails(tmp_path):
+    """research branch without Phase type must fail."""
+    work = _prepare_research_repo(tmp_path, phase_type=None)
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=RESEARCH_BRANCH)
+    assert result.returncode != 0
+    assert "Phase type" in result.stderr
+
+
+def test_research_branch_wrong_phase_type_fails(tmp_path):
+    """research branch with wrong Phase type must fail."""
+    work = _prepare_research_repo(tmp_path, phase_type="implementation")
+    result = _powershell(work / "scripts" / "verify-handoff.ps1", work, branch=RESEARCH_BRANCH)
+    assert result.returncode != 0
+    assert "non-implementation research" in result.stderr
+
+
+def test_research_branch_empty_slug_rejected_by_regex():
+    """research/ (empty slug) must fail the regex check.
+
+    Git itself rejects trailing-slash branch names, so we test the script's
+    regex logic directly.
+    """
+    verify = _read("scripts/verify-handoff.ps1")
+    resume = _read("scripts/resume-work.ps1")
+
+    # Both scripts must use the research slug regex
+    assert '"^research/[^/]+$"' in verify
+    assert '"^research/[^/]+$"' in resume
+
+    import re
+    pattern = r"^research/[^/]+$"
+    assert not re.match(pattern, "research/")        # empty slug
+    assert not re.match(pattern, "research/foo/bar")  # multi-segment slug
+    assert re.match(pattern, "research/src-audit")    # valid

@@ -195,7 +195,7 @@ function Assert-WriterBranchCrossCheck {
         throw "HANDOFF Writer '$handoffWriter' != CURRENT_PHASE Current writer '$phaseWriter'."
     }
 
-    # 3. Branch must start with the writer's registered prefix
+    # 3. Writer must be registered
     $writer = $phaseWriter
     $prefixEntry = $BranchPrefixes.PSObject.Properties | Where-Object { $_.Name -eq $writer }
     if (-not $prefixEntry) {
@@ -203,28 +203,30 @@ function Assert-WriterBranchCrossCheck {
     }
     $prefix = $prefixEntry.Value
 
-    # Handle human/<name>/ prefix
-    if ($prefix -match "<name>") {
-        $prefixBase = $prefix -replace "<name>", ""
-        if (-not $BranchName.StartsWith($prefixBase)) {
-            throw "Branch '$BranchName' does not start with human prefix '$prefix'."
+    # 4. Research branch type — special non-implementation branch
+    if ($BranchName -match "^research/") {
+        if ($BranchName -notmatch "^research/[^/]+$") {
+            throw "Research branch '$BranchName' must match research/<non-empty slug>."
         }
-        $rest = $BranchName.Substring($prefixBase.Length)
-        $namePart = ($rest -split "/")[0]
-        if (-not $namePart -or $namePart -like "phase-*") {
-            throw "Human branch '$BranchName' is missing the <name> segment."
+        $phaseType = $PhaseFields["Phase type"]
+        if (-not $phaseType) {
+            throw "Research branch '$BranchName' requires CURRENT_PHASE field 'Phase type: non-implementation research'. Field is missing."
+        }
+        if ($phaseType -ne "non-implementation research") {
+            throw "Research branch '$BranchName' requires CURRENT_PHASE 'Phase type: non-implementation research'. Got '$phaseType'."
+        }
+        return
+    }
+
+    # 5. Non-research branch: must match writer's implementation prefix
+    if ($prefix -match "<name>") {
+        # human/<name>/phase-<phase>-<slug>
+        if ($BranchName -notmatch "^human/[^/]+/phase-[^/]+$") {
+            throw "Human branch '$BranchName' must match human/<name>/phase-<phase>-<slug>. Name must be non-empty and not start with 'phase-'."
         }
     } else {
         if (-not $BranchName.StartsWith($prefix)) {
             throw "Branch '$BranchName' does not start with prefix '$prefix' for writer '$writer'."
-        }
-    }
-
-    # 4. Reject research/ branches unless CURRENT_PHASE explicitly marks them
-    if ($BranchName -match "^research/") {
-        $phaseType = $PhaseFields["Phase type"]
-        if ($phaseType -ne "non-implementation research") {
-            throw "Research branch '$BranchName' requires CURRENT_PHASE 'Phase type: non-implementation research'."
         }
     }
 }

@@ -140,7 +140,15 @@ enforced by the architecture contract (`architecture-contract.json`).
 | GLM | `glm/phase-<phase>-<slug>` |
 | Claude | `claude/phase-<phase>-<slug>` |
 | Human (named) | `human/<name>/phase-<phase>-<slug>` |
-| Research (non-implementation) | `research/<slug>` — only for Issue-approved non-implementation research tasks |
+
+**Research branches** (`research/<slug>`) are a special non-implementation
+branch type, NOT a writer prefix. The writer is still identified by
+`Current writer` in CURRENT_PHASE. Research branches require:
+
+- `Phase type: non-implementation research` in CURRENT_PHASE.
+- Issue-approved non-implementation scope.
+- The branch must match `research/<non-empty slug>`.
+- The writer must still be registered in `branch_prefixes`.
 
 Rules:
 

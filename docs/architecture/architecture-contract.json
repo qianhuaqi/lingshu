@@ -11,7 +11,7 @@
     "claude": "claude/phase-",
     "human": "human/<name>/phase-"
   },
-  "research_branch_policy": "research/<slug> only for Issue-approved non-implementation research tasks",
+  "research_branch_policy": "research/<slug> is a special non-implementation branch type, NOT a writer prefix. The writer must still be registered in branch_prefixes. Requires CURRENT_PHASE 'Phase type: non-implementation research' and Issue approval.",
   "writer_handoff_policy": "When switching developers: old developer must test, update HANDOFF, commit, push, and stop writing. New developer must create a new prefix branch and record the inherited baseline in HANDOFF. Without explicit Issue approval, no developer may continue writing another developer's branch.",
   "ownership_roots": {
     "framework": "src/lingshu",

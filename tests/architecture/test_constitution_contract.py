@@ -361,18 +361,46 @@ def test_cache_facades_are_legacy():
 
 
 def test_legacy_import_paths_exist():
-    """Every legacy import_path must be importable (or documented as absent)."""
+    """Every legacy import_path must be importable and symbols must exist.
+
+    Fail closed: ImportError and AttributeError both cause test failure.
+    """
     import importlib
     contract = _read_json("docs/architecture/architecture-contract.json")
     for entry in contract["legacy_api_candidates"]:
         path = entry["import_path"]
-        try:
-            mod = importlib.import_module(path)
-            for sym in entry["symbols"]:
-                assert hasattr(mod, sym), (
-                    f"Legacy {path}.{sym} not found"
-                )
-        except ImportError:
-            # Some legacy paths may have been removed; that's OK as long as
-            # they are classified (not silently untracked)
-            pass
+        mod = importlib.import_module(path)
+        for sym in entry["symbols"]:
+            assert hasattr(mod, sym), (
+                f"Legacy symbol '{sym}' not found in module '{path}'"
+            )
+        if entry.get("kind") == "facade":
+            mod_all = getattr(mod, "__all__", None)
+            if mod_all is not None:
+                for sym in entry["symbols"]:
+                    assert sym in mod_all, (
+                        f"Facade symbol '{sym}' not in {path}.__all__"
+                    )
+
+
+def test_nonexistent_legacy_import_fails(tmp_path):
+    """A contract with a non-existent import_path must cause failure.
+
+    This is a counter-example test proving the scanner fails closed.
+    """
+    import importlib
+
+    fake_entry = {
+        "import_path": "lingshu.nonexistent.fake_module_xyz",
+        "symbols": ["FakeSymbol"],
+        "tier": "Legacy",
+    }
+
+    try:
+        importlib.import_module(fake_entry["import_path"])
+    except ImportError:
+        pass  # expected — this proves ImportError is raised
+    else:
+        raise AssertionError(
+            f"import_module('{fake_entry['import_path']}') should have raised ImportError"
+        )
