@@ -1,10 +1,10 @@
 # Development Handoff
 
-Updated at: 2026-06-26
-Location: office
+Updated at: 2026-06-27
+Location: home
 Branch: codex/phase-c1-request-runtime
 Worktree: clean
-Base HEAD: 330c6593ed7251ca3473c7834b2dfe39c276a40d
+Work commit: e313de4c899e6c7326ef4faf3043f3fcb6941894
 
 ## Worker
 
@@ -82,14 +82,21 @@ Base HEAD: 330c6593ed7251ca3473c7834b2dfe39c276a40d
 
 ```
 python -m pytest tests/test_c1_execution_context.py tests/test_c1_lifecycle.py tests/test_c1_task_registry.py tests/test_c1_review_regressions.py tests/test_c1_third_round_review.py tests/test_context_facade.py -q
-→ 92 passed in 1.92s
+→ 92 passed
+```
+
+## pip check
+
+```
+python -m pip check
+→ No broken requirements found.
 ```
 
 ## Full test suite
 
 ```
-python -m pytest tests -q
-→ 203 passed, 4 failed, 1 skipped in 106.21s
+python -m pytest -q
+→ 203 passed, 4 failed, 1 skipped in 126.77s
 ```
 
 ## Baseline comparison
@@ -104,7 +111,7 @@ python -m pytest tests -q
 
 ## Python 3.10 verification
 
-- Machine interpreter: Python 3.11.8 — no 3.10 installed.
+- Machine interpreter: Python 3.14.5 (home verification environment, 2026-06-27).
 - Verified via AST source assertions (no StrEnum, no timeout_at, no context= kwarg) + runtime type checks.
 - **Not verified on real 3.10 interpreter.**
 
