@@ -475,6 +475,52 @@ class TestJwtBearerAuthenticator:
         outcome = _run(auth.authenticate(req))
         assert outcome.is_success
 
+    # --- Strict scopes validation (no str() conversion) ---
+
+    def test_scopes_with_integer_rejected(self):
+        """scopes=[1] must be MALFORMED, not silently converted to '1'."""
+        token = encode_jwt_token(
+            _TEST_SECRET, "HS256", subject="u", extra_claims={"scopes": [1]},
+        )
+        req = _make_request({"Authorization": f"Bearer {token}"})
+        outcome = _run(self._make_auth().authenticate(req))
+        assert outcome.result is AuthResult.MALFORMED
+
+    def test_scopes_with_none_rejected(self):
+        """scopes=[None] must be MALFORMED."""
+        token = encode_jwt_token(
+            _TEST_SECRET, "HS256", subject="u", extra_claims={"scopes": [None]},
+        )
+        req = _make_request({"Authorization": f"Bearer {token}"})
+        outcome = _run(self._make_auth().authenticate(req))
+        assert outcome.result is AuthResult.MALFORMED
+
+    def test_scopes_with_empty_string_rejected(self):
+        """scopes=[''] must be MALFORMED."""
+        token = encode_jwt_token(
+            _TEST_SECRET, "HS256", subject="u", extra_claims={"scopes": [""]},
+        )
+        req = _make_request({"Authorization": f"Bearer {token}"})
+        outcome = _run(self._make_auth().authenticate(req))
+        assert outcome.result is AuthResult.MALFORMED
+
+    def test_scopes_with_mixed_valid_and_invalid_rejected(self):
+        """scopes=['read', 2] must be MALFORMED even if one item is valid."""
+        token = encode_jwt_token(
+            _TEST_SECRET, "HS256", subject="u", extra_claims={"scopes": ["read", 2]},
+        )
+        req = _make_request({"Authorization": f"Bearer {token}"})
+        outcome = _run(self._make_auth().authenticate(req))
+        assert outcome.result is AuthResult.MALFORMED
+
+    def test_scopes_with_valid_string_list_accepted(self):
+        """scopes=['read', 'write'] must succeed — not over-rejected."""
+        token = encode_jwt_token(_TEST_SECRET, "HS256", subject="u", scopes=["read", "write"])
+        req = _make_request({"Authorization": f"Bearer {token}"})
+        outcome = _run(self._make_auth().authenticate(req))
+        assert outcome.is_success
+        assert outcome.principal.scopes == frozenset({"read", "write"})
+
 
 # ---------------------------------------------------------------------------
 # 7. Principal binding — ContextVar isolation
@@ -573,6 +619,39 @@ class TestAuthenticationRejected:
         outcome = AuthenticationOutcome.internal_error("jwt", error=RuntimeError("secret"))
         exc = AuthenticationRejected(outcome)
         assert "secret" not in str(exc)
+
+    def test_does_not_leak_sensitive_error_description(self):
+        """The exception message must use framework-fixed descriptions only.
+
+        Even if the authenticator's error_description contains passwords,
+        tokens, or internal details, str(AuthenticationRejected(outcome))
+        must never include them.
+        """
+        outcome = AuthenticationOutcome.invalid(
+            "jwt",
+            description="password=hunter2 token=abc123 secret_key=AKIA...",
+        )
+        exc = AuthenticationRejected(outcome)
+        msg = str(exc)
+        assert "hunter2" not in msg
+        assert "abc123" not in msg
+        assert "AKIA" not in msg
+        assert "password" not in msg
+        assert "token" not in msg
+        assert "secret_key" not in msg
+        assert "invalid" in msg.lower() or "Authentication" in msg
+
+    def test_does_not_leak_internal_exception_text(self):
+        """INTERNAL_ERROR outcomes must not expose the wrapped exception."""
+        outcome = AuthenticationOutcome.internal_error(
+            "jwt", error=ConnectionError("db://user:pass@10.0.0.5:5432"),
+        )
+        exc = AuthenticationRejected(outcome)
+        msg = str(exc)
+        assert "10.0.0.5" not in msg
+        assert "pass" not in msg
+        assert "db://" not in msg
+        assert "service error" in msg.lower()
 
 
 # ---------------------------------------------------------------------------
@@ -796,6 +875,90 @@ class TestPrincipalCleanupLifecycle:
         assert resp_b.json["data"]["subject"] == "user-b"
         assert current_principal.get() is None
 
+    def test_cleanup_after_cancellation(self):
+        """Principal is cleaned up when the handler task is cancelled.
+
+        Uses Event-based deterministic synchronization — no random sleep.
+
+        Verifies:
+        1. CancelledError is not swallowed.
+        2. Principal binding is reset/detached.
+        3. No Principal is bound after the task ends.
+        4. A subsequent request cannot read the cancelled request's identity.
+        """
+        from lingshu.system import sanic_adapter
+        from lingshu.system.auth.middleware import (
+            install_authentication_middleware,
+            set_authenticator_chain,
+        )
+
+        app = Sanic("cleanup-cancel")
+        sanic_adapter.install_context_middleware(app)
+        bp = Blueprint("cleanup-cancel-bp", url_prefix="/cc")
+
+        handler_entered = asyncio.Event()
+        captured = {}
+        cancel_mode = {"cancelled": False}
+
+        @bp.get("/cancel", name="cancel")
+        async def cancel_handler(request):
+            from lingshu.response import json_response
+            captured["binding"] = request.ctx.lingshu_principal_binding
+            captured["request"] = request
+            handler_entered.set()
+            if cancel_mode["cancelled"]:
+                p = current_principal.get()
+                return json_response({"subject": p.subject if p else None})
+            await asyncio.sleep(30)
+            return None  # unreachable
+
+        set_route_policy(cancel_handler, RoutePolicyDefinition(timeout=60.0))
+        app.blueprint(bp)
+        compile_route_policies(app)
+
+        chain = AuthenticatorChain()
+        chain.register(StubAuthenticator("jwt", mode="success", subject="cancel-user"))
+        set_authenticator_chain(app, chain)
+        install_authentication_middleware(app)
+
+        async def scenario():
+            request_task = asyncio.ensure_future(app.asgi_client.get("/cc/cancel"))
+            await handler_entered.wait()
+
+            # The handler is running; a principal binding must exist on the request.
+            binding = captured["binding"]
+            assert binding is not None
+            assert binding.principal is not None
+            assert binding.principal.subject == "cancel-user"
+
+            # Cancel the in-flight request.
+            request_task.cancel()
+            try:
+                await request_task
+            except (asyncio.CancelledError, Exception):
+                pass
+
+            # The cleanup path must have reset/detached the binding.
+            # Done callbacks run after the task is cancelled but may need
+            # a couple of loop iterations to execute.
+            await asyncio.sleep(0.05)
+            assert captured["request"].ctx.lingshu_principal_binding is None
+            # The binding's reset() must have run (reset_done=True means
+            # the ContextVar token was reset, unbinding the principal).
+            assert captured["binding"].reset_done is True
+
+            # 4. A subsequent request must not inherit the cancelled identity.
+            cancel_mode["cancelled"] = True
+            chain2 = AuthenticatorChain()
+            chain2.register(StubAuthenticator("jwt", mode="success", subject="next-user"))
+            set_authenticator_chain(app, chain2)
+
+            _, resp_next = await app.asgi_client.get("/cc/cancel")
+            assert resp_next.status == 200
+            assert resp_next.json["data"]["subject"] == "next-user"
+
+        asyncio.run(scenario())
+
 
 # ---------------------------------------------------------------------------
 # 12. Multi-app isolation
@@ -882,34 +1045,49 @@ class TestPublicAuthAPI:
         assert auth_mod.configure_authentication is not None
 
     def test_configure_authentication_via_public_api(self):
-        """Bootstrap smoke test: configure JWT auth via lingshu.auth public API."""
+        """Bootstrap smoke test: configure JWT auth using only public APIs.
+
+        Business code should never import ``lingshu.system``.  This test
+        proves the public surface (``lingshu.auth``, ``lingshu.request``,
+        ``lingshu.router``) is sufficient to:
+        - configure a JWT authenticator chain,
+        - mark routes public/protected via RoutePolicy,
+        - read the principal inside a handler via lingshu.request.principal.
+        """
+        import lingshu  # public proxy: lingshu.request is a RequestProxy instance
+        from lingshu.app import create_app
         from lingshu.auth import (
             AuthenticatorChain,
             JwtBearerAuthenticator,
             configure_authentication,
         )
-        from lingshu.system import sanic_adapter
-        from lingshu.system.auth.middleware import install_authentication_middleware
+        from lingshu.router import RoutePolicy, register_blueprints, set_blueprint_policy
 
-        app = Sanic("public-api-smoke")
-        sanic_adapter.install_context_middleware(app)
-        bp = Blueprint("smoke-bp", url_prefix="/smoke")
+        app = create_app()
 
-        @bp.get("/secure", name="secure")
+        # Protected blueprint — default policy requires auth.
+        secure_bp = Blueprint("smoke-secure-bp", url_prefix="/smoke")
+        set_blueprint_policy(secure_bp, RoutePolicy())
+
+        @secure_bp.get("/secure", name="secure")
         async def secure(request):
             from lingshu.response import json_response
-            from lingshu.system.auth.context import current_principal
-            p = current_principal.get()
+            p = lingshu.request.principal
             return json_response({"sub": p.subject if p else None})
 
-        @bp.get("/open", name="open")
+        # Public blueprint — no auth required.
+        open_bp = Blueprint("smoke-open-bp", url_prefix="/smoke")
+        set_blueprint_policy(
+            open_bp,
+            RoutePolicy(auth_required=False, signing_required=False, maintenance_check=False),
+        )
+
+        @open_bp.get("/open", name="open")
         async def open_endpoint(request):
             from lingshu.response import json_response
             return json_response({"ok": True})
 
-        set_route_policy(open_endpoint, RoutePolicyDefinition(public=True))
-        set_route_policy(secure, RoutePolicyDefinition())
-        app.blueprint(bp)
+        register_blueprints(app, [secure_bp, open_bp])
         compile_route_policies(app)
 
         chain = AuthenticatorChain()
@@ -919,7 +1097,6 @@ class TestPublicAuthAPI:
             issuer="smoke-issuer",
         ))
         configure_authentication(app, chain)
-        install_authentication_middleware(app)
 
         # Public route works without token
         _, resp_open = asyncio.run(app.asgi_client.get("/smoke/open"))

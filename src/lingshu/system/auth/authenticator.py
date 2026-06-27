@@ -10,11 +10,24 @@ class AuthenticationRejected(Exception):
 
     This is the bridge exception used inside the middleware layer.  It carries
     the outcome so the error handler can produce a precise 401 response.
+
+    The exception message uses framework-fixed descriptions only — never the
+    authenticator's raw error_description, which may contain sensitive data.
     """
+
+    _SAFE_MESSAGES = {
+        AuthResult.MISSING: "Authentication credential is missing",
+        AuthResult.MALFORMED: "Authentication credential is malformed",
+        AuthResult.INVALID: "Authentication credential is invalid",
+        AuthResult.EXPIRED: "Authentication credential has expired",
+        AuthResult.REVOKED: "Authentication credential has been revoked",
+        AuthResult.INTERNAL_ERROR: "Authentication service error",
+    }
 
     def __init__(self, outcome: AuthenticationOutcome):
         self.outcome = outcome
-        super().__init__(outcome.safe_description)
+        safe_msg = self._SAFE_MESSAGES.get(outcome.result, "Authentication failed")
+        super().__init__(safe_msg)
 
 
 @runtime_checkable

@@ -111,7 +111,12 @@ def install_authentication_middleware(raw_app):
 
     Must be called after ``install_context_middleware`` so the execution
     context and compiled route policy are available.
+
+    This method is idempotent: repeated calls do not install additional
+    middleware instances.
     """
+    if getattr(raw_app.ctx, "lingshu_auth_middleware_installed", False):
+        return
 
     @raw_app.middleware("request")
     async def authenticate_request(request):
@@ -156,6 +161,8 @@ def install_authentication_middleware(raw_app):
         response = _build_401_response(request, outcome)
         await _finalize_for_auth(request)
         return response
+
+    raw_app.ctx.lingshu_auth_middleware_installed = True
 
 
 async def _finalize_for_auth(request):

@@ -154,7 +154,18 @@ class JwtBearerAuthenticator:
                 if isinstance(raw_scopes, str):
                     scopes = frozenset(s.strip() for s in raw_scopes.split() if s.strip())
                 elif isinstance(raw_scopes, (list, tuple, set)):
-                    scopes = frozenset(str(s) for s in raw_scopes)
+                    for item in raw_scopes:
+                        if not isinstance(item, str):
+                            return AuthenticationOutcome.malformed(
+                                self.authenticator_id,
+                                "Token scopes claim contains a non-string value",
+                            )
+                        if not item.strip():
+                            return AuthenticationOutcome.malformed(
+                                self.authenticator_id,
+                                "Token scopes claim contains an empty scope",
+                            )
+                    scopes = frozenset(raw_scopes)
                 else:
                     return AuthenticationOutcome.malformed(
                         self.authenticator_id,

@@ -55,16 +55,17 @@ __all__ = [
 
 
 def configure_authentication(raw_app, chain: AuthenticatorChain) -> AuthenticatorChain:
-    """Register an AuthenticatorChain on a Sanic app and install the auth gate.
+    """Register or replace the AuthenticatorChain on a Sanic app.
 
     This is the public entry point for enabling authentication on an app
     created via ``lingshu.create_app()`` or a scaffolded project.
 
-    Must be called after ``create_app()`` and before serving requests.
+    ``create_app()`` installs the authentication middleware unconditionally;
+    this function only sets the chain.  Calling it more than once replaces
+    the previous chain without installing additional middleware.
     """
-    from lingshu.system.auth.middleware import install_authentication_middleware, set_authenticator_chain
+    from lingshu.system.auth.middleware import set_authenticator_chain
     set_authenticator_chain(raw_app, chain)
-    install_authentication_middleware(raw_app)
     return chain
 
 
