@@ -25,6 +25,8 @@ Status: ready for review
 - Expanded README with actual repository status and contributor entrypoints.
 - Added `P0_DECISION_STATUS.md` to separate confirmed, rejected, and candidate architecture decisions.
 - Added `docs/architecture/README.md` with a visible architecture reading order and candidate-design warning.
+- Replaced the stale v0.6 Blueprint entry with a controlled P0-RC0 document containing only confirmed direction, explicit open decisions, and implementation gates.
+- Preserved the complete former v0.6 detailed design unchanged at `docs/architecture/candidates/LINGSHU_FRAMEWORK_BLUEPRINT_V0.6_CANDIDATE.md`.
 - Explicitly marked package, multi-distribution, `src/`, directory, extension, support, and release layouts as non-executable candidates.
 - Updated Issue #25 to match the active P0-G1 branch and current governance rules.
 - Closed legacy Issue #12 as not planned.
@@ -34,13 +36,13 @@ Status: ready for review
 
 Compared with `main`, this branch contains governance and architecture-document changes only. No production source, dependency configuration, package skeleton, runtime implementation, or publishing configuration has been added.
 
-The branch is ahead of `main` and not behind it.
+The former detailed Blueprint content is preserved byte-for-byte as a candidate document; it is no longer the active architecture entrypoint.
 
 Runtime tests are not applicable because this phase contains documentation and governance only. Review must verify internal consistency, fact-source ordering, P0 gates, and absence of implementation authorization.
 
 ## Remaining after merge
 
-- Review each detailed Blueprint chapter with the project lead.
+- Review each detailed candidate chapter with the project lead.
 - Decide the final repository and package layout.
 - Decide whether any `src/` layout will be used.
 - Decide component and official-extension boundaries.
@@ -62,4 +64,4 @@ No production or governance file remains changed by those temporary commits.
 
 ## Next action
 
-Open and review the P0-G1 Pull Request. Do not start P1.
+Review PR #29. Do not start P1.
