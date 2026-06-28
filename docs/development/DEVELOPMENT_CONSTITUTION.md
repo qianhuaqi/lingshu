@@ -1,293 +1,160 @@
 # LingShu Development Constitution
 
-- Status: Active for P0 governance
-- Version: 2.1-draft
-- Effective baseline: latest accepted `main`
-- Applies to: all work in the greenfield LingShu repository
+- Status: Active
+- Version: 3.0
+- Effective baseline: P0 Final Freeze commit `4c925c20e53b5c3fc6005c5c07f2b32d5175a0f5`
+- Applies to: all work in `qianhuaqi/lingshu`
 
 ## 1. Project identity
 
-LingShu is a greenfield, independently implemented Python Web/API framework.
+LingShu is a greenfield, independently implemented Python Web/API framework. It is not a wrapper, migration, adapter, or compatibility layer for Sanic, FastAPI, Flask, Django, Starlette, or another upper-level Web framework.
 
-LingShu is not a wrapper around, migration from, adapter for, or compatibility layer for Sanic, FastAPI, Flask, Django, Starlette, or any other upper-level Web framework.
+The legacy state is historical reference only at `archive/legacy-sanic-20260628`. Work assuming continuation of that runtime must stop as a scope conflict.
 
-The archived repository state creates no compatibility obligation for the new framework. The legacy implementation is preserved only as non-authoritative reference material in `archive/legacy-sanic-20260628`.
+## 2. Authority and roles
 
-Any task or implementation that assumes continuation of the legacy runtime must stop and be reported as a scope conflict.
+The project lead decides scope, approves architecture changes, authorizes releases, may stop unsafe work, and holds final merge authority.
 
-The canonical repository is `qianhuaqi/lingshu`. A separate repository for a framework component or official capability requires a future accepted ADR.
+The architect prepares Issues and decisions, maintains phase documents, coordinates dependency order, and reviews implementation without silently changing confirmed product decisions.
 
-## 2. Roles and authority
+A developer, human or AI:
 
-### 2.1 Project lead
+- implements only the active Issue;
+- writes only inside its declared scope;
+- follows accepted dependencies and exclusions;
+- supplies exact evidence;
+- does not self-declare final acceptance;
+- stops when fact sources or ownership conflict.
 
-The project lead:
+Implementation, independent review, and final merge remain separate responsibilities.
 
-- decides product scope, priorities, and unresolved architecture choices;
-- confirms or rejects Blueprint decisions;
-- approves deviations from this constitution;
-- holds final merge authority;
-- may stop any phase when evidence is incomplete or risk is unacceptable.
-
-### 2.2 Architect and reviewer
-
-The architect:
-
-- prepares architecture proposals, Issues, acceptance criteria, and ADRs;
-- maintains governance and phase documents;
-- reviews implementation independently from its author;
-- records acceptance findings;
-- coordinates concurrent task boundaries and integration order;
-- does not silently change confirmed product decisions.
-
-### 2.3 Developer
-
-A developer may be a human or an AI tool. A developer:
-
-- executes only the active Issue and branch scope;
-- must read the current Issue, this constitution, `AGENTS.md`, `CURRENT_PHASE.md`, applicable concurrency rules, accepted ADRs, and applicable architecture decisions before writing;
-- must not expand scope, redefine acceptance criteria, or begin the next phase;
-- must not write outside the declared write scope;
-- must not self-declare final acceptance;
-- must stop when fact sources or task ownership conflict.
-
-### 2.4 Separation of duties
-
-Implementation and acceptance must be separated. The implementation author provides evidence; an independent reviewer evaluates it; the project lead performs the final merge.
-
-## 3. Sources of truth and conflict order
-
-The repository, not chat memory, is the permanent source of truth.
+## 3. Sources of truth
 
 When facts conflict, use this order:
 
 1. explicit project-lead decision recorded in an accepted ADR or constitution amendment;
 2. this constitution;
-3. accepted ADRs and the P0 decision-status register;
-4. the active GitHub Issue and its acceptance criteria;
-5. `docs/development/CURRENT_PHASE.md`;
-6. `docs/development/CONCURRENT_DEVELOPMENT.md` for concurrent task operations;
-7. the active remote branch and Pull Request;
-8. `docs/development/HANDOFF.md`;
-9. confirmed sections of the Blueprint;
-10. other documentation and examples.
+3. frozen Blueprint and accepted ADRs;
+4. active GitHub Issue, including recorded scope amendments;
+5. `CURRENT_PHASE.md`;
+6. `CONCURRENT_DEVELOPMENT.md`;
+7. active branch and Pull Request;
+8. `HANDOFF.md`;
+9. other documentation and examples.
 
-Chat history, model memory, archived branches, closed legacy Issues, and old Pull Requests are not active implementation authority.
+The repository is authoritative; chat history, model memory, archives, and old Pull Requests are not. Conflicting active sources stop development until resolved in GitHub.
 
-If two active fact sources conflict, development stops until the conflict is resolved in GitHub.
+## 4. Phase and Issue lifecycle
 
-## 4. Greenfield policy
+Every task follows:
 
-Before v1.0:
+1. create one Issue with objective, value, scope, exclusions, base commit, writer, paths, dependencies, conflicts, integration order, deliverables, checks, risks, and acceptance;
+2. create one writer-prefixed branch from the approved base;
+3. use an isolated worktree or clone and virtual environment when work is concurrent;
+4. implement only the Issue;
+5. run and record required checks;
+6. update handoff state when responsibility or device changes;
+7. open one Pull Request;
+8. perform independent review and resolve blocking findings;
+9. obtain project-lead merge approval;
+10. merge and synchronize phase state;
+11. only then start dependent work.
 
-- legacy APIs have no automatic compatibility guarantee;
-- obsolete or experimental designs may be replaced directly;
-- no permanent compatibility package is created without a real released consumer and an accepted ADR;
-- legacy source, tests, scaffolds, configuration, and dependency files are not implementation baselines;
-- useful ideas from the archive must be re-evaluated against the current Blueprint and reimplemented under a new Issue;
-- no Sanic adapter, migration layer, or old-import forwarding layer may be introduced.
+No phase or dependency may be skipped. Planning may occur early only when the Issue explicitly marks it non-executable.
 
-After v1.0, compatibility policy must be defined by semantic versioning and a dedicated public API policy before release.
-
-## 5. Phase lifecycle
-
-Every implementation or architecture subphase follows this lifecycle:
-
-1. create or select one active Issue;
-2. define scope, exclusions, deliverables, acceptance evidence, prohibited actions, base commit, write scope, dependencies, conflicts, integration order, and required checks;
-3. create one dedicated branch from the approved baseline;
-4. assign one primary writer;
-5. create an independent worktree or clone and virtual environment when work is concurrent;
-6. perform only the approved work;
-7. run required checks and record evidence;
-8. update `HANDOFF.md` before handing work to another writer;
-9. open one Pull Request;
-10. perform independent review;
-11. resolve all blocking findings;
-12. synchronize dependent work with current `main` after relevant upstream merges;
-13. obtain project-lead merge approval;
-14. merge;
-15. synchronize `CURRENT_PHASE.md`, ADR status, and handoff state;
-16. only then open the next dependent phase.
-
-No phase may be skipped or started early. Parallel work requires explicit Issue approval, non-overlapping write scopes, and a recorded integration order.
-
-## 6. Branch, worktree, and Pull Request rules
+## 5. Branch, commit, and Pull Request rules
 
 - Never commit directly to `main`.
 - Never force-push or rewrite shared history.
-- Never enable automatic merge.
-- A branch has one primary writer at a time.
-- Concurrent developers must not share one writable worktree or clone.
-- Each concurrent worktree has its own branch, virtual environment, local environment file, runtime directory, caches, temporary paths, and local ports.
-- Branch names identify the writer and phase, for example `qwen/phase-p1-...`, `glm/phase-p1-...`, `gemini/phase-p1-...`, `codex/phase-p1-...`, or `human/<name>/phase-p1-...`.
-- Research-only branches may use `research/<slug>` when the Issue explicitly declares non-implementation research.
-- A developer change requires a committed handoff and, unless the Issue says otherwise, a new writer-prefixed branch.
-- Pull Requests must link the active Issue and list base commit, primary writer, declared write scope, actual changed paths, dependencies, integration order, tests, known risks, and remaining work.
-- A Pull Request with unresolved blocking review findings must not be merged.
-- Development may be parallel; integration into `main` is serial.
-- After a relevant upstream merge, dependent or potentially conflicting Pull Requests must synchronize with current `main` and rerun required checks.
+- Never enable auto-merge.
+- One branch has one primary writer.
+- Concurrent writers use separate worktrees/clones, environments, caches, runtime directories, and ports.
+- Every commit contains a DCO `Signed-off-by` trailer.
+- Branch names identify writer and task, for example `human/dodo/p1-00-...`, `qwen/p1-...`, `glm/p1-...`, or `gemini/p1-...`.
+- Pull Requests link the Issue and list base commit, writer, declared and actual paths, dependencies, checks, evidence, risks, and remaining work.
+- Final merge authority belongs to the project lead.
 
-Accidental direct commits must be disclosed. They must be corrected without history rewriting unless the project lead explicitly approves a safe recovery procedure.
+Accidental direct commits or scope violations must be disclosed and corrected without unsafe history rewriting.
 
-## 7. Concurrent task ownership
+## 6. Concurrent ownership
 
-Every active task is classified as one of:
+Tasks are independent, ordered dependencies, conflicting, or cross-cutting exclusive.
 
-- independent;
-- ordered dependency;
-- conflicting;
-- cross-cutting exclusive.
+Independent tasks may overlap only when paths and consumed contracts do not overlap. Ordered consumers wait for provider contracts to merge, synchronize with `main`, and rerun checks. Overlapping paths conflict by default. Cross-cutting packaging, CI, public export, lifecycle, security, or release changes permit one writer task at a time.
 
-Independent tasks may run in parallel only when write scopes do not overlap and neither changes a contract consumed by the other.
+Active implementation commits are not cherry-picked between task branches unless both Issues record the reason and integration owner.
 
-Ordered tasks may be researched in parallel, but the provider contract merges before the consumer. The consumer then synchronizes and reruns checks.
+## 7. Frozen architecture and public contracts
 
-Conflicting tasks do not run in parallel. Cross-cutting exclusive changes to architecture, public exports, root packaging, repository-wide CI, shared exceptions, lifecycle contracts, security policy, or release metadata allow only one writer Issue at a time.
+P0 is frozen through ADR-001 to ADR-007. The implementation baseline is:
 
-Two Issues with overlapping write scopes are conflicting by default. An exception requires explicit project-lead approval recorded in both Issues.
+```text
+one repository
+one distribution: lingshu
+one import package: lingshu
+production source: lingshu/
+no src/ directory
+one version cadence
+CPython >= 3.12
+Hatchling and PEP 621
+```
 
-Multiple tasks must not implement duplicate versions of the same public contract. Shared contracts are created by a foundation Issue and merged first.
+Changes affecting repository/package structure, dependency direction, runtime semantics, concurrency, public API, persistence, protocol behavior, security, compatibility, or release policy require a new Issue and ADR.
 
-Cross-branch cherry-picking of active implementation commits is prohibited unless the active Issue records the reason and integration owner. The normal path is foundation merge followed by synchronization from `main`.
+Public API consists only of documented exports and documented CLI, configuration, wire, metadata, and error-code contracts. Importable private names are not automatically public.
 
-Operational details are defined in ADR-001 and `docs/development/CONCURRENT_DEVELOPMENT.md`.
+## 8. Dependency and import policy
 
-## 8. Issue contract
+- Upper-level Web frameworks are prohibited.
+- A mandatory runtime dependency requires a dedicated ADR covering necessity, alternatives, security, maintenance, licensing, and fallback.
+- Development tools remain optional and must not leak into runtime requirements.
+- Optional integrations must not become hidden dependencies.
+- Production code must not depend on `lingshu.testing`.
+- Imports must not start tasks, bind sockets, open runtime files, connect to services, or import user applications.
+- Do not copy dependency files or implementation from the archive.
 
-Every active Issue must define:
+## 9. Quality and evidence
 
-- objective and user value;
-- exact in-scope work;
-- explicit out-of-scope work;
-- target branch and primary writer;
-- approved base commit;
-- write scope using paths or globs;
-- read dependencies;
-- dependent Issues or Pull Requests;
-- conflicting active tasks;
-- integration order;
-- deliverables;
-- acceptance criteria;
-- required tests and evidence;
-- security, compatibility, and migration impact;
-- prohibited actions;
-- prerequisite merge or commit.
+Each Issue defines exact gates. Applicable work covers:
 
-A missing ownership or dependency declaration means the Issue is not ready for concurrent implementation.
+- unit and contract behavior;
+- cross-component integration;
+- malformed protocol and security cases;
+- cancellation, timeout, cleanup, overload, race, and leak behavior;
+- package boundaries and clean installation;
+- supported Python/platform checks;
+- matching documentation and examples.
 
-Vague instructions such as “optimize the framework” are not sufficient implementation authority.
+Tests prove behavior, not field presence. Skipped, flaky, unavailable, or unrun checks must be disclosed. Editable installation is not release evidence.
 
-## 9. Architecture decision policy
+Public code uses English identifiers, type annotations, useful docstrings, and design comments for complex ownership/security behavior. TODO/FIXME entries require an Issue and removal condition.
 
-Architecture decisions that affect repository structure, package structure, dependency direction, runtime semantics, concurrency, public API, persistence format, protocol behavior, security, compatibility, or release policy require:
+## 10. Security, compatibility, and release
 
-1. a GitHub Issue;
-2. an ADR or explicit Blueprint amendment;
-3. project-lead confirmation;
-4. a reviewed Pull Request.
+Never commit credentials, keys, personal data, production endpoints, or sensitive request content. Diagnostics, records, logs, tests, and examples use safe placeholders and redaction.
 
-Candidate text is not executable architecture. Any Blueprint section marked candidate, unresolved, pending confirmation, or not frozen must not be used to create source directories or public APIs.
+Unpatched vulnerabilities follow `SECURITY.md` privately.
 
-Core mechanisms and optional policies must remain separate. Dependency direction must be explicit, cycle-free, and machine-testable once implementation begins.
+Compatibility and release work follows `RELEASE_AND_COMPATIBILITY_POLICY.md`. Published versions, tags, and artifacts are immutable. Public package publication requires separate project-lead authorization and is not implied by P1 completion.
 
-## 10. Quality and test gates
+## 11. Current P1 authority
 
-Each implementation Issue defines its own exact checks. At minimum, applicable work must cover:
+P1 is the single-Worker minimum vertical slice in `P1_IMPLEMENTATION_PLAN.md`.
 
-- unit tests for local behavior;
-- contract tests for public or extension-facing behavior;
-- integration tests for cross-component behavior;
-- protocol and malformed-input tests for network parsers;
-- security tests for trust boundaries and sensitive data;
-- concurrency, race, deadlock, cancellation, timeout, cleanup, overload, and resource-leak tests where applicable;
-- packaging and clean-install tests before a package is published;
-- supported Python and platform checks before a compatibility claim is made;
-- documentation and examples that match the implementation.
+P1-00 creates package/tooling/CI foundations only. P1-01 through P1-10 start in provider-first order after prerequisites merge. Multi-Worker Supervisor, reload, advanced body/protocol features, official integrations, and public PyPI publication remain outside P1.
 
-Tests must prove behavior, not merely object construction or field presence. Skipped, flaky, or unavailable tests must be disclosed and cannot be represented as passing.
+The active Issue controls current writes. Creating a future package directory does not authorize implementing its behavior early.
 
-## 11. Code and documentation standards
+## 12. Handoff and deviations
 
-- Public identifiers, source comments, public Docstrings, and error keys use English unless an accepted ADR changes the rule.
-- Architecture and user-facing guides may be written in Chinese.
-- Public APIs require type annotations and useful Docstrings.
-- Complex lifecycle, concurrency, cancellation, security, and resource-ownership behavior requires design comments.
-- TODO and FIXME entries require an Issue reference and removal condition.
-- Generated files must identify their generator and must not be edited manually.
-- Documentation, tests, and implementation must change together when behavior changes.
-
-## 12. Dependency policy
-
-- No upper-level Web framework may be introduced.
-- Core third-party dependencies require a dedicated ADR explaining necessity, alternatives, security, maintenance, licensing, and fallback behavior.
-- Optional integrations must not become hidden mandatory dependencies.
-- Dependency versions and supported Python versions must be explicit before package publication.
-- A dependency may not be added merely because a developer is familiar with it.
-- Cryptography and TLS primitives must use established, reviewed libraries rather than custom algorithms.
-
-## 13. Security and sensitive information
-
-- Never commit API keys, tokens, passwords, private keys, production endpoints, personal data, or real credentials.
-- Examples use placeholders and safe local defaults.
-- Logs, telemetry, runtime records, exceptions, test fixtures, and review comments must redact secrets and sensitive request data.
-- Security-relevant defaults must fail closed where ambiguity would create exposure.
-- Security exceptions require an Issue, risk explanation, owner, expiration or removal condition, and project-lead approval.
-- Public vulnerability reporting and supported-version policy must be documented before public release.
-
-## 14. Runtime invariants
-
-Applicable runtime designs must preserve these invariants:
-
-- app, worker, request, operation, and extension state are isolated according to scope;
-- queues, buffers, bodies, connections, tasks, retries, timeouts, logs, and disk use are bounded;
-- concurrency has explicit admission control, ownership, and backpressure;
-- blocking work cannot silently block the event loop;
-- startup failure rolls back acquired resources;
-- shutdown is ordered, bounded, drains or cancels tasks, and is observable;
-- cancellation and deadlines propagate and are not silently swallowed;
-- cleanup is deterministic and idempotent where required;
-- no process-wide mutable request state;
-- sensitive data is not recorded by default;
-- protocol ambiguity is rejected rather than guessed.
-
-The concrete runtime concurrency model requires a separate P0 decision.
-
-## 15. Handoff and device switching
-
-Before switching computers, developers, or models:
+Before switching computer, developer, or model:
 
 1. stop writing;
-2. run the required checks;
-3. confirm the worktree is clean;
-4. update `HANDOFF.md` with branch, commit, completed work, test evidence, risks, and next action;
-5. commit and push;
-6. verify the remote branch contains the handoff commit.
+2. run available required checks;
+3. record unrun checks honestly;
+4. confirm worktree status;
+5. update `HANDOFF.md` with branch, commit, evidence, risks, and next action;
+6. commit and push;
+7. verify the remote branch.
 
-The receiving developer must read the handoff and active Issue before continuing. It must not continue from another writer's uncommitted files, stash, virtual environment, or runtime cache.
-
-## 16. Deviations and emergency changes
-
-A deviation from this constitution requires:
-
-- a written reason;
-- affected rules and risks;
-- scope and expiration;
-- project-lead approval;
-- an ADR or constitution amendment when the deviation has lasting effect.
-
-Emergency fixes must still be documented after the immediate risk is contained. “The tool suggested it” or “the old code did it” is not an acceptable justification.
-
-## 17. Current P0 restriction
-
-P0 is architecture and governance consolidation only.
-
-Until the project lead confirms the complete Blueprint and a P1 Issue is created:
-
-- do not create production source packages;
-- do not create package skeletons that imply an unconfirmed directory decision;
-- do not publish packages;
-- do not introduce runtime dependencies;
-- do not implement the HTTP runtime, native server, router, middleware, extension runtime, or official extensions;
-- do not implement an unresolved event-loop, worker, process, thread, or Task Group model;
-- do not treat candidate distribution, `src/`, directory, runtime-concurrency, or release layouts as frozen.
+A lasting deviation requires a written reason, affected rules, risks, scope, expiration where applicable, project-lead approval, and an ADR or constitution amendment when architectural.
