@@ -2,49 +2,125 @@
 
 Canonical repository: `qianhuaqi/lingshu`
 
-LingShu is a greenfield, independently implemented Python Web/API framework.
-
-LingShu does not depend on Sanic, FastAPI, Flask, Django, Starlette, or any other upper-level Web framework. The archived legacy repository creates no compatibility obligation for the new framework.
+LingShu is a greenfield, independently implemented Python Web/API framework. It does not depend on Sanic, FastAPI, Flask, Django, Starlette, or another upper-level Web framework.
 
 ## Current status
 
-The repository is in **P0 architecture and governance consolidation**.
+LingShu is in **P1: Single-Worker Minimum Vertical Slice**.
 
-There is currently no production framework package, runnable server, published wheel, or supported installation command on the greenfield `main` branch. Do not attempt to install or run LingShu yet.
+P0 is frozen through ADR-001 to ADR-007. P1-00 establishes the package, tooling, CI, and governance foundation at development version:
 
-Production implementation is blocked until the project lead confirms the complete Blueprint and a P1 Issue is created.
+```text
+0.1.0.dev0
+```
 
-## Authoritative entrypoints
+The repository now has a root-level `lingshu/` package. A `src/` directory is deliberately not used.
+
+P1-00 implements installed-version reporting only:
+
+```bash
+python -m lingshu --version
+lingshu version
+```
+
+`LingShu`, `Request`, `Response`, routing, middleware, server execution, `lingshu check`, and `lingshu run` are introduced by later dependency-ordered P1 Issues. The current package is not production ready and is not authorized for public package-index publication.
+
+## Development setup
+
+Requirements:
+
+```text
+CPython 3.12 or newer
+```
+
+Create and activate a virtual environment, then install the development extra:
+
+```bash
+python -m venv .venv
+```
+
+Windows PowerShell:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Linux/macOS:
+
+```bash
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e ".[dev]"
+```
+
+Run the baseline checks:
+
+```bash
+ruff check .
+ruff format --check .
+mypy
+pytest
+python -m build
+```
+
+An editable installation is for development only. Release evidence comes from the CI clean-install job, which builds wheel and sdist, installs the wheel outside the checkout, validates artifact inventory, and rebuilds a wheel from the sdist.
+
+## Authoritative entry points
 
 Read these before contributing:
 
 1. [Development Constitution](docs/development/DEVELOPMENT_CONSTITUTION.md)
-2. [Current Phase](docs/development/CURRENT_PHASE.md)
-3. [P0 Decision Status](docs/architecture/P0_DECISION_STATUS.md)
-4. [Framework Blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
-5. [Development Handoff](docs/development/HANDOFF.md)
-6. Active architecture Issue: #25
+2. the active GitHub Issue
+3. [Current Phase](docs/development/CURRENT_PHASE.md)
+4. [Concurrent Development](docs/development/CONCURRENT_DEVELOPMENT.md)
+5. [Frozen Framework Blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
+6. accepted ADRs under [`docs/decisions/`](docs/decisions/)
+7. [P1 Implementation Plan](docs/development/P1_IMPLEMENTATION_PLAN.md)
+8. [Development Handoff](docs/development/HANDOFF.md)
 
-## Important P0 warning
+## Contribution rules
 
-The Blueprint contains detailed candidate designs for package boundaries, repository layout, multiple distributions, `src/` directories, runtime components, extensions, and release stages.
+- One task uses one Issue, one primary writer, one writer-prefixed branch, one isolated worktree/environment, and one Pull Request.
+- Never commit directly to `main`.
+- Never enable auto-merge.
+- Every commit requires a DCO sign-off created with `git commit -s`.
+- Final merge authority belongs to the project lead.
+- Work must remain inside the active Issue's write scope and dependency order.
 
-Those sections are not automatically approved. The project lead has not yet frozen the final directory and packaging plan. No developer or AI tool may create production directories from an unresolved candidate section.
+See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
 
-Use `docs/architecture/P0_DECISION_STATUS.md` to determine what is confirmed and what remains open.
+## Architecture baseline
 
-## Greenfield rules
+```text
+Distribution:        lingshu
+Import package:      lingshu
+Production source:   lingshu/
+Package metadata:    pyproject.toml
+Build backend:       Hatchling
+Minimum Python:      CPython 3.12
+Mandatory runtime dependencies: none in P1-00
+```
 
-- New framework code will be written from scratch.
-- Legacy Sanic code is not migrated, adapted, or preserved for compatibility.
-- No old API compatibility layer is required before v1.0.
-- LingShu will define and control its own framework kernel, HTTP runtime, server behavior, request/response model, routing, middleware, lifecycle, extension protocol, CLI, and ecosystem.
-- Third-party dependencies require explicit architectural review; upper-level Web frameworks are prohibited.
-- P0 allows documentation and governance work only.
+The target component boundaries are:
+
+```text
+lingshu.core
+lingshu.runtime
+lingshu.http
+lingshu.server
+lingshu.record
+lingshu.extensions
+lingshu.cli
+lingshu.testing
+```
+
+The packages are placeholders in P1-00. Component behavior is implemented only by its assigned later Issue.
 
 ## Legacy archive
 
-The complete previous repository state is preserved at:
+The previous Sanic-based repository state remains preserved at:
 
 ```text
 archive/legacy-sanic-20260628
@@ -56,15 +132,4 @@ Archived commit:
 b869270e0ec7cbc324d17ef246e39d0873aab14f
 ```
 
-The archive remains available for historical inspection only. It is not an implementation baseline or source of active requirements.
-
-## Open repository decisions
-
-Before P1, the project lead still needs to confirm:
-
-- single package versus monorepo with multiple distributions;
-- direct `lingshu/` package versus a `src/` layout;
-- exact Core, HTTP, Server, Record, CLI, and extension boundaries;
-- which capabilities are built in and which are separately installable;
-- release stages and the first public compatibility promise;
-- open-source license, contribution rules, and vulnerability-reporting policy.
+It is historical reference only and is not an implementation baseline.

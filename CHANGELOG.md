@@ -2,19 +2,24 @@
 
 All notable user-visible changes to LingShu are documented in this file.
 
-The format uses the categories `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, and `Security`. Releases follow Semantic Versioning as refined by `docs/governance/RELEASE_AND_COMPATIBILITY_POLICY.md`.
+The format uses `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, and `Security`. Releases follow `docs/governance/RELEASE_AND_COMPATIBILITY_POLICY.md`.
 
 ## [Unreleased]
 
 ### Added
 
-- P0 architecture and governance baseline for the independent LingShu Framework.
-- Accepted decisions for repository governance, runtime concurrency, package boundaries, Application Kernel, request pipeline, hardening foundations, executable/CLI behavior, Python/platform support, and build policy.
-- Proposed Apache-2.0 license, DCO contribution process, security policy, code of conduct, release/compatibility policy, and P1 implementation plan.
+- Frozen P0 architecture through ADR-001 to ADR-007.
+- Apache-2.0 license, NOTICE, DCO contribution process, contribution policy, security policy, code of conduct, compatibility/release policy, and P1 implementation plan.
+- Initial P1 package foundation at version `0.1.0.dev0` using the root-level `lingshu/` layout and Hatchling.
+- Empty component package boundaries and typed-package marker.
+- Installed-version CLI reporting through `lingshu version` and `python -m lingshu --version`.
+- Baseline tests for package metadata, import safety, CLI version reporting, artifact inventory, and DCO sign-offs.
+- GitHub Actions matrix for quality, required Python/platform tests, preview Python, build, sdist rebuild, and clean installation.
 
 ### Changed
 
-- None.
+- Project phase moved from P0 architecture/governance to P1 single-Worker implementation.
+- Repository agent and development-constitution rules now reference the frozen P1 authority.
 
 ### Deprecated
 
@@ -26,11 +31,11 @@ The format uses the categories `Added`, `Changed`, `Deprecated`, `Removed`, `Fix
 
 ### Fixed
 
-- None.
+- Removed stale documentation that described the accepted governance and package layout as unresolved proposals.
 
 ### Security
 
-- None.
+- No released vulnerability is recorded.
 
 <!--
 Release template:
@@ -43,6 +48,4 @@ Release template:
 ### Removed
 ### Fixed
 ### Security
-
-Do not edit a released section to hide or replace released behavior. Corrections to release notes must be explicit and dated when material.
 -->

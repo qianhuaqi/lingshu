@@ -6,99 +6,100 @@ LingShu is a greenfield, independently implemented Python Web/API framework.
 
 It must not depend on Sanic, FastAPI, Flask, Django, Starlette, or another upper-level Web framework. The archived repository creates no compatibility obligation.
 
-Any task, document, test, or implementation that assumes Sanic migration, Sanic adaptation, old API compatibility, continuation of the legacy runtime, or reuse of the archived source tree must stop and be reported as a scope conflict.
+Any work that assumes migration of the legacy Sanic runtime, old API compatibility, or reuse of archived source/tests/scaffolding must stop and be reported as a scope conflict.
+
+## Current phase
+
+P0 is frozen. P1 is authorized by Final Freeze PR #51.
+
+P1 follows the dependency graph in `docs/development/P1_IMPLEMENTATION_PLAN.md`. Only the active GitHub Issue authorizes writes. A later P1 task must not begin before its provider dependencies merge.
+
+During P1-00, do not implement framework behavior assigned to P1-01 or later. Package markers and installed-version reporting are the only runtime-facing code allowed by Issue #52.
 
 ## Required reading order
 
-Before any work, read:
+Before writing, read:
 
 1. `docs/development/DEVELOPMENT_CONSTITUTION.md`;
-2. the active GitHub Issue;
+2. the active GitHub Issue and all scope-amendment comments;
 3. `docs/development/CURRENT_PHASE.md`;
-4. `docs/development/CONCURRENT_DEVELOPMENT.md` when any other task is active;
-5. `docs/architecture/P0_DECISION_STATUS.md` during P0;
-6. accepted ADRs under `docs/decisions/`;
-7. confirmed sections of `docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md`;
+4. `docs/development/CONCURRENT_DEVELOPMENT.md`;
+5. `docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md`;
+6. applicable accepted ADRs under `docs/decisions/`;
+7. `docs/development/P1_IMPLEMENTATION_PLAN.md`;
 8. `docs/development/HANDOFF.md`;
-9. the active remote branch and Pull Request.
+9. the active branch and Pull Request.
 
-Chat history, model memory, archived branches, closed legacy Issues, and historical Pull Requests are not active implementation authority.
+Chat history, model memory, archived branches, closed legacy Issues, and old Pull Requests are not implementation authority.
 
-When active sources conflict, stop. Do not guess which rule should win.
+When active sources conflict, stop. Do not guess which rule wins.
 
-## Current P0 restriction
+## Frozen package facts
 
-P0 is architecture and governance consolidation only.
+```text
+Canonical repository: qianhuaqi/lingshu
+Distribution:         lingshu
+Import package:       lingshu
+Production source:    lingshu/
+src layout:           prohibited
+Build backend:        Hatchling
+Version source:       static [project].version
+First P1 version:     0.1.0.dev0
+```
 
-Until the project lead confirms the complete Blueprint and a P1 Issue is created, do not:
+Do not create `src/lingshu/`, a second distribution, component-specific versions, duplicate manual `__version__` literals, or mandatory runtime dependencies without a new accepted decision.
 
-- create production framework source code;
-- create package or directory skeletons that imply an unresolved layout choice;
-- introduce runtime dependencies;
-- implement Core, HTTP runtime, native server, router, middleware, extension runtime, CLI, or official extensions;
-- publish packages;
-- treat candidate package, multi-package, `src/`, directory, extension, runtime-concurrency, or release plans as frozen.
+## Task and concurrency rules
 
-## Single repository and concurrent work
+- One task uses one Issue, one writer-prefixed branch, one primary writer, one isolated worktree or clone, one virtual environment, and one Pull Request.
+- Every Issue declares `base_commit`, `write_scope`, read dependencies, conflicts, integration order, exclusions, and required checks.
+- Two active tasks with overlapping write scopes conflict by default.
+- Provider contracts merge before consumers.
+- Multiple developers must not write in the same worktree or branch.
+- Development may be parallel only for explicitly independent scopes; integration into `main` is serial.
+- Never copy uncommitted code, stashes, caches, runtime directories, or virtual environments between worktrees.
 
-The canonical repository is `qianhuaqi/lingshu`.
+## Git and review workflow
 
-Single repository does not mean shared branch or shared working directory. For concurrent work:
-
-- one task uses one Issue, one writer-prefixed branch, one primary writer, one worktree or clone, one virtual environment, and one Pull Request;
-- every Issue declares `base_commit`, `write_scope`, dependencies, conflicts, integration order, and required checks;
-- two active tasks with overlapping write scopes are conflicting by default;
-- shared public contracts and foundations merge before dependent features;
-- multiple developers must not write in the same worktree;
-- multiple primary writers must not write the same branch;
-- parallel development is allowed only for independent tasks;
-- integration into `main` is serial and controlled by the project lead;
-- after a relevant upstream merge, dependent branches synchronize with current `main` and rerun checks;
-- no developer may copy uncommitted code, stashes, caches, or virtual environments between task worktrees.
-
-Use `docs/development/CONCURRENT_DEVELOPMENT.md` and ADR-001 as the operational authority.
-
-## Workflow
-
-- One active task scope, one Issue, one branch, and one Pull Request.
-- Use a writer-prefixed branch unless an approved research Issue allows `research/<slug>`.
-- A branch has one primary writer at a time.
 - Never commit directly to `main`.
 - Never force-push or rewrite shared history.
 - Never enable automatic merge.
-- The project lead holds final merge authority.
-- Developers implement only the active Issue.
+- Every commit requires a DCO `Signed-off-by` trailer; use `git commit -s`.
+- Pull Requests must reference the active Issue and report actual changed paths, checks, evidence, risks, and remaining work.
 - Implementation and acceptance remain separate.
-- Update `HANDOFF.md` before switching developers, models, or computers.
-- Run the Issue-required checks and report exact evidence; never claim tests that were not run.
+- The project lead holds final merge authority.
+- Update `HANDOFF.md` before switching developer, model, or computer.
+- Never claim a check passed unless it was actually run.
 
-## Architecture gate
+## Architecture and dependency gate
 
-Candidate text is not executable architecture.
+The frozen Blueprint and accepted ADRs are implementation authority. A change to package layout, dependency direction, runtime semantics, public API, persistence format, protocol behavior, security, compatibility, or release policy requires a dedicated Issue and ADR.
 
-The current Blueprint contains unresolved distribution, directory, `src/`, component-boundary, extension, runtime-concurrency, and release choices. Use `docs/architecture/P0_DECISION_STATUS.md` to determine which decisions are confirmed, rejected, or still open.
+- No upper-level Web framework may be added.
+- Mandatory runtime dependencies require a dedicated dependency review/ADR.
+- Optional tools and integrations must not become hidden runtime requirements.
+- Production modules must not depend on `lingshu.testing`.
+- Importing LingShu must not start tasks, open files, bind sockets, connect to services, or import user applications.
 
-No developer may create P1 directories or runtime code from an unresolved Blueprint section.
+## Quality gate
 
-## Dependency gate
+Run the checks required by the active Issue. Applicable evidence includes unit, contract, integration, protocol, security, concurrency, leak, packaging, clean-install, and supported-platform checks.
 
-- Do not add an upper-level Web framework.
-- Core third-party dependencies require an accepted ADR.
-- Optional integrations must not become hidden mandatory dependencies.
-- Do not copy dependencies from the archived project.
+Editable installation is not release evidence. Packaging-sensitive work must build wheel and sdist and test a non-editable wheel outside the repository checkout.
 
 ## Security gate
 
-Never commit or reproduce real tokens, API keys, passwords, private keys, personal data, or production secrets. Redact sensitive values from logs, runtime records, examples, fixtures, Issues, and Pull Requests.
+Never commit or reproduce real tokens, API keys, passwords, private keys, personal data, production endpoints, or production request bodies. Redact sensitive values from logs, records, examples, tests, Issues, Pull Requests, and diagnostics.
+
+Unpatched vulnerabilities use the private process in `SECURITY.md`, never a public Issue.
 
 ## Legacy archive
 
-The previous Sanic-based repository state is frozen at:
+The previous repository state is frozen at:
 
-`archive/legacy-sanic-20260628`
+```text
+archive/legacy-sanic-20260628
+b869270e0ec7cbc324d17ef246e39d0873aab14f
+```
 
-Archive commit:
-
-`b869270e0ec7cbc324d17ef246e39d0873aab14f`
-
-The archive is reference material only. Do not copy its source, tests, scaffolds, dependency files, compatibility rules, or public API assumptions into the greenfield branch without an explicit Issue and architecture review.
+Do not copy its source, tests, dependencies, compatibility rules, or public API assumptions into the greenfield implementation without an explicit Issue and architecture review.
