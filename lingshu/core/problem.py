@@ -55,7 +55,7 @@ class ProblemDetails:
 
 
 def problem_from_exception(
-    error: Exception,
+    error: BaseException,
     *,
     request_id: RequestId | None = None,
     instance: str | None = None,

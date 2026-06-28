@@ -116,4 +116,4 @@ def test_client_visible_error_requires_valid_http_status() -> None:
 def test_control_flow_base_exception_is_not_mapped() -> None:
     cancellation = asyncio.CancelledError()
     with pytest.raises(TypeError, match="control-flow"):
-        problem_from_exception(cancellation)  # type: ignore[arg-type]
+        problem_from_exception(cancellation)
