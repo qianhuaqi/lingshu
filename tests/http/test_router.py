@@ -116,9 +116,9 @@ def test_router_and_declarations_are_immutable_and_concurrent_read_safe() -> Non
     router = compile_router((route,))
 
     with pytest.raises(FrozenInstanceError):
-        setattr(route, "name", "changed")
+        route.name = "changed"  # type: ignore[misc]
     with pytest.raises(FrozenInstanceError):
-        setattr(router, "_routes", ())
+        router._routes = ()  # type: ignore[misc]
 
     with ThreadPoolExecutor(max_workers=8) as executor:
         matches = list(

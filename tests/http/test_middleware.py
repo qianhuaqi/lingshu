@@ -101,7 +101,7 @@ def test_application_and_route_middleware_follow_deterministic_onion_order() -> 
                 "A:out",
             ]
             with pytest.raises(FrozenInstanceError):
-                setattr(app_plan, "scope", MiddlewareScope.ROUTE)
+                app_plan.scope = MiddlewareScope.ROUTE  # type: ignore[misc]
         finally:
             await application.close()
 

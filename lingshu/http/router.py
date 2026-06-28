@@ -67,9 +67,7 @@ class RouteDeclaration:
             )
         middleware = tuple(route_middleware)
         if any(not isinstance(item, MiddlewareDeclaration) for item in middleware):
-            raise TypeError(
-                "route_middleware must contain MiddlewareDeclaration values"
-            )
+            raise TypeError("route_middleware must contain MiddlewareDeclaration values")
 
         object.__setattr__(self, "path_template", path_template)
         object.__setattr__(self, "methods", normalized_methods)
@@ -99,9 +97,7 @@ class RouteMatch:
     allowed_methods: tuple[HTTPMethod, ...]
 
     def __post_init__(self) -> None:
-        object.__setattr__(
-            self, "path_params", MappingProxyType(dict(self.path_params))
-        )
+        object.__setattr__(self, "path_params", MappingProxyType(dict(self.path_params)))
         object.__setattr__(self, "allowed_methods", tuple(self.allowed_methods))
         if self.kind is RouteMatchKind.MATCH:
             if self.route is None or self.allowed_methods:
@@ -150,9 +146,7 @@ class _RouteGroup:
     specificity: tuple[int, ...]
     routes_by_method: Mapping[str, RouteDeclaration]
 
-    def capture(
-        self, route: RouteDeclaration, values: tuple[str, ...]
-    ) -> Mapping[str, str]:
+    def capture(self, route: RouteDeclaration, values: tuple[str, ...]) -> Mapping[str, str]:
         params: dict[str, str] = {}
         for segment, value in zip(route._segments, values, strict=True):
             if segment.parameter is not None:
@@ -190,9 +184,7 @@ class Router:
     def match(self, method: str | HTTPMethod, path: str) -> RouteMatch:
         """Match path specificity first, then the explicit HTTP method."""
 
-        normalized_method = (
-            method if isinstance(method, HTTPMethod) else HTTPMethod(method)
-        )
+        normalized_method = method if isinstance(method, HTTPMethod) else HTTPMethod(method)
         values = _parse_request_path(path)
         for group in self._groups:
             if not _shape_matches(group.shape, values):
@@ -249,9 +241,7 @@ def compile_router(declarations: Iterable[RouteDeclaration]) -> Router:
                     )
                 routes_by_method[method.value] = route
         specificity = tuple(1 if kind == "static" else 0 for kind, _ in shape)
-        compiled_groups.append(
-            _RouteGroup(shape, specificity, MappingProxyType(routes_by_method))
-        )
+        compiled_groups.append(_RouteGroup(shape, specificity, MappingProxyType(routes_by_method)))
 
     compiled_groups.sort(key=lambda group: group.specificity, reverse=True)
     return Router(routes, tuple(compiled_groups), named)
@@ -377,9 +367,7 @@ def _parse_request_path(path: str) -> tuple[str, ...]:
 
 def _shape(segments: tuple[_Segment, ...]) -> tuple[tuple[str, str], ...]:
     return tuple(
-        ("static", segment.literal)
-        if segment.literal is not None
-        else ("parameter", "")
+        ("static", segment.literal) if segment.literal is not None else ("parameter", "")
         for segment in segments
     )
 

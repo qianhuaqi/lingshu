@@ -221,9 +221,7 @@ def compile_middleware(
     entries: list[_MiddlewareEntry] = []
     for sequence, declaration in enumerate(declarations):
         if not isinstance(declaration, MiddlewareDeclaration):
-            raise TypeError(
-                "middleware declarations must be MiddlewareDeclaration values"
-            )
+            raise TypeError("middleware declarations must be MiddlewareDeclaration values")
         if not _is_async_callable(declaration.callback):
             raise HandlerContractError(
                 "middleware.async_required",
@@ -243,8 +241,9 @@ def compile_middleware(
 def _is_async_callable(callback: object) -> bool:
     if inspect.iscoroutinefunction(callback):
         return True
-    call = getattr(callback, "__call__", None)
-    return inspect.iscoroutinefunction(call)
+    if not callable(callback):
+        return False
+    return inspect.iscoroutinefunction(type(callback).__call__)
 
 
 def _checkpoint_request(request: Request) -> None:
