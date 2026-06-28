@@ -3,64 +3,57 @@
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
 Current phase: P1 - Single-Worker Minimum Vertical Slice
-Active Issue: #52 — P1-00 package, tooling, CI, and governance foundation
-Active Pull Request: #53
-Active branch: `human/dodo/p1-00-package-tooling-ci`
+Completed foundation: P1-00 / Issue #52 / PR #53
+Active Issue: #54 — P1-01 Core time, identifiers, errors, and safe Problem Details
+Active Pull Request: #55
+Active branch: `human/dodo/p1-01-core-foundations`
 Primary writer: qianhuaqi / 小顾
-Base commit: `4c925c20e53b5c3fc6005c5c07f2b32d5175a0f5`
+Base commit: `689fb411f5d3ed03ad0059ede86bf532541e7249`
+Verified implementation commit: `20a089683a6a35d3b8313489af6a0b32f7cc9691`
 Planned version: `0.1.0.dev0`
-Status: implementation complete; CI green; awaiting independent review and project-lead merge
+Status: implementation complete; required CI green; awaiting independent review and project-lead merge
 Next dependent phase allowed: no
 
-## P0 result
+## P1-01 result under review
 
-P0 is Frozen through ADR-001 to ADR-007. The PR #51 merge commit is the authoritative architecture baseline.
+P1-01 implements the first real `lingshu.core` provider surface:
 
-## P1-00 result under review
+- UTC wall-clock and process-local monotonic-clock contracts;
+- strict RFC3339 UTC timestamps with trailing `Z`;
+- typed opaque 128-bit runtime identifiers;
+- deterministic SHA-256 RevisionId;
+- bounded untrusted external request-correlation validation;
+- LingShuError taxonomy, stable dotted codes, Severity, and FatalScope;
+- immutable recursively validated safe details;
+- client-safe `application/problem+json` Problem Details;
+- generic `internal.error` mapping without cause, traceback, path, or secret leakage.
 
-P1-00 establishes:
-
-- root `pyproject.toml` using Hatchling and PEP 621;
-- root-level `lingshu/` package with no `src/` directory;
-- version `0.1.0.dev0` as the single manually maintained version;
-- empty component package boundaries;
-- installed-version CLI only;
-- pytest, Ruff, and mypy development tooling;
-- required Python/platform CI matrix and non-blocking Python 3.15 preview;
-- wheel/sdist validation, sdist rebuild comparison, and clean non-editable install;
-- DCO and governance checks;
-- synchronized README, agent, constitution, phase, handoff, and changelog text.
+The root `lingshu` facade remains empty. The provider is exported only through `lingshu.core` until a later accepted facade task publishes root names.
 
 ## Verified evidence
 
-GitHub Actions CI run #2 passed:
+GitHub Actions CI run #11 passed:
 
 - Ruff lint and format check;
 - mypy strict package check;
-- pytest;
+- full pytest suite and focused Core tests;
 - DCO sign-off validation;
 - Linux CPython 3.12, 3.13, and 3.14;
 - Windows CPython 3.12 and 3.14;
 - macOS CPython 3.12 and 3.14;
 - Linux CPython 3.15 preview;
 - wheel and sdist build;
-- artifact metadata/inventory and Apache-2.0 license files;
-- wheel rebuild from sdist with matching metadata/inventory;
-- non-editable wheel install and CLI/import smoke tests outside checkout;
-- uninstall verification.
+- artifact inventory and license metadata;
+- wheel rebuild from sdist;
+- non-editable clean installation outside checkout;
+- CLI/import smoke tests and uninstall verification.
+
+The temporary Ruff diagnostic job used during failure investigation was removed. The final workflow is unchanged from `main`.
 
 ## Explicit exclusions
 
-P1-00 does not implement:
-
-- `LingShu`, `Request`, `Response`, or `HTTPException`;
-- core time, identifiers, errors, or configuration;
-- Scope, Deadline, cancellation, tasks, or admission;
-- HTTP messages, Router, Middleware, or Application Kernel;
-- Runtime Record or Server behavior;
-- CLI `check` or `run`;
-- multi-Worker, reload, advanced protocol/body features, official integrations, or publication.
+P1-01 does not implement configuration, Deadline, cancellation reason, Scope, task ownership, admission, HTTP Request/Response, HTTPException, Router, Middleware, Application Kernel, Runtime Record, Server, CLI run/check, telemetry exporters, serializer registry, or mandatory runtime dependencies.
 
 ## Dependency gate
 
-All later P1 Issues depend on P1-00. P1-01 must not begin until PR #53 is reviewed and merged by the project lead.
+P1-02 and P1-03 remain blocked until PR #55 is independently reviewed and merged by the project lead. Consumers must then synchronize from the P1-01 merge commit.

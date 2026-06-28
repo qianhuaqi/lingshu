@@ -3,41 +3,34 @@
 Updated at: 2026-06-28
 Project: LingShu Framework
 Phase: P1 - Single-Worker Minimum Vertical Slice
-Active Issue: #52
-Active Pull Request: #53
-Branch: `human/dodo/p1-00-package-tooling-ci`
+Completed: P1-00 / PR #53
+Active Issue: #54
+Active Pull Request: #55
+Branch: `human/dodo/p1-01-core-foundations`
 Primary writer: qianhuaqi / 小顾
-Base commit: `4c925c20e53b5c3fc6005c5c07f2b32d5175a0f5`
-Latest implementation commit: `85703eeadfe90234c7cc99c57ed30f82e2446392`
-Status: implementation complete; all required CI checks green; awaiting review and project-lead merge
+Base commit: `689fb411f5d3ed03ad0059ede86bf532541e7249`
+Verified implementation commit: `20a089683a6a35d3b8313489af6a0b32f7cc9691`
+Status: implementation complete; required CI green; awaiting independent review and project-lead merge
 
-## Completed
+## Implemented
 
-- Created `pyproject.toml` with Hatchling, PEP 621, Apache-2.0 metadata, CPython >=3.12, version `0.1.0.dev0`, no mandatory runtime dependencies, and a development extra.
-- Created root-level `lingshu/`; no `src/` directory.
-- Created component package markers for core, runtime, HTTP, server, record, extensions, CLI, and testing.
-- Added `py.typed`.
-- Added installed-version access through `importlib.metadata` without a duplicate version literal.
-- Added `python -m lingshu --version`, `python -m lingshu version`, and console-script version reporting only.
-- Added package metadata, CLI, import-safety, artifact, and DCO checks.
-- Added required Linux/Windows/macOS test matrix, quality job, Python 3.15 preview, build, sdist rebuild, artifact inventory, clean-install, and uninstall workflow.
-- Synchronized stale P0 wording in README, AGENTS, Development Constitution, Current Phase, Handoff, and Changelog.
-- All branch commits contain a DCO sign-off.
+- `WallClock` and `MonotonicClock` protocols with system implementations.
+- Strict RFC3339 UTC `format_rfc3339_utc` and `parse_rfc3339_utc`.
+- RequestId, ConnectionId, TraceId, OperationId, WorkerId, and RecordId as immutable typed 128-bit lowercase hexadecimal values.
+- RevisionId as immutable lowercase SHA-256 canonical Revision identity.
+- Secure identifier generation with InternalError cause preservation on entropy failure.
+- Bounded external request-correlation validation that remains separate from internal RequestId.
+- LingShuError and the frozen category subclasses.
+- Lowercase dotted error-code validation.
+- Severity and FatalScope bounded enums.
+- Recursive safe-details validation and immutable mappings/tuples.
+- ProblemDetails allowlist and generic `internal.error` fallback.
+- Explicit `lingshu.core` exports while leaving root `lingshu.__all__` empty.
+- Unit tests for time, identifiers, safe errors, redaction, control flow, and package-boundary transition.
 
-## Local evidence
+## Verification
 
-An offline staging copy successfully:
-
-- parsed `pyproject.toml` with `tomllib`;
-- compiled every new Python file with `py_compile`;
-- passed Ruff lint and formatting after the CI-reported corrections;
-- passed mypy for the package.
-
-A direct local pytest run before editable installation correctly failed to import the package. This is not counted as a product failure because the declared developer and CI workflow installs the project before testing. GitHub Actions performed the authoritative installed-package test.
-
-## GitHub Actions evidence
-
-CI run #2 passed every job:
+CI run #11 passed all required jobs:
 
 ```text
 Quality and governance                   success
@@ -52,32 +45,31 @@ macOS Python 3.14                        success
 Python 3.15 preview                      success
 ```
 
-The successful build job verified:
+The quality job passed Ruff, format, mypy, pytest, and DCO. The build job passed wheel/sdist construction, artifact inventory, sdist rebuild, clean installation outside checkout, CLI/import smoke tests, and uninstall.
 
-- current Hatchling accepts the PEP 639 Apache-2.0 metadata;
-- LICENSE and NOTICE are included under wheel license metadata;
-- one `py3-none-any` wheel and one sdist are produced;
-- forbidden files are absent from the wheel;
-- a wheel rebuilt from the sdist has matching metadata and inventory;
-- a non-editable wheel imports and reports its version outside checkout;
-- the console script works outside checkout;
-- uninstall completes.
+Temporary Ruff diagnostic workflow changes were fully reverted before this handoff. `.github/workflows/ci.yml` has no final P1-01 behavior change.
 
-## Scope amendments
+## Security review points satisfied
 
-Issue #52 includes `AGENTS.md` and `DEVELOPMENT_CONSTITUTION.md` because both retained stale P0-only prohibitions after Final Freeze. Their architecture and governance controls remain active; only phase authority was synchronized.
+- inbound correlation text cannot replace internal RequestId;
+- generated identifiers expose no host, PID, timestamp, user, tenant, route, or business meaning;
+- secure-source failures catch ordinary `Exception`, not BaseException control flow;
+- safe details reject arbitrary objects, bytes, non-string keys, and non-finite floats;
+- client Problem Details contain only allowlisted safe values;
+- internal causes, traceback, exception repr, paths, and secrets are not serialized;
+- no mandatory runtime dependency was added.
 
 ## Remaining action
 
-1. independent review of PR #53;
-2. resolve any blocking review finding inside Issue #52 scope;
+1. independently review PR #55;
+2. resolve any blocking finding inside Issue #54 scope;
 3. project lead performs final merge;
-4. only after merge, close P1-00 and create P1-01 from the resulting `main` commit.
+4. only after merge, create P1-02 and P1-03 from the resulting `main` commit according to the declared parallel wave.
 
 ## Protected facts
 
-- Production source is `lingshu/`, never `src/lingshu/`.
-- P1-00 contains no framework behavior assigned to later Issues.
-- Archive branch `archive/legacy-sanic-20260628` remains untouched.
-- Public package-index publication remains unauthorized.
-- No auto-merge; final merge belongs to the project lead.
+- root `lingshu` facade remains unchanged;
+- configuration and runtime behavior remain deferred;
+- archive branch remains untouched;
+- public package publication remains unauthorized;
+- no auto-merge; final merge belongs to the project lead.

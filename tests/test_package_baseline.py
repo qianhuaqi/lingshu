@@ -17,6 +17,7 @@ COMPONENTS = (
     "lingshu.server",
     "lingshu.testing",
 )
+PROVIDER_COMPONENTS = {"lingshu.cli", "lingshu.core"}
 
 
 def test_root_layout_has_no_src_directory() -> None:
@@ -44,4 +45,7 @@ def test_root_facade_is_an_explicit_placeholder() -> None:
 def test_component_boundaries_are_importable() -> None:
     for module_name in COMPONENTS:
         module = importlib.import_module(module_name)
-        assert module.__all__ == () or module_name == "lingshu.cli"
+        if module_name in PROVIDER_COMPONENTS:
+            assert module.__all__
+        else:
+            assert module.__all__ == ()
