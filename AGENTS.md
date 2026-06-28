@@ -1,91 +1,41 @@
 # Repository Agent Rules
 
-This repository uses a strict GitHub-first workflow for LingShu Framework development.
-These rules apply to **all** developers — human, AI, and future tools alike.
+## Highest-priority project fact
 
-## Sources Of Truth
+LingShu is a greenfield, independently implemented Python Web/API framework.
 
-1. GitHub Issue for the current phase
-2. Remote branch on `github`
-3. Pull Request and its review comments
-4. Development Constitution: `docs/development/DEVELOPMENT_CONSTITUTION.md`
-5. Current phase: `docs/development/CURRENT_PHASE.md`
-6. Architecture contracts: `docs/architecture/architecture-contract.json`
-7. Related ADRs: `docs/decisions/`
+It must not depend on Sanic, FastAPI, Flask, Django, Starlette, or another upper-level Web framework. Legacy repository code creates no compatibility obligation.
 
-**Chat history and model memory are NOT sources of truth.** If something is
-not written in the above artifacts, it does not exist as a rule.
+Any task, document, test, or implementation that assumes Sanic migration, Sanic adaptation, old API compatibility, or continuation of the legacy runtime must stop and be reported as a scope conflict.
 
-## Before Starting Work
+## Sources of truth
 
-1. Read `docs/development/DEVELOPMENT_CONSTITUTION.md`.
-2. Read `docs/development/CURRENT_PHASE.md`.
-3. Read the current GitHub Issue.
-4. Read related ADRs in `docs/decisions/`.
-5. Fetch from `github` remote: `git fetch github --prune`.
-6. Verify local HEAD equals `github/<branch>`.
-7. Confirm worktree is clean: `git status --short`.
+1. Current GitHub Issue for the active phase.
+2. `docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md` after project-lead confirmation.
+3. Accepted ADRs under `docs/decisions/`.
+4. `docs/development/CURRENT_PHASE.md`.
+5. Remote phase branch and Pull Request.
 
-## Before Leaving Or Switching Computers
+Chat history and model memory are not permanent repository rules.
 
-1. Run relevant tests for the current work.
-2. Update `docs/development/HANDOFF.md`.
-3. Commit all intended changes.
-4. Push to `github`.
-5. Confirm worktree is clean.
-6. Confirm local HEAD equals `github/<branch>`.
+## Current phase restriction
 
-## Hard Rules
+P0 is architecture consolidation only. Do not create production framework source code, package skeletons, compatibility layers, or implementation PRs until the project lead explicitly freezes P0 and a P1 Issue is created.
 
-1. **One phase, one Issue, one branch, one PR.**
-2. **A branch may have only one writer at a time.**
-3. **Never commit directly to `main`.**
-4. **Never auto-merge a PR.** Xiao Gu performs independent acceptance; the
-   user performs the final merge.
-5. **Never start the next phase until the current phase is accepted.**
-6. **Always use the `github` remote** (never `origin`).
-7. **Synchronize with fast-forward only.**
+## Development workflow
 
-## Branch Naming
+- One phase, one Issue, one branch, one PR.
+- Never commit directly to `main`.
+- Never auto-merge.
+- The project lead holds final merge authority.
+- Developers execute only the current Issue.
+- Implementation and acceptance must remain separate.
+- Never force push or rewrite protected history.
 
-Every implementation branch must be prefixed by the **primary writer** of that
-branch. The prefix identifies who is actively writing the branch and is
-enforced by the architecture contract.
+## Legacy archive
 
-| Writer | Branch prefix |
-|---|---|
-| Codex | `codex/phase-<phase>-<slug>` |
-| Qwen | `qwen/phase-<phase>-<slug>` |
-| Gemini | `gemini/phase-<phase>-<slug>` |
-| GLM | `glm/phase-<phase>-<slug>` |
-| Claude | `claude/phase-<phase>-<slug>` |
-| Human (named) | `human/<name>/phase-<phase>-<slug>` |
-| Research (non-implementation) | `research/<slug>` — only for Issue-approved non-implementation research tasks |
+The old Sanic-based repository state is frozen at:
 
-Rules:
+`archive/legacy-sanic-20260628`
 
-1. **Branch prefix = primary writer.** The writer who creates the branch owns
-   its prefix.
-2. **Xiao Gu is NOT an implementation branch prefix.** Xiao Gu performs
-   planning, review, and acceptance — never writes implementation branches.
-3. **When switching developers:** the old developer must test, update HANDOFF,
-   commit, push, and stop writing. The new developer must create a new
-   prefix branch and record the inherited baseline in HANDOFF.
-4. **Without explicit Issue approval**, no developer may continue writing
-   another developer's branch.
-
-## Prohibited Git Actions
-
-- Do not run `git reset --hard`.
-- Do not run `git clean -fd`.
-- Do not rebase a phase branch.
-- Do not force push.
-- Do not auto-save local changes outside an explicit commit.
-
-## Roles
-
-| Role | Responsibility |
-|---|---|
-| **User / Project Lead** | Final scope decision. Final merge authority. |
-| **Xiao Gu** | Architecture planning. Issue and PR creation. Independent review and acceptance. Does NOT merge. |
-| **Developer** (human or AI) | Executes the current Issue only. Does not exceed scope. Does not self-accept or auto-merge. |
+Do not copy legacy source, tests, scaffolds, dependency files, or compatibility rules into the greenfield branch without an explicit Issue and architectural review.

@@ -1,60 +1,51 @@
 # Current Phase
 
 Project: LingShu Framework
-Current phase: C2-RC - Development Constitution V1 and Machine Boundary Tests
-Current branch: qwen/phase-c2-rc-development-constitution
-Current writer: qwen
-Current issue: #21
+Current phase: P0 - Greenfield Architecture Consolidation
+Phase type: non-implementation architecture
+Current branch: human/dodo/phase-p0-greenfield-reset
+Current issue: #25
 Status: in progress
 Next phase allowed: no
 
-## Accepted Baseline
+## Foundational fact
 
-- Phase A accepted and merged.
-- Phase B accepted and merged through PR #8.
-- Phase C0 accepted and merged through PR #11.
-- Phase C1 accepted and merged through PR #13.
-- Phase C2.1 accepted and merged through PR #16.
-- Phase C2.2A accepted and merged through PR #18.
-- Phase C2-R0 accepted and merged through PR #20 (merge commit: `ed3ff04`).
+LingShu is a completely new, independently implemented Python Web/API framework.
 
-## Test Baseline
+It does not depend on Sanic, FastAPI, Flask, Django, Starlette, or any other upper-level Web framework. The old repository implementation creates no compatibility obligation.
 
-- `tests/test_c2_auth.py`: 111 passed.
-- `tests/test_c2_tenant.py`: 127 passed.
-- Full suite: 446 passed, 1 skipped, 0 failed.
-- `pip check`: no broken requirements.
+## Current objective
 
-## Phase C2-RC Goal
+1. Establish a clean repository baseline.
+2. Preserve the old Sanic-based state in an archive branch.
+3. Consolidate the complete Blueprint into one authoritative file.
+4. Resolve remaining P0 package, directory, runtime, extension, and release questions.
+5. Obtain explicit project-lead confirmation before P1.
 
-Establish Development Constitution V1 and machine-executable architecture
-boundary tests. Freeze the rules that govern all developers (human and AI)
-so that repository rules do not change when developers change.
+## In scope
 
-This is a documentation and test phase — no production code changes.
+- Architecture and governance documents.
+- Greenfield repository reset.
+- Blueprint consistency review.
+- Closing or classifying legacy Issues and PRs.
+- Defining P1 acceptance criteria.
 
-## Scope
+## Out of scope
 
-### In scope
+- Production framework implementation.
+- Sanic adapters or migration.
+- Legacy API compatibility.
+- Copying old source or tests.
+- Publishing packages.
+- Starting P1 before project-lead confirmation.
 
-- Rewrite `AGENTS.md` as a model-agnostic entry point.
-- Create `docs/development/DEVELOPMENT_CONSTITUTION.md`.
-- Create model-agnostic phase documents under `docs/development/`.
-- Create architecture contract documents under `docs/architecture/`.
-- Create ADRs under `docs/decisions/`.
-- Create `docs/architecture/architecture-contract.json`.
-- Create machine boundary tests under `tests/architecture/`.
-- Update `tests/test_handoff_workflow.py` to use new fact sources.
+## Exit conditions
 
-### Out of scope
+P0 ends only when:
 
-- Moving `src/lingshu` production directories.
-- Modifying auth, tenant, RoutePolicy, database, Model, or Sanic adapter behavior.
-- Starting R1–R6, C2.2B, or C3.
-- Adding third-party dependencies.
-
-## CLI Exception (Issue #21 approved)
-
-- Baseline `ed3ff04` lacks `app/v1/language/` directory.
-- This phase adds `app/v1/language/.gitkeep` as a minimal placeholder.
-- No runtime behavior change. No other `app/**` files modified.
+1. the project lead confirms the complete Blueprint;
+2. there is exactly one authoritative architecture file;
+3. no active fact source describes LingShu as Sanic-based;
+4. package and directory structure are explicitly confirmed;
+5. P1 scope and acceptance criteria are ready;
+6. all legacy implementation Issues are closed or marked historical.
