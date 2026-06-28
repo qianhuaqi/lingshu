@@ -2,9 +2,8 @@
 
 - Status: Active P0 control document
 - Parent Issue: #25
-- Active decision Issue: #40
-- Active proposal: P0-D4 / ADR-004
-- Last accepted decision: P0-D3 / ADR-003 / PR #38
+- Active decision Issue: none
+- Last accepted decision: P0-D4 / ADR-004 / PR #41
 - Last updated: 2026-06-28
 
 ## Authority
@@ -40,7 +39,7 @@
 - One active HTTP/1.1 request per connection.
 - Bounded admission, queues, executors, telemetry, and Runtime Records.
 - Absolute monotonic Deadline and cancellation propagation.
-- Blocking work isolation, bounded Worker restart, and ordered graceful shutdown.
+- Blocking-work isolation, bounded Worker restart, and ordered graceful shutdown.
 
 ### P0-D3: Package and component layout
 
@@ -53,7 +52,7 @@ Production code: lingshu/
 src layout:      prohibited
 ```
 
-Confirmed components and direction:
+Confirmed direction:
 
 ```text
 runtime     → core
@@ -65,16 +64,46 @@ cli         → public composition surface
 testing     → public/test-support surfaces
 ```
 
-Additional confirmed rules:
+Additional rules:
 
 - one framework version and release cadence;
 - no initial component distributions;
 - no dependency cycles;
-- production components do not depend on `testing`;
+- production does not depend on `testing`;
 - controlled root public facade;
 - lazy optional integrations;
 - default Runtime Record mechanisms with optional heavy exporters;
 - wheel and sdist isolated-install quality gate.
+
+### P0-D4: Application Kernel and request pipeline
+
+- ADR-004 accepted.
+- Issue #40 completed.
+- PR #41 merged at `bb78918dc2bc92dd49c34258e3707abd37274f12`.
+- Detailed model: `docs/architecture/APPLICATION_KERNEL_AND_REQUEST_PIPELINE.md`.
+
+Confirmed semantics:
+
+- public `LingShu` composition root and private low-level Application Kernel;
+- lifecycle `CREATED → CONFIGURING → FROZEN → STARTING → RUNNING → DRAINING → STOPPING → STOPPED`;
+- registration only before freeze;
+- immutable Application Revision and atomic compiled-plan publication;
+- no partial plan after freeze failure;
+- immutable compiled Router and deterministic conflict validation;
+- asynchronous Handler with one explicit Request;
+- deterministic application and route Middleware onion ordering;
+- single-use Scope-bound `call_next`;
+- fixed request pipeline from protocol acceptance through Scope cleanup;
+- immutable Request metadata, scoped state, and bounded single-consumer body;
+- exactly-once Handler return normalization;
+- `Response`, `str`, and bytes-like initial Handler results;
+- `None`, tuple magic, arbitrary iterators, and unknown values rejected by default;
+- Response states `NEW → PREPARED → COMMITTED → COMPLETED/ABORTED`;
+- no status/header mutation or replacement response after commit;
+- exception resolution through route mapper, application mapper, `HTTPException`, then safe default before commit;
+- extensions compiled before startup and immutable during request processing;
+- root public exports `LingShu`, `Request`, `Response`, and `HTTPException`;
+- state-machine, ordering, ownership, commit, error, leak, and import-side-effect tests required.
 
 ### Repository reset, compatibility, and P0 gate
 
@@ -84,100 +113,68 @@ Additional confirmed rules:
 - No production package, source tree, runtime dependency, or implementation phase begins before P0 acceptance.
 - Every accepted request has an internal Request ID and bounded, redacted, recoverable Runtime Record.
 
-## Proposed — P0-D4, not executable until merged
-
-Issue #40 and ADR-004 propose:
-
-- public `LingShu` composition root with a private low-level Application Kernel;
-- Application lifecycle `CREATED → CONFIGURING → FROZEN → STARTING → RUNNING → DRAINING → STOPPING → STOPPED`;
-- registration only before freeze;
-- immutable Application Revision and atomic compiled-plan publication;
-- failed freeze publishes no partial plan;
-- immutable compiled routing and deterministic route conflict validation;
-- asynchronous handler contract with one explicit Request argument;
-- deterministic application and route Middleware onion ordering;
-- single-use Scope-bound `call_next`;
-- fixed request pipeline from Server acceptance through Request Scope cleanup;
-- immutable Request metadata, scoped mutable state, and bounded single-consumer body;
-- one-time return normalization;
-- `None`, tuple response magic, arbitrary iterator, and unknown return values rejected by default;
-- Response states `NEW → PREPARED → COMMITTED → COMPLETED/ABORTED`;
-- no status/header mutation or replacement response after commit;
-- deterministic route/application/HTTPException/default exception resolution;
-- Extension contributions compiled before startup and immutable during request handling;
-- minimum root exports `LingShu`, `Request`, `Response`, and `HTTPException`;
-- contract tests for state, order, ownership, commit, error, extension, and import-side-effect behavior.
-
-Proposal documents:
-
-- `docs/decisions/ADR-004-application-kernel-request-pipeline-and-public-api.md`
-- `docs/architecture/APPLICATION_KERNEL_AND_REQUEST_PIPELINE.md`
-
-Until the decision PR is merged, these semantics remain Proposed and production implementation is prohibited.
-
 ## Rejected
 
 - upper-level Web framework dependency;
 - legacy runtime migration or compatibility shims without released consumers;
-- separate initial repositories or distributions for framework components;
-- shared writable development directory or multi-writer branch;
-- automatic merge or long-lived shared `develop` branch;
-- unbounded runtime resources, fire-and-forget tasks, or global mutable request state;
+- separate initial repositories or distributions;
+- shared writable worktrees, multi-writer branches, automatic merge, or long-lived `develop`;
+- unbounded tasks, queues, executors, waiters, or mutable global request state;
 - one thread per request;
 - resetting timeout at every nested layer;
 - concurrent HTTP/1.1 requests on one connection in the initial runtime;
-- infinite Worker restart loops;
-- shutdown without drain and cleanup;
-- requiring a third-party event loop for correctness;
-- `src/lingshu/` or initial `packages/` layout;
-- component-specific versions and packaging files;
+- infinite Worker restart loops or shutdown without drain/cleanup;
+- mandatory third-party event loop for correctness;
+- `src/lingshu/`, initial `packages/`, component-level packaging, or component versions;
 - production dependency on `lingshu.testing`;
-- treating all deep imports as public API;
-- editable-install-only packaging evidence;
-- running route or Middleware mutation;
-- import-time registration;
+- treating all deep imports as public;
+- editable-only packaging evidence;
+- running registry mutation or import-time registration;
 - route conflict resolution by registration order;
-- unordered Middleware;
-- multiple `call_next` invocations;
-- implicit sync handler execution on the event loop;
+- unordered Middleware or multiple `call_next` calls;
+- implicit sync Handler execution on the event loop;
 - implicit tuple or `None` response magic;
 - mutable Request metadata;
 - multiple Response commits or replacement after commit;
-- per-request mutation of the compiled Application Plan.
+- per-request mutation of the compiled plan.
 
 ## Candidate — not executable
 
+### Recommended next decision: P0-D5 hardening foundations
+
+- identifier formats and correlation for Request, Connection, Trace, Operation, Worker, Revision, and Runtime Record;
+- exception taxonomy, stable error codes, safe client messages, redaction, and cause chains;
+- configuration sources, precedence, validation, immutability, versioning, reload, and rollback;
+- JSON/general serialization and content-negotiation baseline;
+- Runtime Record event envelope, file/storage format, budgets, retention, disk safety, failure mode, and crash recovery;
+- common telemetry fields and correlation requirements.
+
 ### Deferred by P0-D4
 
-- configuration reload and multi-Worker revision rollout;
-- complete exception taxonomy and client error schema;
-- Request/Connection/Trace/Operation identifier formats;
-- JSON and other serialization rules;
-- cookie, form, multipart, upload, and content-negotiation APIs;
-- automatic `HEAD` and `OPTIONS`;
-- host routing, reverse routing, mounting, and sub-applications;
-- public server `run`/`serve` and CLI semantics;
-- synchronous handler adaptation;
+- automatic HEAD/OPTIONS;
+- host routing, reverse routing, mounts, and sub-applications;
+- cookies, forms, multipart, uploads, and advanced body APIs;
+- public run/serve and CLI semantics;
+- sync Handler adaptation;
 - dependency injection;
-- exact numeric limits, timeouts, and media types.
+- exact numeric limits, timeouts, and media-type defaults.
 
 ### Official capabilities and protocols
 
 - Auth, Tenant, Tenant-Auth bridge, RBAC;
-- Data, SQL, database drivers, Redis, and Cache;
-- i18n, OpenAPI, Observability, and Resilience;
-- Scheduler, Storage, and WebSocket;
-- HTTP/2 and HTTP/3;
-- optional event-loop or parser accelerators.
+- Data, SQL, database drivers, Redis, Cache;
+- i18n, OpenAPI, Observability, Resilience;
+- Scheduler, Storage, WebSocket;
+- HTTP/2, HTTP/3, and optional accelerators.
 
 ### Support, packaging implementation, and governance
 
 - minimum Python version and platform matrix;
-- build backend and authoritative version-source mechanism;
+- build backend and authoritative version source;
 - optional extras and official integration catalog;
 - P1/v0.x mapping and first public release;
 - v1.0 API freeze scope;
-- License, contribution policy, vulnerability reporting, security-support versions, changelog policy, and code of conduct.
+- License, contribution policy, vulnerability reporting, supported security versions, changelog policy, and code of conduct.
 
 ## Confirmation rule
 

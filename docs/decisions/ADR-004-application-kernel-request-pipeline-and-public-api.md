@@ -1,31 +1,28 @@
 # ADR-004: Application Kernel, request pipeline, and minimum public API
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-28
 - Parent architecture Issue: #25
-- Decision Issue: #40
+- Decision Issue: #40 (completed)
+- Implemented by: PR #41
+- Effective merge commit: `bb78918dc2bc92dd49c34258e3707abd37274f12`
+- Detailed model: `docs/architecture/APPLICATION_KERNEL_AND_REQUEST_PIPELINE.md`
 
 ## Context
 
-LingShu has accepted repository, runtime-concurrency, and physical component boundaries. The next architecture boundary is the application itself: how configuration is composed, when routes and middleware become immutable, how a request moves through the framework, when a response becomes irreversible, and which names form the minimum public API.
-
-Without a fixed execution contract, concurrent implementation could produce incompatible middleware ordering, route mutation races, ambiguous handler returns, double responses, hidden import-time registration, and exception behavior that changes after bytes are sent.
+LingShu required a fixed application and request-execution contract before implementation. Without it, parallel contributors could create incompatible lifecycle states, middleware ordering, route mutation behavior, handler return rules, exception paths, or response-commit semantics.
 
 ## Decision
 
-### 1. Public composition root and internal Kernel
+### Public composition root and internal Kernel
 
 The public application type is `LingShu`.
 
-`LingShu` is the composition root exposed by the root package. It assembles approved Core, Runtime, HTTP, Server, Record, Extension, CLI, and Testing surfaces without forcing lower components to import the root facade.
+`LingShu` is the root composition facade. The low-level Application Kernel remains an internal `lingshu.core` mechanism and owns lifecycle state, registration catalogs, Application Revisions, freeze validation, immutable compiled-plan ownership, and resource-lifecycle contracts.
 
-The low-level Application Kernel remains an internal `lingshu.core` mechanism. It owns lifecycle state, registration catalogs, revision identity, freeze validation, compiled-plan ownership, and resource lifecycle contracts. It does not own TCP listeners, HTTP parsing, or business policy.
+The Kernel does not own TCP listeners, protocol parsing, or business policy and must not import `lingshu.server`.
 
-The public composition root may delegate to Server capabilities through a documented facade. The internal Kernel must not import `lingshu.server`.
-
-### 2. Application lifecycle
-
-The application lifecycle is:
+### Application lifecycle
 
 ```text
 CREATED → CONFIGURING → FROZEN → STARTING → RUNNING
@@ -35,119 +32,72 @@ CREATED → CONFIGURING → FROZEN → STARTING → RUNNING
                                    STOPPED
 ```
 
-Rules:
-
-- construction creates no connection, task, listener, file, or process side effect;
+- construction has no runtime side effects;
 - registration is allowed only in `CREATED` and `CONFIGURING`;
-- the first accepted registration moves the application to `CONFIGURING`;
-- `freeze` validates and compiles one immutable Application Plan;
-- `freeze` is idempotent for an unchanged revision;
-- failed freeze publishes no partial plan and leaves the previous valid plan unchanged;
-- startup operates only on a frozen plan;
+- freeze validates and compiles one immutable Application Plan;
+- freeze is idempotent for an unchanged revision;
+- failed freeze publishes no partial plan;
+- startup requires a frozen plan;
 - running registries are immutable;
-- drain stops new admission before shutdown cleanup;
-- shutdown is idempotent and follows ADR-002;
-- fatal failure is recorded as an outcome and still enters bounded cleanup rather than skipping directly to process exit.
+- draining stops new admission before shutdown cleanup;
+- shutdown is idempotent and follows ADR-002.
 
-### 3. Application revision and freeze boundary
+### Application Revision and freeze
 
-Configuration, routes, middleware, exception mappers, extensions, and lifecycle hooks belong to an Application Revision.
+Configuration, routes, middleware, exception mappers, extensions, capabilities, and lifecycle hooks belong to an Application Revision.
 
-Freeze performs at least:
+Freeze validates configuration, route conflicts, handler and middleware signatures, exception mappings, extension dependencies, lifecycle ordering, and resource budgets. It then compiles immutable routing, middleware, exception, extension, capability, and lifecycle plans and publishes the complete plan atomically.
 
-1. configuration validation;
-2. extension dependency resolution;
-3. route conflict and ambiguity validation;
-4. middleware ordering and phase validation;
-5. exception-mapper validation;
-6. public handler signature validation;
-7. resource-budget validation;
-8. compilation of immutable route, middleware, exception, extension, and lifecycle plans;
-9. generation of a revision identifier and diagnostics;
-10. atomic publication of the complete plan.
+Direct mutation after freeze is rejected. Future reload must create a new revision and atomically switch validated plans; in-place mutation of a running plan is prohibited.
 
-After freeze, direct mutation is rejected with a configuration-state error.
+### Route contract
 
-Future hot reload must create and validate a new revision and atomically switch plans. In-place mutation of a running plan is prohibited. Full reload semantics are deferred.
+A route declaration contains a normalized path template, explicit methods, handler, optional name, route middleware, metadata, capability requirements, and later-approved body/response policies.
 
-### 4. Route model
+- registration order is not conflict resolution;
+- duplicate and ambiguous routes fail at freeze;
+- matcher specificity is explicit;
+- 404 and 405 remain distinct;
+- the running Router is immutable;
+- automatic `HEAD`/`OPTIONS`, reverse routing, and mounts are deferred.
 
-A route declaration contains at least:
+### Handler contract
 
-- normalized path template;
-- explicit HTTP method set;
-- handler;
-- optional route name;
-- route-local middleware;
-- route metadata and capability requirements;
-- explicit body and response policy references when later approved.
-
-Rules:
-
-- route registration order is not a hidden conflict-resolution policy;
-- duplicate and ambiguous routes fail during freeze;
-- static routes are more specific than dynamic segments through explicit matcher rules, not registration order;
-- method-not-allowed and not-found results are distinct;
-- automatic `HEAD` or `OPTIONS` behavior is deferred unless separately approved;
-- the running Router is immutable and safe for concurrent reads;
-- reverse routing and mount/sub-application semantics are deferred.
-
-### 5. Handler contract
-
-The initial handler contract is asynchronous:
+Initial handlers are asynchronous and receive one explicit Request:
 
 ```python
 async def handler(request: Request) -> Response | SupportedReturnValue:
     ...
 ```
 
-Rules:
+Path parameters are accessed through Request. Core dependency injection and automatic synchronous-handler execution are not part of this decision. Handler signatures are validated before startup.
 
-- the initial Kernel does not execute synchronous handlers directly on the event loop;
-- automatic sync-handler executor adaptation is deferred;
-- the request is the explicit handler input;
-- route parameters are exposed through the Request instead of implicit function-argument injection;
-- dependency injection is not a Core Kernel responsibility;
-- handler signatures are validated during freeze;
-- unsupported signatures fail before startup.
+### Middleware contract
 
-### 6. Middleware model
-
-LingShu uses deterministic onion-style middleware with two HTTP scopes:
-
-- application middleware wraps route matching, route middleware, handler execution, and return normalization;
-- route middleware runs only after a route match and wraps the selected handler plus normalization.
-
-Middleware contract:
+LingShu uses deterministic onion-style application and route middleware:
 
 ```python
 async def middleware(request: Request, call_next: Next) -> Response:
     ...
 ```
 
-Ordering rules:
+- lower numeric priority enters earlier and exits later;
+- equal priority uses explicit registration sequence within the revision;
+- application middleware wraps route matching and the selected route pipeline;
+- route middleware runs only after route match;
+- egress is exact reverse order;
+- middleware may short-circuit with a Response;
+- `call_next` is single-use and Scope-bound;
+- import order is not execution order.
 
-- lower numeric priority executes earlier on ingress and later on egress;
-- equal priority uses explicit registration sequence within the same Application Revision;
-- import order is not middleware order;
-- application middleware ingress runs outer to inner;
-- route middleware ingress runs outer to inner after route matching;
-- egress unwinds in exact reverse order;
-- middleware may short-circuit by returning a Response without calling `call_next`;
-- calling `call_next` more than once is prohibited;
-- retaining or invoking `call_next` after the middleware Scope completes is prohibited;
-- middleware failures follow the same exception path as handler failures.
+Connection hooks, lifecycle hooks, and record sinks use separate contracts.
 
-Connection/protocol hooks, lifecycle hooks, and Runtime Record sinks are not disguised as HTTP middleware; they use their own contracts.
-
-### 7. Request pipeline
-
-The canonical request pipeline is:
+### Canonical request pipeline
 
 ```text
 1. protocol request accepted by Server
 2. create Request Scope and absolute Deadline
-3. assign Request/Connection/Trace identities and open Runtime Record
+3. assign identities and open Runtime Record
 4. create immutable request metadata and bounded body stream
 5. perform Worker/Application admission
 6. enter application middleware
@@ -164,56 +114,45 @@ The canonical request pipeline is:
 17. stream/write response with backpressure
 18. finalize Runtime Record
 19. cancel/await remaining request-owned tasks
-20. release body, admission, context, and other request resources
+20. release body, admission, context, and request resources
 ```
 
-Every stage is observable and records start, outcome, failure, cancellation, and cleanup as applicable.
+Every stage is observable and must preserve Deadline, cancellation, admission, cleanup, and Runtime Record rules.
 
-A stage may not silently bypass Deadline, cancellation, admission, or cleanup rules.
+### Request semantics
 
-### 8. Request semantics
+A Request belongs to one Request Scope and becomes invalid when that Scope completes.
 
-A Request is owned by one Request Scope and is invalid after that Scope completes.
+- request metadata is read-only;
+- route identity and path parameters become read-only after match;
+- mutable application data uses explicit request-scoped state;
+- extension state is namespaced or typed;
+- body is bounded, backpressured, and single-consumer;
+- buffering and decoding are explicit and limited;
+- post-completion body or Request access fails;
+- sensitive data is redacted from records by default.
 
-Read-only request metadata includes method, target, scheme, authority/host, path, query representation, protocol version, headers, client/server connection metadata, and assigned identities.
+### Handler return normalization
 
-Rules:
+Every handler result is normalized exactly once.
 
-- metadata is immutable to application code;
-- route match adds read-only route identity and path parameters;
-- request-local mutable application data uses an explicit scoped state container;
-- extensions use namespaced state keys or typed capability access to avoid collisions;
-- the request body is a bounded, backpressured, single-consumer stream;
-- convenience buffering or decoding is explicit, cached only within configured limits, and owned by the Request Scope;
-- body consumption after completion or cancellation fails explicitly;
-- application code must not retain the Request object beyond Scope completion;
-- sensitive header and body data is redacted from records by default.
+Initially supported:
 
-The exact query, cookie, form, multipart, and structured-body APIs are deferred to serialization and HTTP-detail decisions.
+- `Response`;
+- `str` as text under an explicit encoding/media policy;
+- bytes-like data as binary;
+- structured values only after a later serialization decision.
 
-### 9. Handler return normalization
+Rejected by default:
 
-Every handler result passes through one explicit Response Normalizer before middleware egress completes.
+- `None` as implicit success;
+- tuple response magic;
+- arbitrary iterables as implicit streams;
+- unknown objects.
 
-Initial supported result categories are:
+Middleware returns Response, not unnormalized handler values.
 
-- an existing `Response`;
-- `str`, normalized as a text response under explicit default encoding rules;
-- bytes-like data, normalized as a binary response;
-- structured values only after the serialization decision approves their serializer and media type.
-
-Rules:
-
-- `None` is not an implicit empty success response;
-- tuple magic such as `(body, status, headers)` is rejected;
-- arbitrary iterables are not silently treated as streaming bodies;
-- unsupported values raise a clear return-type framework error;
-- middleware must return a Response, not an unnormalized handler value;
-- normalization occurs exactly once.
-
-### 10. Response states and commit point
-
-Response state is:
+### Response state and commit
 
 ```text
 NEW → PREPARED → COMMITTED → COMPLETED
@@ -221,64 +160,34 @@ NEW → PREPARED → COMMITTED → COMPLETED
                    ABORTED ← ABORTED
 ```
 
-Rules:
+- status, headers, cookies, and body policy are mutable only before `COMMITTED`;
+- `PREPARED` is finalized but still replaceable;
+- commit begins when the finalized response head is accepted by the Transport;
+- only one response may be committed;
+- pre-commit exceptions may replace the pending response;
+- post-commit failures cannot create a second response and instead abort the stream/connection according to protocol policy;
+- double commit, mutation after commit, and writes after completion are framework errors.
 
-- status, headers, cookies, and body policy may be changed only before `COMMITTED`;
-- `PREPARED` means normalization and framework finalization have completed but bytes are not irreversible;
-- `COMMITTED` begins when the finalized response head is accepted by the Transport for transmission;
-- after commit, status and headers are immutable;
-- only one response may be committed per request;
-- a pre-commit exception may replace the pending response through exception mapping;
-- a post-commit exception cannot create a second HTTP response; the stream/connection is aborted according to protocol policy and the failure is recorded;
-- streaming producers are request-owned unless explicitly transferred through a bounded streaming contract;
-- response completion requires body completion or an explicitly recorded abort;
-- double commit, write-after-completion, and mutation-after-commit are framework errors.
-
-### 11. Exception resolution
-
-Exception mapping is deterministic.
+### Exception resolution
 
 Resolution order:
 
-1. route-scoped mapper for the most specific exception type;
-2. application-scoped mapper for the most specific exception type;
-3. built-in mapping for intentional `HTTPException` values;
-4. safe default internal-error response before commit.
+1. most-specific route-scoped mapper;
+2. most-specific application-scoped mapper;
+3. built-in `HTTPException` mapping;
+4. safe internal-error response before commit.
 
-Rules:
+Mapper ambiguity fails at freeze. Mapper output is a Response. Mapper failure records both errors and falls back safely before commit. Sensitive details are hidden by default. Cancellation is not converted into an ordinary application error response. After commit, mapping cannot replace the response.
 
-- most specific exception class wins; equal ambiguity fails during freeze;
-- middleware may catch and convert exceptions before framework fallback mapping;
-- mapper output must be a Response and is not passed through handler-return normalization;
-- mapper failure records both the original exception and mapper exception, then uses the safe default response when still pre-commit;
-- sensitive exception details are not exposed by default;
-- cancellation is not converted into an ordinary error response unless an explicit protocol-safe rule applies;
-- after response commit, exception mapping cannot replace the response;
-- fatal process errors are not broadly converted into HTTP success/failure responses.
+### Extension participation
 
-The full exception taxonomy and error payload schema remain a later hardening decision.
+Extensions may contribute schemas, capabilities, routes, middleware, exception mappers, lifecycle hooks, and approved record/telemetry sinks during configuration.
 
-### 12. Extension participation
+Freeze resolves dependencies and compiles contributions into the immutable plan. Startup follows dependency order; cleanup is reverse order. Extensions cannot mutate registries while running.
 
-Extensions may contribute through explicit contracts during `CONFIGURING`:
+### Minimum public API
 
-- configuration schema and validation;
-- capabilities;
-- routes;
-- application or route middleware;
-- exception mappers;
-- lifecycle hooks;
-- Runtime Record/telemetry sinks through approved protocols.
-
-Freeze resolves extension dependencies and compiles all contributions into the immutable plan.
-
-During startup and shutdown, extension resources follow dependency order on startup and reverse order on cleanup.
-
-Extensions may not mutate route, middleware, or exception registries while the plan is running. Per-request extension work uses compiled hooks, capabilities, and scoped context.
-
-### 13. Minimum public API
-
-The root facade initially exposes only:
+The root facade exposes:
 
 ```python
 from lingshu import LingShu, Request, Response, HTTPException
@@ -296,79 +205,61 @@ async def index(request: Request) -> Response:
     return Response.text("hello")
 ```
 
-Confirmed public concepts:
+Confirmed concepts include the `LingShu` facade, scoped Request, Response factories, intentional `HTTPException`, route decorators, middleware registration, exception-mapper registration, and extension registration.
 
-- `LingShu`: composition root and registration facade;
-- `Request`: scoped immutable request interface with bounded body access;
-- `Response`: response construction and explicit factory interface;
-- `HTTPException`: intentional HTTP failure signal handled by the exception pipeline;
-- route decorators including `route` and common method conveniences;
-- explicit application and route middleware registration;
-- explicit exception-mapper registration;
-- explicit extension registration.
+Constructor details, server run/serve APIs, lifecycle decorator names, sync adaptation, dependency injection, automatic JSON/form/multipart behavior, and OpenAPI are deferred.
 
-Not confirmed by this ADR:
+Root exports use explicit `__all__`. Kernel, plan, matcher, compiler, normalizer, commit-controller, and transport internals remain private unless separately promoted.
 
-- exact constructor parameters;
-- `run`/`serve` method names and CLI command details;
-- lifecycle-hook decorator names;
-- automatic dependency injection;
-- sync handler adaptation;
-- automatic JSON/form/multipart APIs;
-- OpenAPI behavior.
+## Required acceptance tests
 
-Root exports use explicit `__all__`. Internal Kernel, plan, matcher, middleware compiler, normalizer, commit controller, and transport types remain private unless separately promoted.
-
-### 14. Contract and state-machine tests
-
-Implementation acceptance must include tests for:
+Implementation must test:
 
 - legal and illegal Application state transitions;
-- idempotent freeze and no partial plan publication after failed freeze;
+- idempotent freeze and shutdown;
+- no partial plan publication after freeze failure;
 - mutation rejection after freeze;
-- route conflict and ambiguity detection independent of registration order;
-- deterministic middleware ingress/egress order and priority ties;
-- short-circuit middleware and double-`call_next` rejection;
-- request metadata immutability and scoped-state isolation;
-- single-consumer body behavior and bounded caching;
-- handler signature validation and unsupported return types;
-- one-time normalization;
-- pre-commit exception replacement;
-- mutation-after-commit, double-commit, and write-after-completion rejection;
-- post-commit streaming failure abort behavior;
+- route conflict/ambiguity detection independent of registration order;
+- deterministic middleware ingress, egress, priorities, and short-circuiting;
+- double or delayed `call_next` rejection;
+- immutable request metadata and scoped-state isolation;
+- bounded single-consumer body behavior;
+- handler signature and return-type validation;
+- exactly-once normalization;
+- pre-commit replacement and post-commit abort behavior;
+- double-commit and mutation-after-commit rejection;
 - exception mapper specificity and mapper-failure fallback;
-- cancellation not being swallowed or converted incorrectly;
-- extension contribution freeze and reverse cleanup;
-- no request, body, state, task, or response object leakage after Scope completion;
-- root public-export manifest and import-side-effect checks.
+- cancellation preservation;
+- extension dependency/startup/reverse-cleanup behavior;
+- no request, body, state, task, or response leakage;
+- exact root export manifest and no import-time side effects.
 
 ## Rejected alternatives
 
-- route and middleware mutation while RUNNING;
-- import-time route or extension registration;
-- registration order as hidden route conflict resolution;
-- unordered middleware execution;
-- calling `call_next` multiple times;
+- route, middleware, exception, or extension mutation while running;
+- import-time registration;
+- registration order as route conflict resolution;
+- unordered middleware;
+- multiple `call_next` calls;
 - implicit sync-handler execution on the event loop;
-- implicit tuple response magic;
-- implicit `None` success responses;
-- mutable request metadata;
+- implicit tuple or `None` response magic;
+- mutable Request metadata;
 - multiple response commits;
-- replacing an HTTP response after it is committed;
-- exposing all deep implementation modules as public API;
-- allowing extensions to mutate the compiled plan per request.
+- replacing a response after commit;
+- exposing all deep implementation modules;
+- per-request mutation of the compiled plan.
 
 ## Intentionally deferred
 
-- complete configuration reload and atomic multi-Worker rollout;
-- full exception taxonomy and error body schema;
+- configuration reload and multi-Worker plan rollout;
+- complete exception taxonomy and client error schema;
 - identifier formats;
-- structured serialization and content negotiation details;
-- cookies, form, multipart, and upload APIs;
-- reverse routing, sub-applications, and route mounts;
-- automatic `HEAD` and `OPTIONS` policy;
-- public `run`/`serve` API and CLI semantics;
+- structured serialization and content negotiation;
+- cookie, form, multipart, and upload APIs;
+- automatic `HEAD` and `OPTIONS`;
+- host routing, reverse routing, mounting, and sub-applications;
+- public server run/serve and CLI semantics;
 - synchronous handler adaptation;
 - dependency injection;
-- OpenAPI and official extension implementations;
-- exact numeric limits and timeouts.
+- OpenAPI and official capabilities;
+- exact numeric limits, timeouts, and media-type defaults.
