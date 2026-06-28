@@ -2,9 +2,8 @@
 
 - Status: Active P0 control document
 - Parent Issue: #25
-- Active decision Issue: #34
-- Active proposal: P0-D2 / ADR-002
-- Last accepted decision: P0-D1 / ADR-001 / PR #32
+- Active decision Issue: none
+- Last accepted decision: P0-D2 / ADR-002 / PR #35
 - Last updated: 2026-06-28
 
 ## Authority
@@ -30,7 +29,7 @@ LingShu defines and controls its own application kernel, HTTP runtime, native se
 
 Their physical package placement remains unresolved.
 
-### Single repository and development concurrency
+### Single repository and development concurrency — P0-D1
 
 - Canonical repository: `qianhuaqi/lingshu`.
 - ADR-001 is accepted; Issue #31 is completed; PR #32 is merged.
@@ -39,6 +38,34 @@ Their physical package placement remains unresolved.
 - Write scopes must not overlap.
 - Shared contracts merge before dependent work.
 - Development may be parallel; integration into `main` is serial.
+
+### Runtime concurrency — P0-D2
+
+- ADR-002 is accepted.
+- Issue #34 is completed.
+- PR #35 merged at `6809a18b0284d18fd1ee46d9af7183521a66d67c`.
+- Detailed model: `docs/architecture/RUNTIME_CONCURRENCY_MODEL.md`.
+
+Confirmed semantics:
+
+- standard-library `asyncio` behavior is the correctness baseline;
+- each Worker process owns one event loop and one Application Runtime;
+- Supervisor manages Worker readiness, signals, bounded restart, and exit;
+- Workers do not share mutable Python application state;
+- runtime ownership is Supervisor → Worker → Application → Connection → Request → Operation;
+- request-created tasks are request-owned by default;
+- long-lived tasks require explicit Application or Worker registration;
+- unregistered fire-and-forget tasks are prohibited;
+- one HTTP/1.1 connection executes one request at a time, while connections run concurrently;
+- admission, waiters, queues, buffers, executors, dependencies, telemetry, and Runtime Records are bounded;
+- backpressure propagates through the entire request/response pipeline;
+- Deadline is absolute and monotonic and is not reset by nested calls;
+- cancellation reasons are explicit and propagate from owner to children;
+- blocking and CPU-heavy work is isolated from the event loop through bounded mechanisms;
+- Worker restart is bounded and crash loops stop;
+- shutdown drains, cancels, cleans up, flushes, and escalates to hard stop;
+- request and operation context is Scope-local;
+- concurrency, overload, cancellation, leak, race, deadlock, and shutdown tests are mandatory.
 
 ### Repository reset and compatibility
 
@@ -52,32 +79,6 @@ Their physical package placement remains unresolved.
 - No production package, directory skeleton, runtime dependency, or implementation phase may start before P0 acceptance.
 - Every accepted business request has an internal Request ID and bounded, redacted, recoverable Runtime Record.
 
-## Proposed — P0-D2, not executable
-
-Issue #34 and ADR-002 propose:
-
-- standard-library `asyncio` semantics as the correctness baseline;
-- one event loop and one application runtime per Worker process;
-- Supervisor-managed Workers with bounded restart and crash-loop stop;
-- explicit Supervisor → Worker → Application → Connection → Request → Operation ownership;
-- request-owned tasks by default and explicitly registered application-owned background tasks;
-- no unregistered fire-and-forget tasks;
-- one active request at a time per HTTP/1.1 connection, with concurrency across connections;
-- hierarchical bounded admission and bounded waiters;
-- end-to-end backpressure across transports, bodies, routes, executors, dependencies, telemetry, and Runtime Records;
-- absolute monotonic Deadline propagation without nested timeout reset;
-- explicit cancellation reasons and parent-to-child cancellation;
-- bounded thread and process executors for blocking and CPU-heavy work;
-- ordered, bounded graceful shutdown and hard-stop escalation;
-- context isolation, observability, leak gates, and concurrency stress tests.
-
-Proposal documents:
-
-- `docs/decisions/ADR-002-runtime-concurrency-model.md`
-- `docs/architecture/RUNTIME_CONCURRENCY_MODEL.md`
-
-Merging the decision PR confirms these semantics. Until then they remain Proposed.
-
 ## Rejected
 
 - LingShu as a Sanic template or adapter.
@@ -90,34 +91,41 @@ Merging the decision PR confirms these semantics. Until then they remain Propose
 - Parallel branches changing the same public contract or write scope.
 - Long-lived shared `develop` branch.
 - Automatic merge of concurrent Pull Requests.
+- One thread per request.
+- Unbounded fire-and-forget tasks, executor queues, or waiter lists.
+- Global mutable request context.
+- Resetting the full timeout at every nested layer.
+- Concurrent HTTP/1.1 request execution on one connection in the initial runtime.
+- Infinite Worker restart loops.
+- Shutdown without draining and cleanup.
+- Requiring a third-party event loop for correctness.
 
 ## Candidate — not executable
 
-### Packaging and source layout
+### Recommended next decision: P0-D3 packaging and source layout
 
 - one distribution versus multiple distributions;
 - `packages/` or another repository root layout;
-- direct `lingshu/` versus `src/<package>/`;
-- exact Core, HTTP, Server, Record, CLI, testing, resource, and extension directories;
-- one versus multiple `pyproject.toml` files.
+- direct `lingshu/` versus `src/lingshu/`;
+- one versus multiple `pyproject.toml` files;
+- physical boundaries for Core, HTTP, Server, Record, CLI, Testing, and Extensions;
+- public imports and dependency direction;
+- placement of tests, examples, tools, templates, benchmarks, protocol tests, and fuzzing assets.
 
-### Component and extension boundaries
+### Component and extension details
 
-- Core, HTTP, Server, and Record as internal modules versus separate distributions;
-- exact dependency direction and public exports;
-- Runtime Record default installation status;
+- Runtime Record default installation and storage placement;
 - WebSocket, OpenAPI, and Observability placement;
 - Auth, Tenant, RBAC, Data, SQL, database drivers, Redis, Cache, i18n, Resilience, Scheduler, and Storage boundaries.
 
 ### Deferred by P0-D2
 
-- minimum Python version;
-- exact public Scope, Deadline, limiter, and cancellation API names;
+- minimum supported Python version;
+- public Scope, Deadline, limiter, and cancellation API names;
 - exact numeric defaults;
 - mandatory third-party event loop or parser;
 - listener socket distribution strategy;
-- HTTP/2 and HTTP/3 multiplexing;
-- physical module and distribution placement.
+- HTTP/2 and HTTP/3 multiplexing.
 
 ### Release and public governance
 
@@ -129,14 +137,16 @@ Merging the decision PR confirms these semantics. Until then they remain Propose
 
 ## Pending hardening consolidation
 
-Before P0 acceptance, accepted requirements from `P0_HARDENING_CHECKLIST.md` must enter the Blueprint: time model, identifiers, exceptions, configuration versioning and reload, serialization, async context isolation, telemetry fields, and Worker/storage budgets.
+P0-D2 integrated monotonic Deadline, Async Context isolation, bounded Worker/connection/queue semantics, and part of the Telemetry requirements into the Blueprint.
+
+Before P0 acceptance, remaining accepted hardening requirements must be integrated: identifier standards, exception semantics, configuration versioning and reload, serialization rules, Runtime Record storage budgets, and disk policy.
 
 ## Confirmation rule
 
 A proposal or candidate becomes Confirmed only after:
 
 1. a dedicated Issue;
-2. a Blueprint amendment or ADR;
+2. a Blueprint amendment or accepted ADR;
 3. explicit project-lead confirmation;
 4. reviewed and merged Pull Request;
 5. this register is synchronized.
