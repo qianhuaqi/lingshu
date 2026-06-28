@@ -1,20 +1,90 @@
-name: Temporary P1-07 Mypy Diagnostic
+name: Temporary P1-07 Mypy Repair
 
 on:
   pull_request:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  mypy:
+  repair:
     if: github.head_ref == 'human/dodo/p1-07-runtime-record-core'
     runs-on: ubuntu-latest
     steps:
-      - name: Clone and run mypy
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Repair and verify
         shell: bash
         run: |
-          git clone -q --depth=1 --branch "$GITHUB_HEAD_REF" "https://github.com/$GITHUB_REPOSITORY.git" source
-          cd source
-          python -m pip install -q "mypy>=1.11,<2"
+          python - <<'PY'
+          from pathlib import Path
+          path = Path("lingshu/record/model.py")
+          text = path.read_text()
+          replacements = {
+              '''        if self.event_count >= self.budgets.max_events_per_record:
+              return self._drop_or_raise(
+                  "record.event_limit_exceeded",
+                  "The Runtime Record event limit was exceeded.",
+              )
+          ''': '''        if self.event_count >= self.budgets.max_events_per_record:
+              self._drop_or_raise(
+                  "record.event_limit_exceeded",
+                  "The Runtime Record event limit was exceeded.",
+              )
+              return None
+          ''',
+              '''        if len(payload) > self.budgets.max_event_bytes:
+              return self._drop_or_raise(
+                  "record.event_too_large",
+                  "A Runtime Record event exceeds its configured limit.",
+              )
+          ''': '''        if len(payload) > self.budgets.max_event_bytes:
+              self._drop_or_raise(
+                  "record.event_too_large",
+                  "A Runtime Record event exceeds its configured limit.",
+              )
+              return None
+          ''',
+              '''        if self.record_bytes + len(payload) > self.budgets.max_record_bytes:
+              return self._drop_or_raise(
+                  "record.record_too_large",
+                  "The Runtime Record exceeds its configured limit.",
+              )
+          ''': '''        if self.record_bytes + len(payload) > self.budgets.max_record_bytes:
+              self._drop_or_raise(
+                  "record.record_too_large",
+                  "The Runtime Record exceeds its configured limit.",
+              )
+              return None
+          ''',
+              '''    available: bool
+          ''': '''    @property
+              def available(self) -> bool:
+                  """Return whether reserved capacity remains available."""
+                  ...
+          ''',
+          }
+          for old, new in replacements.items():
+              if text.count(old) != 1:
+                  raise SystemExit("mypy repair target count is not one")
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+          python -m pip install -q "ruff>=0.8,<1" "mypy>=1.11,<2"
+          ruff format lingshu/record tests/record tests/test_package_baseline.py
+          ruff check lingshu/record tests/record tests/test_package_baseline.py
+          ruff format --check lingshu/record tests/record tests/test_package_baseline.py
           mypy lingshu/record
+          rm .github/workflows/p1-07-mypy-diagnostic.yml
+      - name: Commit repair
+        shell: bash
+        run: |
+          git config user.name qianhuaqi
+          git config user.email 22343174+qianhuaqi@users.noreply.github.com
+          git add -A
+          git commit -s -m "fix(record): align reservation and drop contracts"
+          git push origin HEAD:${{ github.head_ref }}
