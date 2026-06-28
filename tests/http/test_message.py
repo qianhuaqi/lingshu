@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import pytest
-from lingshu.http import HTTPMethod, HTTPVersion, Headers, RequestTarget
+from lingshu.http import Headers, HTTPMethod, HTTPVersion, RequestTarget
 
 
 def test_method_target_and_version_are_canonical() -> None:

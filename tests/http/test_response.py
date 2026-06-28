@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from lingshu.core import LifecycleError
 from lingshu.http import Response, ResponseState, normalize_response
 
 
@@ -19,14 +20,14 @@ def test_response_factories_prepare_commit_and_complete() -> None:
     assert head.headers.get("content-length") == "6"
     assert response.state is ResponseState.COMMITTED
 
-    with pytest.raises(Exception) as duplicate:
+    with pytest.raises(LifecycleError) as duplicate:
         response.commit()
     assert duplicate.value.code == "response.invalid_state"
-    with pytest.raises(Exception):
+    with pytest.raises(LifecycleError):
         response.set_header("x-test", "value")
     response.complete()
     assert response.state is ResponseState.COMPLETED
-    with pytest.raises(Exception):
+    with pytest.raises(LifecycleError):
         response.abort()
 
 
@@ -35,7 +36,7 @@ def test_abort_is_terminal_and_idempotent() -> None:
     assert response.abort()
     assert not response.abort()
     assert response.state is ResponseState.ABORTED
-    with pytest.raises(Exception):
+    with pytest.raises(LifecycleError):
         response.write(b"later")
 
 

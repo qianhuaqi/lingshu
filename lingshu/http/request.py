@@ -9,7 +9,7 @@ from types import MappingProxyType
 from lingshu.core.errors import FatalScope, RequestError
 from lingshu.core.identifiers import ConnectionId, RequestId, TraceId
 from lingshu.http.body import RequestBody
-from lingshu.http.message import HTTPMethod, HTTPVersion, Headers, RequestTarget
+from lingshu.http.message import Headers, HTTPMethod, HTTPVersion, RequestTarget
 from lingshu.runtime import Scope, ScopeState
 
 

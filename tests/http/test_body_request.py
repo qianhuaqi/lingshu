@@ -6,9 +6,9 @@ from collections.abc import AsyncIterator
 import pytest
 from lingshu.core import ConnectionId, RequestId
 from lingshu.http import (
+    Headers,
     HTTPMethod,
     HTTPVersion,
-    Headers,
     Request,
     RequestBody,
     RequestTarget,
