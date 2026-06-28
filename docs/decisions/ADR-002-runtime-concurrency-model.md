@@ -1,148 +1,119 @@
 # ADR-002: Runtime concurrency, task ownership, and graceful shutdown
 
-- Status: Proposed
+- Status: Accepted
 - Date: 2026-06-28
 - Parent architecture Issue: #25
-- Decision Issue: #34
+- Decision Issue: #34 (completed)
+- Implemented by: PR #35
+- Effective merge commit: `6809a18b0284d18fd1ee46d9af7183521a66d67c`
+- Detailed model: `docs/architecture/RUNTIME_CONCURRENCY_MODEL.md`
 
 ## Context
 
 LingShu must process many connections and requests concurrently without unbounded queues, request-context leakage, orphan tasks, blocked event loops, cancellation loss, or shutdown corruption.
 
-The framework must work consistently on development machines and production systems while remaining independently implemented and not depending on another Web framework.
-
-This decision defines runtime concurrency semantics. It does not define the final source directory, Python distribution layout, minimum Python version, HTTP/2 or HTTP/3 semantics, or a third-party event-loop dependency.
+This ADR fixes the runtime-concurrency semantics. It does not decide the final source directory, distribution layout, minimum Python version, HTTP/2 or HTTP/3 multiplexing, listener distribution strategy, or a mandatory third-party event loop.
 
 ## Decision
 
-### 1. Standard asynchronous baseline
+### 1. Asynchronous baseline
 
-Python standard-library `asyncio` semantics are the required baseline.
+Python standard-library `asyncio` semantics are the correctness baseline.
 
-LingShu must run correctly without a third-party event loop. A future optional accelerator may be supported only through a separate ADR and must preserve the same observable semantics.
+LingShu must run correctly without a third-party event loop. Any future optional accelerator requires a separate ADR and must preserve the same observable behavior.
 
-### 2. One event loop per Worker process
+### 2. Worker and event-loop model
 
-A Worker process owns exactly one event loop and one application runtime instance.
+Each Worker process owns exactly one event loop and one application runtime.
 
 A Supervisor may manage one or more Workers. Workers do not share mutable Python application state. Cross-Worker coordination requires an explicit IPC, database, cache, message, or operating-system mechanism.
 
-Single-Worker execution is the semantic reference. Multi-Worker execution is a scale-out layer and must not change request, cancellation, shutdown, or extension lifecycle semantics.
+Single-Worker execution is the semantic reference. Multi-Worker execution scales throughput without changing request, cancellation, shutdown, extension, or Runtime Record semantics.
 
-### 3. Structured ownership tree
+### 3. Structured ownership
 
-Every runtime task belongs to an explicit ownership Scope:
+Every task belongs to an explicit Scope:
 
 ```text
 Supervisor
 └─ Worker
    └─ Application Runtime
-      ├─ Listener / Server tasks
+      ├─ Listener and infrastructure tasks
       ├─ Application-owned background tasks
       └─ Connection
          └─ Request
-            └─ Operation / child tasks
+            └─ Operation and child tasks
 ```
 
-A child Scope cannot outlive its owner unless it is explicitly transferred to a longer-lived Scope through a reviewed framework API.
+A child Scope cannot outlive its owner unless ownership is explicitly transferred through a reviewed framework API.
 
-Unregistered fire-and-forget tasks are prohibited. Direct task creation that bypasses LingShu ownership tracking is not a supported framework operation.
+Unregistered fire-and-forget tasks are prohibited.
 
-### 4. Request-owned and application-owned tasks
+### 4. Request and background tasks
 
-A task created while handling a request is request-owned by default.
+Tasks created during request handling are request-owned by default.
 
-When the request completes, times out, disconnects, or is cancelled, remaining request-owned tasks are cancelled and awaited within a bounded cleanup budget.
+When a request completes, times out, disconnects, or is cancelled, remaining request-owned tasks are cancelled and awaited within a bounded cleanup budget.
 
-Long-lived background work must be explicitly registered as application-owned or Worker-owned. Its registration must declare name, owner, start phase, stop policy, failure policy, restart policy, deadline, and shutdown behavior.
+Long-lived background work must be explicitly registered as application-owned or Worker-owned and declare its name, owner, start phase, stop policy, failure policy, restart policy, Deadline, and shutdown behavior.
 
-Request context must not leak into detached background tasks. Context inheritance is cleared or deliberately reconstructed when ownership transfers.
+Detached background tasks start with a clean request context unless safe values are explicitly copied.
 
-### 5. HTTP/1.1 connection concurrency
+### 5. HTTP/1.1 concurrency
 
-For the initial HTTP/1.1 runtime, one connection may execute at most one request at a time.
+One HTTP/1.1 connection executes at most one request at a time.
 
-Multiple connections execute concurrently. Keep-alive requests on one connection are processed sequentially. LingShu does not concurrently execute pipelined HTTP/1.1 requests or emit out-of-order responses.
+Multiple connections execute concurrently. Keep-alive requests on one connection are processed sequentially. LingShu does not concurrently execute pipelined HTTP/1.1 requests or emit responses out of order.
 
-Read-ahead buffering is bounded. Protocol input arriving beyond configured limits is paused, rejected, or causes connection termination according to protocol and security policy.
+Read-ahead buffering is bounded. HTTP/2 and HTTP/3 multiplexing require separate decisions.
 
-HTTP/2 and HTTP/3 multiplexing require separate future decisions.
+### 6. Hierarchical admission and backpressure
 
-### 6. Hierarchical admission control
+Concurrency is bounded at multiple layers, including Worker connections, active requests, application and route limits, background tasks, executors, outbound dependencies, telemetry, and Runtime Record queues.
 
-Concurrency is controlled at multiple levels:
+Waiting queues are bounded and have a maximum wait Deadline. Capacity exhaustion produces backpressure or explicit rejection; it never creates an unbounded waiter list.
 
-- Supervisor and total Worker budget;
-- Worker connection budget;
-- Worker active-request budget;
-- optional application and route budget;
-- background-task budget;
-- blocking-executor worker and queue budget;
-- outbound dependency budget;
-- Runtime Record and telemetry queue budget.
+Transport reads, request-body streaming, response streaming, parser buffers, executors, dependencies, telemetry, and Runtime Records participate in end-to-end backpressure.
 
-Waiting queues are bounded and have a maximum wait deadline. Reaching capacity produces backpressure or an explicit rejection. The framework must never create an unbounded waiter list merely because a semaphore is used internally.
+Slow clients cannot reserve unlimited Worker resources.
 
-### 7. Backpressure and slow clients
-
-Transport reads and writes participate in backpressure.
-
-- input reading pauses when parsing, body, request, or application capacity is exhausted;
-- streaming request bodies expose bounded flow control;
-- response streaming waits for transport drain signals;
-- write buffers have high and low watermarks;
-- header, body, idle, read-progress, write-progress, and total-request deadlines are distinct;
-- slow clients cannot reserve unlimited Worker resources.
-
-When a complete HTTP response can still be safely produced, overload may return an explicit service-unavailable response. Otherwise the connection is closed and the reason is recorded.
-
-### 8. Absolute monotonic Deadline
+### 7. Deadline model
 
 Timeout budgeting uses an absolute monotonic Deadline.
 
-A child operation receives the same Deadline or an earlier one. It never receives a fresh copy of the original duration. All route, middleware, extension, database, cache, outbound HTTP, streaming, and cleanup operations consume the remaining budget.
+A child operation receives the same Deadline or an earlier one. It never receives a fresh copy of the original duration. Queueing, middleware, route handling, extensions, database/cache calls, outbound calls, streaming, and cleanup consume the remaining budget.
 
-System wall-clock time is used for human-readable timestamps, not timeout measurement.
+Wall-clock time is used for human-readable timestamps, not timeout measurement.
 
-### 9. Cancellation reasons and propagation
+### 8. Cancellation
 
-Cancellation carries a framework reason, including at least:
-
-- client disconnect;
-- request deadline exceeded;
-- server draining;
-- Worker stopping;
-- parent operation cancelled;
-- explicit application cancellation;
-- resource admission failure.
+Cancellation carries an explicit reason, including client disconnect, request Deadline, server draining, Worker stopping, parent cancellation, application cancellation, and admission failure.
 
 Cancellation propagates from owner to children. Code may perform bounded cleanup but must not silently swallow cancellation and continue normal request work.
 
-Shielding is allowed only for narrow, bounded, explicitly documented cleanup or commit sections. Shielding cannot create an unbounded shutdown delay.
+Shielding is allowed only for narrow, bounded, documented cleanup or commit sections.
 
-### 10. Blocking and CPU-intensive work
+### 9. Blocking and CPU work
 
 Blocking work must not execute directly on the Worker event loop.
 
 Blocking I/O uses a bounded thread executor. CPU-intensive work uses a bounded process executor or an external job system when configured.
 
-Executor worker counts and submission queues are bounded. Queue admission has a timeout. Cancellation of already-running thread work is best-effort; the request result is discarded if ownership is cancelled, and the outstanding work remains accounted for until completion.
+Executor worker counts and submission queues are bounded. Queue admission has a Deadline. Already-running thread work may continue after request cancellation, but its result is discarded and the work remains tracked until completion.
 
-The framework must expose overload and orphan-risk telemetry for executor work.
+### 10. Supervisor and Worker lifecycle
 
-### 11. Supervisor and Worker lifecycle
+The Supervisor owns Worker process handles, readiness aggregation, signals, bounded restart policy, and final exit status.
 
-The Supervisor owns Worker processes, readiness aggregation, signal handling, restart policy, and final exit status.
+Worker startup must complete before readiness is announced. Startup failure triggers reverse-order cleanup.
 
-Worker startup must complete initialization before readiness is announced. Startup failure triggers reverse-order cleanup.
+Unexpected Worker exit may trigger bounded restart with rate limiting and backoff. A crash loop exhausts the restart budget and marks the service unhealthy instead of restarting forever.
 
-Unexpected Worker exit may trigger a bounded restart policy with rate limit and backoff. A crash loop must stop automatic restarts and mark the service unhealthy rather than restart forever.
+The semantic baseline must not depend on fork-only inherited mutable state.
 
-The cross-platform semantic baseline must not depend on fork-only inherited mutable state. Platform-specific optimizations may be added later if they preserve lifecycle semantics.
+### 11. Graceful shutdown
 
-### 12. Graceful shutdown state machine
-
-The runtime state sequence is:
+Runtime states are:
 
 ```text
 STARTING → RUNNING → DRAINING → STOPPING → STOPPED
@@ -155,105 +126,61 @@ Shutdown proceeds in order:
 3. stop admitting new requests and background work;
 4. drain active requests and response streams until the graceful Deadline;
 5. cancel remaining request and operation Scopes;
-6. stop application-owned background tasks according to policy;
+6. stop application-owned background tasks;
 7. close extensions and external resources in reverse startup order;
-8. flush Runtime Record and telemetry within bounded budgets;
+8. flush Runtime Records and telemetry within bounded budgets;
 9. close listeners, transports, and executors;
 10. exit Workers and aggregate Supervisor status;
-11. after the hard-stop Deadline, terminate remaining processes and record forced shutdown.
+11. terminate remaining processes after the hard-stop Deadline and record forced shutdown.
 
-Shutdown calls are idempotent. A second signal may shorten the remaining grace period but must not skip required best-effort cleanup reporting.
+Shutdown is idempotent. A repeated signal may shorten the remaining grace period but must preserve best-effort cleanup reporting.
 
-### 13. Context isolation
+### 12. Context, records, and observability
 
-Request, connection, operation, deadline, cancellation reason, identity, and Runtime Record context are Scope-local.
+Connection, request, operation, Deadline, cancellation reason, identity, and Runtime Record context are Scope-local.
 
-Context-local mechanisms may be used internally, but object ownership remains explicit. Application singletons must not retain request-scoped objects after Scope completion.
+Application singletons must not retain request-scoped objects after Scope completion.
 
-Detached application tasks start with a clean request context unless an explicit safe value is copied.
+Runtime Record and telemetry pipelines are bounded and expose queue depth, truncation, drop, failure, and flush-timeout information.
 
-### 14. Runtime Record and telemetry under concurrency
+Required observability includes connection, request, task, executor, Worker, backpressure, admission, cancellation, shutdown, and Runtime Record metrics.
 
-Every request records its Scope, Deadline, cancellation reason, admission decisions, queue waits, executor submissions, child-task outcomes, and final cleanup result.
+### 13. Required test classes
 
-Record and telemetry pipelines are bounded. Their overload policy must be explicit: truncate noncritical detail, aggregate, reject new work in strict-audit mode, or fail according to configuration. Silent unbounded buffering is prohibited.
+Implementation acceptance must cover:
 
-### 15. Required observability
+- concurrent short connections and requests;
+- keep-alive sequential behavior and attempted HTTP/1.1 pipelining;
+- slow headers, bodies, readers, and streaming;
+- client disconnect at multiple execution points;
+- global, route, executor, and dependency saturation;
+- bounded waiter queues;
+- parent-to-child cancellation;
+- Deadline budgets not resetting in nested calls;
+- request-context isolation and detached-task context clearing;
+- Worker startup rollback, crash, bounded restart, and crash-loop stop;
+- graceful drain, grace expiry, hard-stop expiry, and repeated signals;
+- no leaked tasks, connections, files, executors, or request contexts;
+- repeatable race and deadlock stress diagnostics.
 
-The runtime exposes at least:
+## Intentionally deferred
 
-- active and accepted connections;
-- active, queued, completed, rejected, timed-out, disconnected, and cancelled requests;
-- task counts by owner Scope;
-- background-task failures and restarts;
-- admission wait time and rejection reason;
-- read and write backpressure duration;
-- executor active work, queue depth, timeout, and abandoned-result count;
-- Worker start, ready, drain, crash, restart, and forced-stop counts;
-- shutdown remaining tasks and cleanup failures;
-- Runtime Record queue depth, drops, truncations, and failures.
-
-### 16. Required test matrix
-
-Implementation acceptance must include deterministic tests for:
-
-- many concurrent short connections and requests;
-- keep-alive sequential request handling;
-- attempted HTTP/1.1 pipelining;
-- slow headers, slow body, slow response reader, and stalled streaming;
-- client disconnect before, during, and after handler execution;
-- route and global capacity saturation;
-- bounded waiter and executor queue saturation;
-- parent-to-child cancellation propagation;
-- Deadline budget not being reset by nested calls;
-- cancellation during extension, database, cache, and outbound-call cleanup;
-- request-context isolation across concurrent requests;
-- detached background task context clearing;
-- Worker startup failure and rollback;
-- Worker crash, bounded restart, and crash-loop stop;
-- graceful drain, grace expiry, hard-stop expiry, and repeated shutdown signal;
-- no leaked tasks, connections, files, executors, or request contexts after shutdown;
-- race and deadlock stress with repeatable diagnostics.
-
-## Explicitly unresolved
-
-This ADR does not decide:
-
-- the minimum supported Python version;
-- public class and method names for Scope, Deadline, limiter, or cancellation APIs;
-- specific default numeric limits;
-- a mandatory third-party event loop;
-- low-level listener distribution strategy between Workers;
+- minimum supported Python version;
+- public names for Scope, Deadline, limiter, and cancellation APIs;
+- exact numeric defaults;
+- mandatory third-party event loop or parser;
+- listener socket distribution strategy;
 - HTTP/2 and HTTP/3 multiplexing;
-- exact source directory or package boundaries.
-
-## Consequences
-
-### Benefits
-
-- predictable request ownership and cleanup;
-- bounded resource use and explicit overload behavior;
-- consistent single-Worker and multi-Worker semantics;
-- safer shutdown, cancellation, and background work;
-- cross-platform architecture without fork-only assumptions;
-- testable concurrency contracts before optimization.
-
-### Costs
-
-- more explicit runtime bookkeeping;
-- route, executor, task, and transport capacity configuration;
-- background work must use framework registration rather than raw fire-and-forget tasks;
-- CPU and blocking integrations require explicit isolation;
-- HTTP/1.1 pipelined concurrency is intentionally not supported initially.
+- physical source, module, and distribution placement.
 
 ## Rejected alternatives
 
 - one thread per request;
-- unbounded `create_task`-style fire-and-forget work;
-- one global mutable request context;
+- unbounded fire-and-forget tasks;
+- global mutable request context;
 - unlimited executor queues;
-- refreshing the full timeout duration at every nested layer;
-- concurrently executing multiple HTTP/1.1 requests on one connection in the initial runtime;
+- resetting the full timeout duration at every nested layer;
+- concurrent HTTP/1.1 request execution on one connection in the initial runtime;
 - infinite Worker restart loops;
 - shutdown that merely stops the event loop without draining and cleanup;
 - requiring a third-party event loop for correctness.

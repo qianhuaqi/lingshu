@@ -2,13 +2,13 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P0-D2 - Runtime Concurrency, Task Ownership, and Graceful Shutdown
+Current phase: P0 - Architecture Decision Review and Blueprint Consolidation
 Phase type: non-implementation architecture and governance
 Accepted baseline: latest accepted `main`
-Active decision branch: `human/dodo/phase-p0-d2-runtime-concurrency`
-Active decision Issue: #34
+Active decision branch: none
+Active decision Issue: none
 Parent architecture Issue: #25
-Status: proposed architecture under project-lead review
+Status: P0-D2 accepted; awaiting next architecture decision
 Next phase allowed: no
 
 ## Foundational fact
@@ -17,65 +17,63 @@ LingShu is a completely new, independently implemented Python Web/API framework.
 
 It does not depend on Sanic, FastAPI, Flask, Django, Starlette, or any other upper-level Web framework. The archived implementation creates no compatibility obligation.
 
-The previous implementation is preserved at `archive/legacy-sanic-20260628` and is not an active source of truth.
-
 ## Completed decisions
 
-### P0-D1: Single repository and concurrency governance
+### P0-D1: Single repository and development concurrency
 
-Implemented by PR #32 and ADR-001.
+Accepted through ADR-001 and PR #32.
 
 Confirmed:
 
-- one canonical GitHub repository: `qianhuaqi/lingshu`;
+- one canonical repository: `qianhuaqi/lingshu`;
 - independent Issue, branch, primary writer, worktree or clone, virtual environment, and Pull Request per concurrent task;
-- explicit write scopes and dependency order;
+- declared write scopes and integration order;
 - parallel development with serial integration into `main`.
-
-## Active decision proposal
 
 ### P0-D2: Runtime concurrency
 
-The proposal defines:
+Accepted through ADR-002 and PR #35 at merge commit `6809a18b0284d18fd1ee46d9af7183521a66d67c`.
+
+Confirmed:
 
 - standard-library `asyncio` semantics as the correctness baseline;
-- one event loop per Worker process;
-- Supervisor-managed Workers with bounded restart policy;
-- structured task ownership from Supervisor to Operation Scope;
-- request-owned versus application-owned tasks;
-- sequential request execution per HTTP/1.1 connection and concurrency across connections;
-- hierarchical bounded admission control;
-- transport, body, route, executor, dependency, telemetry, and Runtime Record backpressure;
+- one event loop and one Application Runtime per Worker process;
+- Supervisor-managed Workers with bounded restart and crash-loop stop;
+- explicit Supervisor → Worker → Application → Connection → Request → Operation ownership;
+- request-owned tasks by default and explicitly registered long-lived background tasks;
+- no unregistered fire-and-forget tasks;
+- one active request at a time per HTTP/1.1 connection, with concurrency across connections;
+- bounded hierarchical admission, queues, executors, telemetry, and Runtime Record pipelines;
+- end-to-end backpressure;
 - absolute monotonic Deadline propagation;
 - explicit cancellation reasons and parent-to-child propagation;
-- bounded thread and process executors for blocking work;
-- RUNNING → DRAINING → STOPPING → STOPPED shutdown semantics;
-- context isolation, observability, and concurrency test requirements.
+- bounded thread/process isolation for blocking and CPU-heavy work;
+- ordered graceful shutdown with hard-stop escalation;
+- context isolation, observability, leak gates, and concurrency stress tests.
 
-Detailed proposal:
+## Still unresolved
 
-- `docs/decisions/ADR-002-runtime-concurrency-model.md`
-- `docs/architecture/RUNTIME_CONCURRENCY_MODEL.md`
+- one distribution versus multiple distributions inside the single repository;
+- `packages/` versus another repository layout;
+- direct `lingshu/` versus `src/`;
+- exact Core, HTTP, Server, Record, CLI, testing, and extension boundaries;
+- Runtime Record default installation and physical placement;
+- official built-in versus optional capabilities;
+- Python and platform support range;
+- public API names and numeric runtime defaults;
+- listener distribution and HTTP/2/HTTP/3 semantics;
+- release, compatibility, license, contribution, and security policies.
 
-## Explicitly unresolved
+## Recommended next decision
 
-P0-D2 does not decide:
+P0-D3 should decide packaging, source layout, and component boundaries:
 
-- minimum Python version;
-- public API class and method names;
-- exact numeric capacity and timeout defaults;
-- mandatory third-party event loop or parser;
-- listener socket distribution strategy;
-- HTTP/2 and HTTP/3 multiplexing;
-- distribution count, `packages/`, `src/`, or physical source layout.
-
-## Current objective
-
-1. review ADR-002 and the detailed runtime model;
-2. confirm or revise ownership, Worker, admission, Deadline, cancellation, blocking-work, and shutdown semantics;
-3. ensure the decision remains independent from unresolved package and directory choices;
-4. open a documentation-only Pull Request;
-5. keep P1 blocked.
+1. one distribution or multiple distributions;
+2. direct `lingshu/` or `src/lingshu/`;
+3. one or multiple `pyproject.toml` files;
+4. Core, HTTP, Server, Record, CLI, Testing, and Extensions physical boundaries;
+5. public imports and dependency direction;
+6. test, benchmark, fuzz, example, and tooling directory placement.
 
 ## Out of scope
 
@@ -85,15 +83,4 @@ P0-D2 does not decide:
 - package publication;
 - starting P1.
 
-## Exit conditions for P0-D2
-
-1. ADR-002 and the runtime concurrency model are reviewed and merged;
-2. task ownership and background-task semantics are explicit;
-3. Worker and event-loop semantics are explicit;
-4. admission, backpressure, Deadline, cancellation, and blocking-work rules are explicit;
-5. graceful shutdown and crash-restart semantics are explicit;
-6. observability and test matrices are explicit;
-7. deferred decisions remain marked unresolved;
-8. the project lead performs the final merge.
-
-P0 continues after P0-D2. P1 remains blocked.
+P1 remains blocked until all P0 exit conditions are satisfied and the project lead explicitly authorizes it.
