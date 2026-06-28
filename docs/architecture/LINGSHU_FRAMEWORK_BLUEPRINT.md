@@ -4,7 +4,8 @@
 - 产品决策人：多多
 - 状态：P0 候选总纲，尚未冻结
 - GitHub Issue：#25
-- 当前工作分支：`human/dodo/phase-p0-g1-governance-hardening`
+- 规范仓库：`qianhuaqi/lingshu`
+- 治理基线：PR #29
 - 决策状态表：`docs/architecture/P0_DECISION_STATUS.md`
 - 历史详细候选稿：`docs/architecture/candidates/LINGSHU_FRAMEWORK_BLUEPRINT_V0.6_CANDIDATE.md`
 

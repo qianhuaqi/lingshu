@@ -1,58 +1,55 @@
 # Development Handoff
 
 Updated at: 2026-06-28
-Phase: P0-G1 - Governance and Architecture Fact-Source Consolidation
-Branch: `human/dodo/phase-p0-g1-governance-hardening`
+Project: LingShu Framework
+Canonical repository: `qianhuaqi/lingshu`
+Phase: P0 - Architecture Decision Review and Blueprint Consolidation
 Issue: #25
-Baseline: `main` after PR #28
-Status: ready for review
+Baseline: `main` after PR #29 merge commit `0b5310f5e90dd321f9d5c571a89904dca949847c`
+Status: awaiting project-lead architecture decisions
 
 ## Confirmed repository state
 
-- PR #28 is merged.
-- The active `main` tree is the greenfield P0 baseline.
+- The repository has been renamed from `qianhuaqi/sanic_framework` to `qianhuaqi/lingshu`.
+- The old GitHub URL redirects to the canonical repository.
+- PR #28 established the greenfield P0 baseline.
+- PR #29 merged the complete governance hardening and controlled Blueprint entrypoint.
 - The previous Sanic-based repository is archived at `archive/legacy-sanic-20260628`.
 - Archive commit: `b869270e0ec7cbc324d17ef246e39d0873aab14f`.
-- Production source, legacy tests, old scaffolds, and old dependency configuration are absent from the active tree.
+- Production source, legacy tests, old scaffolds, and old dependency configuration are absent from active `main`.
 - P0 remains unaccepted and P1 remains blocked.
+- Issue #25 is the only active architecture Issue.
 
-## Completed on this branch
+## Completed governance work
 
-- Expanded `DEVELOPMENT_CONSTITUTION.md` into an executable governance contract.
-- Synchronized `CURRENT_PHASE.md` with the post-PR #28 state.
-- Marked ADR-000 as accepted and recorded the effective merge.
-- Updated `AGENTS.md` with reading order, conflict handling, P0 gates, dependency rules, security rules, and archive restrictions.
-- Expanded README with actual repository status and contributor entrypoints.
-- Added `P0_DECISION_STATUS.md` to separate confirmed, rejected, and candidate architecture decisions.
-- Added `docs/architecture/README.md` with a visible architecture reading order and candidate-design warning.
-- Replaced the stale v0.6 Blueprint entry with a controlled P0-RC0 document containing only confirmed direction, explicit open decisions, and implementation gates.
-- Preserved the complete former v0.6 detailed design unchanged at `docs/architecture/candidates/LINGSHU_FRAMEWORK_BLUEPRINT_V0.6_CANDIDATE.md`.
-- Explicitly marked package, multi-distribution, `src/`, directory, extension, support, and release layouts as non-executable candidates.
-- Updated Issue #25 to match the active P0-G1 branch and current governance rules.
-- Closed legacy Issue #12 as not planned.
-- Confirmed that Issue #25 is the only open repository Issue.
+- `DEVELOPMENT_CONSTITUTION.md` is the active governance contract.
+- `P0_DECISION_STATUS.md` separates confirmed, rejected, and candidate decisions.
+- `LINGSHU_FRAMEWORK_BLUEPRINT.md` is the controlled P0-RC0 architecture entrypoint.
+- The former detailed v0.6 proposal is preserved under `docs/architecture/candidates/`.
+- Package, multi-distribution, `src/`, directory, extension, support, and release layouts are explicitly non-executable candidates.
+- Legacy implementation Issues have been closed or marked historical.
+
+## Remaining P0 work
+
+- Review the candidate design chapter by chapter with the project lead.
+- Decide the final repository and package layout.
+- Decide whether any `src/` layout will be used.
+- Decide Core, HTTP, Server, Record, CLI, and official-extension boundaries.
+- Integrate accepted `P0_HARDENING_CHECKLIST.md` requirements into the single Blueprint.
+- Decide supported Python and platform versions.
+- Decide release and compatibility policy.
+- Decide license, contribution, and vulnerability-reporting policy.
+- Prepare P1 scope only after all required decisions are confirmed.
 
 ## Verification
 
-Compared with `main`, this branch contains governance and architecture-document changes only. No production source, dependency configuration, package skeleton, runtime implementation, or publishing configuration has been added.
+The active repository contains architecture and governance documents only. No production source, package skeleton, runtime dependency, framework implementation, or publishing configuration is authorized.
 
-The former detailed Blueprint content is preserved byte-for-byte as a candidate document; it is no longer the active architecture entrypoint.
-
-Runtime tests are not applicable because this phase contains documentation and governance only. Review must verify internal consistency, fact-source ordering, P0 gates, and absence of implementation authorization.
-
-## Remaining after merge
-
-- Review each detailed candidate chapter with the project lead.
-- Decide the final repository and package layout.
-- Decide whether any `src/` layout will be used.
-- Decide component and official-extension boundaries.
-- Integrate accepted `P0_HARDENING_CHECKLIST.md` requirements into the single Blueprint.
-- Decide license, contribution, vulnerability-reporting, and release policies.
-- Prepare P1 scope only after those decisions are confirmed.
+Runtime tests are not applicable at this phase. P0 review focuses on internal consistency, decision status, security and lifecycle completeness, and absence of accidental implementation authorization.
 
 ## Known repository history noise
 
-During the preceding audit, three temporary files were accidentally committed directly to `main` and immediately removed. No temporary file remains in the tree. The six corrective/no-op commits remain visible because shared history was not rewritten.
+During an earlier audit, three temporary files were accidentally committed directly to `main` and immediately removed. No temporary file remains in the tree. The six corrective/no-op commits remain visible because shared history was not rewritten.
 
 Affected commit sequence:
 
@@ -64,4 +61,4 @@ No production or governance file remains changed by those temporary commits.
 
 ## Next action
 
-Review PR #29. Do not start P1.
+Confirm the first unresolved architecture decision. Do not start P1.
