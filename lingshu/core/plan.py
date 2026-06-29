@@ -56,8 +56,7 @@ class ExceptionMapperRegistration:
 
     def __post_init__(self) -> None:
         if not (
-            isinstance(self.exception_type, type)
-            and issubclass(self.exception_type, Exception)
+            isinstance(self.exception_type, type) and issubclass(self.exception_type, Exception)
         ):
             raise TypeError("exception_type must be a subclass of Exception")
         if not callable(self.mapper):
@@ -179,9 +178,7 @@ class ApplicationRevision:
         for hook in self.shutdown_hooks:
             material.append(("shutdown", *hook.stable_identity()))
 
-        material.append(
-            ("config", str(self.config_revision_id) if self.config_revision_id else "")
-        )
+        material.append(("config", str(self.config_revision_id) if self.config_revision_id else ""))
 
         # Deterministic sort ensures order independence of the hash input is NOT desired —
         # registration order is semantically meaningful. We preserve list order.
@@ -235,7 +232,7 @@ class ApplicationPlan:
     revision_id: RevisionId
     router: Router
     application_middleware: MiddlewarePlan
-    route_middleware: Mapping[str, MiddlewarePlan]
+    route_middleware: Mapping[RouteIdentity, MiddlewarePlan]
     exception_mappers: tuple[ExceptionMapperRegistration, ...]
     extension_plan: ExtensionLifecyclePlan
     startup_hooks: tuple[LifecycleHookRegistration, ...]
@@ -325,16 +322,25 @@ def _compile_middleware_safe(
         ) from exc
 
 
+type RouteIdentity = tuple[str, tuple[str, ...]]
+
+
+def _route_identity(route: _RouteDeclaration) -> RouteIdentity:
+    """Return a stable, hashable identity for any route (named or anonymous)."""
+
+    return route.path_template, tuple(method.value for method in route.methods)
+
+
 def _compile_all_route_middleware(
     routes: Iterable[_RouteDeclaration],
-) -> dict[str, MiddlewarePlan]:
-    """Compile a MiddlewarePlan for each named route at freeze time."""
+) -> dict[RouteIdentity, MiddlewarePlan]:
+    """Compile a MiddlewarePlan for every route at freeze time."""
 
-    plans: dict[str, MiddlewarePlan] = {}
+    plans: dict[RouteIdentity, MiddlewarePlan] = {}
     for route in routes:
-        if route.name is None:
+        if not route.route_middleware:
             continue
-        plans[route.name] = _compile_middleware_safe(
+        plans[_route_identity(route)] = _compile_middleware_safe(
             MiddlewareScope.ROUTE,
             route.route_middleware,
         )
@@ -546,5 +552,6 @@ __all__ = (
     "ExtensionLifecyclePlan",
     "LifecycleHookRegistration",
     "MapperScope",
+    "RouteIdentity",
     "SyncExceptionMapper",
 )

@@ -59,9 +59,7 @@ class HTTPException(LingShuError):
             fatal_scope=FatalScope.REQUEST,
         )
         self._status_code = status_code
-        self._headers = (
-            MappingProxyType(dict(headers)) if headers else MappingProxyType({})
-        )
+        self._headers = MappingProxyType(dict(headers)) if headers else MappingProxyType({})
 
     @property
     def status_code(self) -> int:

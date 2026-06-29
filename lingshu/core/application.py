@@ -115,17 +115,13 @@ class _RegistrationCatalog:
 
         return ApplicationRevision(
             routes=tuple(reg.declaration for reg in self.routes),
-            application_middleware=tuple(
-                reg.declaration for reg in self.application_middleware
-            ),
+            application_middleware=tuple(reg.declaration for reg in self.application_middleware),
             exception_mappers=tuple(self.exception_mappers),
             extensions=tuple(self.extensions),
             startup_hooks=tuple(self.startup_hooks),
             shutdown_hooks=tuple(self.shutdown_hooks),
             config_revision_id=(
-                self.config_snapshot.revision_id
-                if self.config_snapshot is not None
-                else None
+                self.config_snapshot.revision_id if self.config_snapshot is not None else None
             ),
         )
 
@@ -364,49 +360,49 @@ class Application:
         request: Request,
         plan: ApplicationPlan,
     ) -> Response:
-        """Execute the full middleware→route→handler pipeline."""
+        """Execute the full application-middleware → route-match → handler pipeline.
 
-        match = plan.router.match(method, path)
+        Route matching happens *inside* the application middleware terminal so that
+        application middleware can observe, short-circuit, or handle routing-phase
+        outcomes (404, 405) and exceptions.
+        """
 
-        if match.kind is RouteMatchKind.NOT_FOUND:
-            return Response.text("Not Found", status=404)
-        if match.kind is RouteMatchKind.METHOD_NOT_ALLOWED:
-            allowed = ",".join(
-                m.value for m in sorted(match.allowed_methods, key=lambda m: m.value)
-            )
-            return Response.text(
-                "Method Not Allowed",
-                status=405,
-                headers=[("allow", allowed)],
-            )
+        async def app_terminal(req: Request) -> Response:
+            match = plan.router.match(method, path)
 
-        # MATCH: publish route identity and path params.
-        assert match.route is not None
-        route = match.route
-        if route.name is not None:
-            request.publish_route(route.name, match.path_params)
+            if match.kind is RouteMatchKind.NOT_FOUND:
+                return Response.text("Not Found", status=404)
+            if match.kind is RouteMatchKind.METHOD_NOT_ALLOWED:
+                allowed = ",".join(
+                    m.value for m in sorted(match.allowed_methods, key=lambda m: m.value)
+                )
+                return Response.text(
+                    "Method Not Allowed",
+                    status=405,
+                    headers=[("allow", allowed)],
+                )
 
-        # Build the terminal: route middleware → handler → normalize.
-        async def terminal(req: Request) -> Response:
-            raw = await route.handler(req)
-            return normalize_response(raw)
+            # MATCH: publish route identity and path params.
+            assert match.route is not None
+            route = match.route
+            route_label = route.name or route.path_template
+            request.publish_route(route_label, match.path_params)
 
-        # Select route middleware plan if available.
-        route_plan = plan.route_middleware.get(route.name) if route.name else None
+            # Build the inner terminal: handler → normalize.
+            async def handler_terminal(req: Request) -> Response:
+                raw = await route.handler(req)
+                return normalize_response(raw)
 
-        if route_plan is not None and route_plan.declarations:
-            # Execute: application middleware → route middleware → terminal
-            async def combined(req: Request) -> Response:
-                return await route_plan.run(req, cast(Terminal, terminal))
+            # Select route middleware plan by stable identity.
+            identity = (route.path_template, tuple(m.value for m in route.methods))
+            route_plan = plan.route_middleware.get(identity)
 
-            return await plan.application_middleware.run(
-                request, cast(Terminal, combined)
-            )
+            if route_plan is not None and route_plan.declarations:
+                return await route_plan.run(req, cast(Terminal, handler_terminal))
 
-        # No route middleware: application middleware → terminal directly.
-        return await plan.application_middleware.run(
-            request, cast(Terminal, terminal)
-        )
+            return await handler_terminal(req)
+
+        return await plan.application_middleware.run(request, cast(Terminal, app_terminal))
 
     async def _resolve_exception(
         self,
