@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from lingshu.core.errors import DeadlineError, LifecycleError
 from lingshu.runtime import (
     CancellationReason,
@@ -78,9 +77,7 @@ def test_parent_cancellation_propagates_reason_and_preserves_control_flow() -> N
         except Exception:
             caught_by_exception = True
         except ScopeCancelled as exc:
-            assert (
-                exc.cancellation.origin_reason is CancellationReason.CLIENT_DISCONNECT
-            )
+            assert exc.cancellation.origin_reason is CancellationReason.CLIENT_DISCONNECT
         assert not caught_by_exception
         await app.close()
 
@@ -163,9 +160,7 @@ def test_checkpoint_marks_deadline_cancellation() -> None:
     clock = FakeClock()
     app = Scope.application(clock=clock)
     connection = app.create_child(ScopeKind.CONNECTION)
-    request = connection.create_child(
-        ScopeKind.REQUEST, deadline=Deadline.after(10, clock)
-    )
+    request = connection.create_child(ScopeKind.REQUEST, deadline=Deadline.after(10, clock))
     clock.advance(10)
     with pytest.raises(DeadlineError):
         request.checkpoint()
