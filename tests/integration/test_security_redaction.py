@@ -14,12 +14,15 @@ _TEST_CONFIG = ServerConfig(
     drain_timeout=0.5,
 )
 
+
 @pytest.fixture
 def app() -> LingShu:
     return LingShu()
 
+
 def test_unhandled_exception_does_not_leak_details(app: LingShu) -> None:
     """Test that a handler raising an exception does not leak details in the response."""
+
     @app.get("/error")
     async def cause_error(request: Request) -> Response:
         raise RuntimeError("SUPER_SECRET_INTERNAL_ERROR_DETAIL")
@@ -51,8 +54,10 @@ def test_unhandled_exception_does_not_leak_details(app: LingShu) -> None:
 
     asyncio.run(run())
 
+
 def test_oversized_header_safe_rejection(app: LingShu) -> None:
     """Test that an oversized header is rejected safely without leaking parser state."""
+
     async def run() -> None:
         app.freeze()
         srv = Server(app, _TEST_CONFIG)

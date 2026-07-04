@@ -15,9 +15,11 @@ _TEST_CONFIG = ServerConfig(
     drain_timeout=0.5,
 )
 
+
 @pytest.fixture
 def app() -> LingShu:
     return LingShu()
+
 
 def test_full_request_response_cycle(app: LingShu) -> None:
     """Test a full request/response cycle including middleware and route parameters."""
@@ -40,10 +42,13 @@ def test_full_request_response_cycle(app: LingShu) -> None:
         body_str = body_bytes.decode("utf-8")
         data = json.loads(body_str) if body_str else {}
 
-        return Response.json({
-            "item_id": item_id,
-            "received": data.get("value", None)
-        })
+        payload = json.dumps(
+            {"item_id": item_id, "received": data.get("value")},
+            separators=(",", ":"),
+        )
+        response = Response.text(payload)
+        response.add_header("content-type", "application/json")
+        return response
 
     async def run() -> None:
         app.freeze()
@@ -83,6 +88,7 @@ def test_full_request_response_cycle(app: LingShu) -> None:
 
     asyncio.run(run())
 
+
 def test_client_disconnect_safety(app: LingShu) -> None:
     """Test that a client disconnect does not hang the server or leak."""
     handler_started = asyncio.Event()
@@ -119,8 +125,10 @@ def test_client_disconnect_safety(app: LingShu) -> None:
 
     asyncio.run(run())
 
+
 def test_graceful_shutdown_drain(app: LingShu) -> None:
     """Test that server drains gracefully, finishing active requests."""
+
     @app.get("/process")
     async def process(request: Request) -> Response:
         await asyncio.sleep(0.2)
