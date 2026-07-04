@@ -1,5 +1,6 @@
-import pytest
+from __future__ import annotations
 
+import pytest
 from lingshu.core.errors import FatalScope, RequestError
 from lingshu.core.identifiers import RequestId
 from lingshu.core.problem import problem_from_exception
