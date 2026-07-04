@@ -23,6 +23,7 @@ PROVIDER_COMPONENTS = {
     "lingshu.http",
     "lingshu.record",
     "lingshu.runtime",
+    "lingshu.server",
 }
 
 
