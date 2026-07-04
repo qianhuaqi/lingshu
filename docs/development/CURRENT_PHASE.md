@@ -2,58 +2,58 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P1 - Single-Worker Minimum Vertical Slice
-Completed foundation: P1-00 / Issue #52 / PR #53
-Active Issue: #54 — P1-01 Core time, identifiers, errors, and safe Problem Details
-Active Pull Request: #55
-Active branch: `human/dodo/p1-01-core-foundations`
-Primary writer: qianhuaqi / 小顾
-Base commit: `689fb411f5d3ed03ad0059ede86bf532541e7249`
-Verified implementation commit: `20a089683a6a35d3b8313489af6a0b32f7cc9691`
+Current phase: P2 - Post-P1 roadmap and hardening preparation
+Completed milestone: P1 - Single-Worker Minimum Vertical Slice
+Completed final P1 Issue: #76 — P1-10 Vertical-slice integration, security, packaging, and documentation
+Completed final P1 Pull Request: #77
+P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
+P1 acceptance evidence: `docs/development/P1_ACCEPTANCE_EVIDENCE.md`
+Active Issue: #78 — P2-00 P1 closeout, phase state refresh, and P2 roadmap freeze
+Active Pull Request: none yet
+Active branch: `human/dodo/p2-00-phase-roadmap`
+Primary writer: project lead / 小顾 unless reassigned before implementation
 Planned version: `0.1.0.dev0`
-Status: implementation complete; required CI green; awaiting independent review and project-lead merge
-Next dependent phase allowed: no
+Status: P1 complete; P2 planning documentation in progress
+Next dependent phase allowed: no implementation-heavy P2 task until P2-00 is merged
 
-## P1-01 result under review
+## P1 closeout facts
 
-P1-01 implements the first real `lingshu.core` provider surface:
+P1 completed when PR #77 merged and Issue #76 closed as completed.
 
-- UTC wall-clock and process-local monotonic-clock contracts;
-- strict RFC3339 UTC timestamps with trailing `Z`;
-- typed opaque 128-bit runtime identifiers;
-- deterministic SHA-256 RevisionId;
-- bounded untrusted external request-correlation validation;
-- LingShuError taxonomy, stable dotted codes, Severity, and FatalScope;
-- immutable recursively validated safe details;
-- client-safe `application/problem+json` Problem Details;
-- generic `internal.error` mapping without cause, traceback, path, or secret leakage.
+P1 delivered the first installable and tested LingShu vertical slice:
 
-The root `lingshu` facade remains empty. The provider is exported only through `lingshu.core` until a later accepted facade task publishes root names.
+- root `lingshu/` package and Hatchling packaging;
+- immutable `LingShu` application plan and lifecycle;
+- `Request`, `Response`, `HTTPException`, routing, middleware, and safe handler contracts;
+- runtime scopes, deadlines, cancellation, admission, and minimum Runtime Record behavior;
+- native single-worker HTTP/1.1 server with bounded keep-alive, safe parsing, drain, and close behavior;
+- CLI `version`, `check`, and `run --workers 1`;
+- examples, integration/security/runtime-watermark tests, clean wheel/sdist verification, and cross-platform CI.
 
-## Verified evidence
+The P1 acceptance evidence is recorded in `docs/development/P1_ACCEPTANCE_EVIDENCE.md`.
 
-GitHub Actions CI run #11 passed:
+## P2 preparation goal
 
-- Ruff lint and format check;
-- mypy strict package check;
-- full pytest suite and focused Core tests;
-- DCO sign-off validation;
-- Linux CPython 3.12, 3.13, and 3.14;
-- Windows CPython 3.12 and 3.14;
-- macOS CPython 3.12 and 3.14;
-- Linux CPython 3.15 preview;
-- wheel and sdist build;
-- artifact inventory and license metadata;
-- wheel rebuild from sdist;
-- non-editable clean installation outside checkout;
-- CLI/import smoke tests and uninstall verification.
+P2 begins by freezing the roadmap and updating phase-tracking documents before any runtime implementation resumes.
 
-The temporary Ruff diagnostic job used during failure investigation was removed. The final workflow is unchanged from `main`.
+The recommended initial P2 direction is configuration and operational hardening around the existing single-worker contract, not a jump to multi-worker, hot reload, ASGI/WSGI, OpenAPI, Auth/Tenant/RBAC, database integration, public package publication, or production-readiness claims.
 
-## Explicit exclusions
+## Active P2-00 scope
 
-P1-01 does not implement configuration, Deadline, cancellation reason, Scope, task ownership, admission, HTTP Request/Response, HTTPException, Router, Middleware, Application Kernel, Runtime Record, Server, CLI run/check, telemetry exporters, serializer registry, or mandatory runtime dependencies.
+P2-00 may update only planning and status documents:
+
+```text
+docs/development/CURRENT_PHASE.md
+docs/development/HANDOFF.md
+docs/development/P2_ROADMAP.md
+README.md status section only if needed
+CHANGELOG.md only if needed
+```
+
+P2-00 must not change framework runtime code, tests, package metadata, CI behavior, or public APIs.
 
 ## Dependency gate
 
-P1-02 and P1-03 remain blocked until PR #55 is independently reviewed and merged by the project lead. Consumers must then synchronize from the P1-01 merge commit.
+The first implementation-heavy P2 Issue is blocked until P2-00 merges and the project lead confirms the P2 roadmap.
+
+Every P2 task still follows the governance rule: one Issue, one primary writer, one writer-prefixed branch, one isolated environment, one Pull Request, no auto-merge, and final merge authority remains with the project lead.
