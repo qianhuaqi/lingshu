@@ -1,75 +1,56 @@
 # Development Handoff
 
-Updated at: 2026-06-28
+Updated at: 2026-07-04
 Project: LingShu Framework
-Phase: P1 - Single-Worker Minimum Vertical Slice
-Completed: P1-00 / PR #53
-Active Issue: #54
-Active Pull Request: #55
-Branch: `human/dodo/p1-01-core-foundations`
-Primary writer: qianhuaqi / 小顾
-Base commit: `689fb411f5d3ed03ad0059ede86bf532541e7249`
-Verified implementation commit: `20a089683a6a35d3b8313489af6a0b32f7cc9691`
-Status: implementation complete; required CI green; awaiting independent review and project-lead merge
+Phase: P2 - Roadmap, audit, and hardening preparation
+Completed milestone: P1 - Single-Worker Minimum Vertical Slice
+Completed final P1 Issue: #76
+Completed final P1 Pull Request: #77
+P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
+P1 acceptance evidence: `docs/development/P1_ACCEPTANCE_EVIDENCE.md`
+Active Issue: #78
+Active branch: `human/dodo/p2-00-self`
+Primary writer: project lead / 小顾
+Status: P2-00 documentation refresh and LingShu 2.0 roadmap freeze in progress.
 
-## Implemented
+## Implemented through P1
 
-- `WallClock` and `MonotonicClock` protocols with system implementations.
-- Strict RFC3339 UTC `format_rfc3339_utc` and `parse_rfc3339_utc`.
-- RequestId, ConnectionId, TraceId, OperationId, WorkerId, and RecordId as immutable typed 128-bit lowercase hexadecimal values.
-- RevisionId as immutable lowercase SHA-256 canonical Revision identity.
-- Secure identifier generation with InternalError cause preservation on entropy failure.
-- Bounded external request-correlation validation that remains separate from internal RequestId.
-- LingShuError and the frozen category subclasses.
-- Lowercase dotted error-code validation.
-- Severity and FatalScope bounded enums.
-- Recursive safe-details validation and immutable mappings/tuples.
-- ProblemDetails allowlist and generic `internal.error` fallback.
-- Explicit `lingshu.core` exports while leaving root `lingshu.__all__` empty.
-- Unit tests for time, identifiers, safe errors, redaction, control flow, and package-boundary transition.
+P1 produced a narrow, tested, installable vertical slice of the framework:
 
-## Verification
+- package, CI, DCO, type/lint/test/build governance, and clean-install artifact checks;
+- core time helpers, identifiers, framework errors, safe Problem Details, and redaction primitives;
+- immutable startup configuration snapshot;
+- runtime deadlines, scopes, cancellation, task ownership, admission, bounded cleanup, and minimum Runtime Record behavior;
+- HTTP value model, router, middleware, request, response, and handler contract safety;
+- `LingShu` application kernel with route decorators, immutable freeze, lifecycle, and root facade exports;
+- native single-worker HTTP/1.1 server;
+- CLI `version`, `check`, and `run --workers 1`;
+- integration, security, runtime watermark, packaging, example, and P1 acceptance evidence.
 
-CI run #11 passed all required jobs:
+## Current task
 
-```text
-Quality and governance                   success
-Build and clean install                  success
-Linux Python 3.12                        success
-Linux Python 3.13                        success
-Linux Python 3.14                        success
-Windows Python 3.12                      success
-Windows Python 3.14                      success
-macOS Python 3.12                        success
-macOS Python 3.14                        success
-Python 3.15 preview                      success
-```
+P2-00 replaces stale P1-01-era handoff state, records P1 closeout, and writes the LingShu 2.0 direction into the repository roadmap.
 
-The quality job passed Ruff, format, mypy, pytest, and DCO. The build job passed wheel/sdist construction, artifact inventory, sdist rebuild, clean installation outside checkout, CLI/import smoke tests, and uninstall.
+P2-00 is documentation-only. It must not change framework runtime behavior, public APIs, CI behavior, packaging metadata, or tests.
 
-Temporary Ruff diagnostic workflow changes were fully reverted before this handoff. `.github/workflows/ci.yml` has no final P1-01 behavior change.
+## Recommended P2 sequence
 
-## Security review points satisfied
-
-- inbound correlation text cannot replace internal RequestId;
-- generated identifiers expose no host, PID, timestamp, user, tenant, route, or business meaning;
-- secure-source failures catch ordinary `Exception`, not BaseException control flow;
-- safe details reject arbitrary objects, bytes, non-string keys, and non-finite floats;
-- client Problem Details contain only allowlisted safe values;
-- internal causes, traceback, exception repr, paths, and secrets are not serialized;
-- no mandatory runtime dependency was added.
-
-## Remaining action
-
-1. independently review PR #55;
-2. resolve any blocking finding inside Issue #54 scope;
-3. project lead performs final merge;
-4. only after merge, create P1-02 and P1-03 from the resulting `main` commit according to the declared parallel wave.
+1. P2-00: close out P1 documents and freeze the LingShu 2.0 roadmap.
+2. P2-01: create a framework audit baseline for security, concurrency, storage boundaries, and operations.
+3. P2-02: lock toolchain reproducibility and Ruff formatting baseline.
+4. P2-03: strengthen startup configuration and CLI/config documentation without hot reload.
+5. P2-04: harden the existing single-worker server operational surface without multi-worker implementation.
+6. P2-05: improve examples and developer documentation around the accepted P1 contract.
 
 ## Protected facts
 
-- root `lingshu` facade remains unchanged;
-- configuration and runtime behavior remain deferred;
-- archive branch remains untouched;
-- public package publication remains unauthorized;
-- no auto-merge; final merge belongs to the project lead.
+- P1 remains a single-worker minimum vertical slice, not a production-ready stable release.
+- Public package publication remains unauthorized.
+- Database, cache, storage, auth, tenant, RBAC, OpenAPI, multi-worker, reload/watch, and adapter tracks remain deferred until explicitly authorized by later Issues and ADRs.
+- No direct commits to `main`.
+- No auto-merge.
+- Final merge authority belongs to the project lead.
+
+## Next action
+
+Open a Draft PR for Issue #78 from `human/dodo/p2-00-self`, verify documentation scope and CI, then wait for project-lead final merge review.
