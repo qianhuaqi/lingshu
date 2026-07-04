@@ -209,6 +209,18 @@ def test_main_run_custom_host_port(mock_serve: Any) -> None:
     assert config.port == 9000
 
 
+def test_main_run_invalid_server_config_is_safe(capsys: pytest.CaptureFixture[str]) -> None:
+    assert (
+        main(["run", "tests.cli.test_cli:app_instance", "--host", "SECRET\nexample"])
+        == ExitCode.USAGE_ERROR
+    )
+    captured = capsys.readouterr()
+    assert "Traceback" not in captured.err
+    assert "SECRET" not in captured.err
+    assert "example" not in captured.err
+    assert "Error: invalid server configuration" in captured.err
+
+
 @patch("lingshu.cli.commands.serve", side_effect=RuntimeError("server crashed SECRET"))
 def test_main_run_runtime_failure(mock_serve: Any, capsys: pytest.CaptureFixture[str]) -> None:
     assert main(["run", "tests.cli.test_cli:app_instance"]) == ExitCode.RUNTIME_FAILURE
