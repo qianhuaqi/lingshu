@@ -6,9 +6,9 @@ LingShu is a greenfield, independently implemented Python Web/API framework. It 
 
 ## Current status
 
-LingShu is in **P1: Single-Worker Minimum Vertical Slice**.
+LingShu has completed the **P1: Single-Worker Minimum Vertical Slice** baseline and is now in the P2 hardening track.
 
-P1-10 marks the final integration of the P1 baseline. The framework provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, and a CLI foundation.
+The framework currently provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, safe diagnostics, configuration hardening, operational hardening, and a CLI foundation.
 
 Current development version:
 
@@ -17,7 +17,7 @@ Current development version:
 ```
 
 > [!WARNING]
-> This is a development milestone for P1 only. The framework is strictly single-worker, lacks production performance optimizations, and is not authorized for public PyPI publication.
+> This is a pre-alpha development milestone. The framework is strictly single-worker, lacks production performance optimizations, and is not authorized for public PyPI publication.
 
 ## Quick Start
 
@@ -36,9 +36,11 @@ async def index(request: Request) -> Response:
 Validate the application and run it with the LingShu CLI:
 
 ```bash
-lingshu check examples.hello_world:app
-lingshu run examples.hello_world:app --workers 1
+python -m lingshu check examples.hello_world:app
+python -m lingshu run examples.hello_world:app --workers 1
 ```
+
+Only one worker is supported. Passing any other worker count returns a safe unsupported-worker error.
 
 ## Development setup
 
@@ -49,6 +51,10 @@ CPython 3.12 or newer
 ```
 
 The supported development toolchain and Ruff formatting baseline are documented in [`docs/development/TOOLCHAIN.md`](docs/development/TOOLCHAIN.md).
+
+The current developer loop and CLI behavior are documented in [`docs/development/DEVELOPER_ERGONOMICS.md`](docs/development/DEVELOPER_ERGONOMICS.md).
+
+Future test-client boundaries are documented in [`docs/development/TEST_CLIENT_PLAN.md`](docs/development/TEST_CLIENT_PLAN.md).
 
 Create and activate a virtual environment, then install the development extra:
 
@@ -96,7 +102,7 @@ Read these before contributing:
 4. [Concurrent Development](docs/development/CONCURRENT_DEVELOPMENT.md)
 5. [Frozen Framework Blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
 6. accepted ADRs under [`docs/decisions/`](docs/decisions/)
-7. [P1 Implementation Plan](docs/development/P1_IMPLEMENTATION_PLAN.md)
+7. [P2 Roadmap](docs/development/P2_ROADMAP.md)
 8. [Development Handoff](docs/development/HANDOFF.md)
 
 ## Contribution rules
@@ -119,7 +125,7 @@ Production source:   lingshu/
 Package metadata:    pyproject.toml
 Build backend:       Hatchling
 Minimum Python:      CPython 3.12
-Mandatory runtime dependencies: none in P1-00
+Mandatory runtime dependencies: none
 ```
 
 The target component boundaries are:
@@ -135,7 +141,7 @@ lingshu.cli
 lingshu.testing
 ```
 
-The packages are placeholders in P1-00. Component behavior is implemented only by its assigned later Issue.
+Some target packages are still placeholders. Component behavior is implemented only by its assigned Issue.
 
 ## Legacy archive
 
