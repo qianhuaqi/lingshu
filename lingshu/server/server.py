@@ -43,6 +43,9 @@ class Server:
             )
         except Exception:
             await self._app.shutdown()
+            if self._app_scope is not None:
+                await self._app_scope.close()
+                self._app_scope = None
             raise
 
     async def drain(self) -> None:
@@ -72,6 +75,7 @@ class Server:
         if self._server is not None:
             self._server.close()
             import contextlib
+
             with contextlib.suppress(Exception):
                 await self._server.wait_closed()
             self._server = None
@@ -79,9 +83,15 @@ class Server:
         for conn in tuple(self._connections):
             conn.close()
 
-        await self._app.shutdown()
+        import contextlib
+
+        with contextlib.suppress(Exception):
+            await self._app.shutdown()
+
         if self._app_scope is not None:
-            await self._app_scope.close()
+            with contextlib.suppress(Exception):
+                await self._app_scope.close()
+            self._app_scope = None
 
     async def _handle_connection(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter

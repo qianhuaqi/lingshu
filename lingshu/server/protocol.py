@@ -13,6 +13,7 @@ from lingshu.http.request import ConnectionInfo, Request
 from lingshu.http.response import Response
 from lingshu.runtime.deadline import Deadline
 from lingshu.runtime.scope import ScopeKind
+from lingshu.runtime.cancellation import CancellationReason
 
 if TYPE_CHECKING:
     from lingshu.core.application import LingShu
@@ -28,6 +29,7 @@ class HttpConnection:
         "_closed",
         "_config",
         "_conn_scope",
+        "_connection_id",
         "_connection_info",
         "_draining",
         "_reader",
@@ -59,6 +61,7 @@ class HttpConnection:
             local=str(sockname) if sockname else None,
             secure=writer.get_extra_info("sslcontext") is not None,
         )
+        self._connection_id = ConnectionId.generate()
 
     def drain(self) -> None:
         """Mark connection as draining, will close after current request."""
@@ -88,6 +91,9 @@ class HttpConnection:
                     if not e.partial:
                         break  # Client closed connection cleanly
                     break  # Client disconnected midway
+                except asyncio.LimitOverrunError:
+                    await self._send_error(414, "URI Too Long")
+                    break
                 except Exception:
                     break
 
@@ -99,7 +105,12 @@ class HttpConnection:
 
                 try:
                     # Parse request line
-                    line = raw_request_line.decode("ascii").rstrip("\r\n")
+                    try:
+                        line = raw_request_line.decode("ascii").rstrip("\r\n")
+                    except UnicodeDecodeError:
+                        await self._send_error(400, "Bad Request")
+                        break
+
                     parts = line.split(" ")
                     if len(parts) != 3:
                         await self._send_error(400, "Bad Request")
@@ -115,10 +126,14 @@ class HttpConnection:
                         await self._send_error(505, "HTTP Version Not Supported")
                         break
 
-                    method = HTTPMethod(method_str)
-                    target = RequestTarget.parse(
-                        target_str, max_bytes=self._config.max_headers_bytes
-                    )
+                    try:
+                        method = HTTPMethod(method_str)
+                        target = RequestTarget.parse(
+                            target_str, max_bytes=self._config.max_headers_bytes
+                        )
+                    except ValueError:
+                        await self._send_error(400, "Bad Request")
+                        break
 
                     # Parse headers
                     raw_headers = []
@@ -131,6 +146,9 @@ class HttpConnection:
                             )
                         except TimeoutError:
                             await self._send_error(408, "Request Timeout")
+                            return
+                        except asyncio.LimitOverrunError:
+                            await self._send_error(431, "Request Header Fields Too Large")
                             return
 
                         headers_size += len(header_line)
@@ -149,7 +167,26 @@ class HttpConnection:
                         name, value = header_line.split(b":", 1)
                         raw_headers.append((name, value))
 
-                    headers = Headers(raw_headers, max_total_bytes=self._config.max_headers_bytes)
+                    try:
+                        headers = Headers(
+                            raw_headers, max_total_bytes=self._config.max_headers_bytes
+                        )
+                    except (ValueError, ProtocolError, TypeError):
+                        await self._send_error(400, "Bad Request")
+                        break
+                    except ResourceLimitError as exc:
+                        await self._send_error(431, "Request Header Fields Too Large")
+                        break
+
+                    # Enforce HTTP/1.1 subset constraints
+                    if headers.contains("transfer-encoding"):
+                        await self._send_error(400, "Bad Request")
+                        break
+
+                    content_length_values = headers.get_all("content-length")
+                    if len(content_length_values) > 1 and len(set(content_length_values)) > 1:
+                        await self._send_error(400, "Bad Request")
+                        break
 
                     # Connection close handling
                     connection_header = (headers.get("connection") or "").lower()
@@ -163,6 +200,9 @@ class HttpConnection:
                     content_length_str = headers.get("content-length")
                     body_bytes = b""
                     if content_length_str:
+                        if not content_length_str.isdigit():
+                            await self._send_error(400, "Bad Request")
+                            break
                         try:
                             content_length = int(content_length_str)
                             if content_length < 0:
@@ -233,12 +273,17 @@ class HttpConnection:
                 scope=req_scope,
                 body=request_body,
                 request_id=RequestId.generate(),
-                connection_id=ConnectionId.generate(),  # use generated ID
+                connection_id=self._connection_id,
                 connection_info=self._connection_info,
             )
 
             try:
-                response = await self._app.kernel.dispatch(method.value, target.path, request)
+                async with asyncio.timeout(self._config.request_timeout):
+                    response = await self._app.kernel.dispatch(method.value, target.path, request)
+            except TimeoutError:
+                req_scope.cancel(CancellationReason.REQUEST_DEADLINE)
+                await self._send_error(408, "Request Timeout")
+                return
             except asyncio.CancelledError:
                 raise
             except Exception:
