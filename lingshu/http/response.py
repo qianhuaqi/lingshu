@@ -7,10 +7,12 @@ import json as json_module
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any
 
 from lingshu.core.errors import FatalScope, HandlerContractError, LifecycleError
 from lingshu.http.message import Headers
+
+
+type JSONValue = None | bool | int | float | str | list[JSONValue] | dict[str, JSONValue]
 
 
 class ResponseState(StrEnum):
@@ -91,7 +93,7 @@ class Response:
     @classmethod
     def json(
         cls,
-        value: Any,
+        value: JSONValue,
         *,
         status: int = 200,
         headers: Iterable[tuple[str | bytes, str | bytes]] = (),
