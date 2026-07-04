@@ -16,7 +16,7 @@ from lingshu.http.response import SupportedReturnValue
 
 _PARAMETER = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
-type Handler = Callable[[Request], Awaitable[SupportedReturnValue]]
+Handler = Callable[[Request], Awaitable[SupportedReturnValue]]
 
 
 class RouteMatchKind(StrEnum):

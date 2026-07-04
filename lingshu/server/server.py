@@ -72,6 +72,9 @@ class Server:
             except TimeoutError:
                 for conn in tuple(self._connections):
                     conn.close()
+                deadline = asyncio.get_running_loop().time() + 1.0
+                while self._connections and asyncio.get_running_loop().time() < deadline:
+                    await asyncio.sleep(0.01)
 
     async def close(self) -> None:
         """Idempotently close the server and application."""
@@ -110,7 +113,7 @@ class Server:
         self._connections.add(conn)
         try:
             async with conn_scope:
-                await conn.serve()
+                await conn_scope.run(conn.serve(), name="connection")
         finally:
             self._connections.discard(conn)
 

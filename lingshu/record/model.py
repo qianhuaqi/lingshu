@@ -33,8 +33,8 @@ from lingshu.core.time import (
 _EVENT_TYPE = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 _COMPONENT = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)*$")
 
-type JSONScalar = str | int | float | bool | None
-type JSONValue = JSONScalar | tuple[JSONValue, ...] | Mapping[str, JSONValue]
+JSONScalar = str | int | float | bool | None
+JSONValue = JSONScalar | tuple["JSONValue", ...] | Mapping[str, "JSONValue"]
 
 
 class RecordPolicy(StrEnum):

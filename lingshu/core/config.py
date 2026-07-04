@@ -110,9 +110,9 @@ class SecretProvider(Protocol):
         """Return plaintext for ``reference`` or raise an ordinary exception."""
 
 
-type ConfigScalar = str | int | float | bool | None | SecretValue
-type ConfigValue = ConfigScalar | tuple[ConfigValue, ...] | Mapping[str, ConfigValue]
-type ValueNormalizer = Callable[[object], object]
+ConfigScalar = str | int | float | bool | None | SecretValue
+ConfigValue = ConfigScalar | tuple["ConfigValue", ...] | Mapping[str, "ConfigValue"]
+ValueNormalizer = Callable[[object], object]
 
 
 class _Missing:

@@ -231,7 +231,7 @@ class Response:
         return any(item_name == normalized for item_name, _ in self._headers)
 
 
-type SupportedReturnValue = Response | str | bytes | bytearray | memoryview
+SupportedReturnValue = Response | str | bytes | bytearray | memoryview
 
 
 def normalize_response(value: object) -> Response:

@@ -7,7 +7,7 @@ name = "lingshu"
 version = "0.1.0.dev0"
 description = "An independently implemented Python Web/API framework."
 readme = "README.md"
-requires-python = ">=3.12"
+requires-python = ">=3.11"
 license = "Apache-2.0"
 license-files = ["LICENSE", "NOTICE"]
 authors = [{ name = "LingShu Framework contributors" }]
@@ -20,6 +20,7 @@ classifiers = [
   "License :: OSI Approved :: Apache Software License",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
   "Programming Language :: Python :: 3.14",
@@ -68,7 +69,7 @@ testpaths = ["tests"]
 [tool.ruff]
 line-length = 100
 src = ["lingshu", "tests"]
-target-version = "py312"
+target-version = "py311"
 
 [tool.ruff.format]
 docstring-code-format = true
@@ -78,7 +79,7 @@ line-ending = "lf"
 select = ["B", "E", "F", "I", "RUF", "SIM", "UP"]
 
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.11"
 strict = true
 files = ["lingshu"]
 warn_unreachable = true

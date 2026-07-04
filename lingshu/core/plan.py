@@ -37,9 +37,9 @@ class MapperScope(StrEnum):
     APPLICATION = "application"
 
 
-type SyncExceptionMapper = Callable[[Exception], Response]
-type AsyncExceptionMapper = Callable[[Exception], Awaitable[Response]]
-type ExceptionMapper = SyncExceptionMapper | AsyncExceptionMapper
+SyncExceptionMapper = Callable[[Exception], Response]
+AsyncExceptionMapper = Callable[[Exception], Awaitable[Response]]
+ExceptionMapper = SyncExceptionMapper | AsyncExceptionMapper
 
 
 @dataclass(frozen=True, slots=True)
@@ -322,7 +322,7 @@ def _compile_middleware_safe(
         ) from exc
 
 
-type RouteIdentity = tuple[str, tuple[str, ...]]
+RouteIdentity = tuple[str, tuple[str, ...]]
 
 
 def _route_identity(route: _RouteDeclaration) -> RouteIdentity:

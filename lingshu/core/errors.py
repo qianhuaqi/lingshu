@@ -10,9 +10,9 @@ from types import MappingProxyType
 
 _ERROR_CODE_PATTERN = re.compile(r"^[a-z][a-z0-9_]*(?:\.[a-z][a-z0-9_]*)+$")
 
-type SafeScalar = str | int | float | bool | None
-type SafeValue = SafeScalar | tuple[SafeValue, ...] | Mapping[str, SafeValue]
-type SafeDetails = Mapping[str, SafeValue]
+SafeScalar = str | int | float | bool | None
+SafeValue = SafeScalar | tuple["SafeValue", ...] | Mapping[str, "SafeValue"]
+SafeDetails = Mapping[str, SafeValue]
 
 
 class Severity(StrEnum):

@@ -39,8 +39,8 @@ class ApplicationState(StrEnum):
     STOPPED = "stopped"
 
 
-type LifecycleHook = Callable[[], Awaitable[None]]
-type RouteMethodDecorator = Callable[[Handler], Handler]
+LifecycleHook = Callable[[], Awaitable[None]]
+RouteMethodDecorator = Callable[[Handler], Handler]
 
 
 @dataclass(frozen=True, slots=True)

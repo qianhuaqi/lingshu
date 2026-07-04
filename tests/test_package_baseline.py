@@ -39,7 +39,7 @@ def test_project_metadata_matches_frozen_baseline() -> None:
     project = configuration["project"]
     assert project["name"] == "lingshu"
     assert project["version"] == "0.1.0.dev0"
-    assert project["requires-python"] == ">=3.12"
+    assert project["requires-python"] == ">=3.11"
     assert project["license"] == "Apache-2.0"
     assert project["dependencies"] == []
     assert configuration["tool"]["hatch"]["build"]["targets"]["wheel"]["packages"] == ["lingshu"]

@@ -31,7 +31,7 @@ class Terminal(Protocol):
         ...
 
 
-type MiddlewareCallable = Callable[[Request, Next], Awaitable[Response]]
+MiddlewareCallable = Callable[[Request, Next], Awaitable[Response]]
 
 
 class MiddlewareScope(StrEnum):

@@ -74,6 +74,7 @@ class HttpConnection:
             self._closed = True
             with contextlib.suppress(Exception):
                 self._writer.close()
+            self._conn_scope.cancel(CancellationReason.SERVER_DRAINING)
 
     async def serve(self) -> None:
         """Process requests on this connection sequentially."""
