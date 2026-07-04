@@ -7,6 +7,7 @@ import json as json_module
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
+from typing import Any
 
 from lingshu.core.errors import FatalScope, HandlerContractError, LifecycleError
 from lingshu.http.message import Headers
@@ -90,7 +91,7 @@ class Response:
     @classmethod
     def json(
         cls,
-        value: object,
+        value: Any,
         *,
         status: int = 200,
         headers: Iterable[tuple[str | bytes, str | bytes]] = (),
