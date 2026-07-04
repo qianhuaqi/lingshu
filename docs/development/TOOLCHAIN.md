@@ -33,7 +33,7 @@ Do not add runtime dependencies during tooling, documentation, audit, configurat
 
 ## Development dependency policy
 
-Development tools are intentionally bounded to narrow minor-version ranges.
+Development tools are intentionally bounded where they can create noisy unrelated diffs or packaging drift.
 
 Current P2-02 policy:
 
@@ -44,13 +44,15 @@ requires = ["hatchling>=1.26,<1.27"]
 [project.optional-dependencies]
 dev = [
   "build>=1.2,<1.3",
-  "mypy>=1.11,<1.12",
+  "mypy>=1.11,<2",
   "pytest>=8.3,<8.4",
   "ruff>=0.13,<0.14",
 ]
 ```
 
 The goal is not to freeze LingShu forever. The goal is to make local and CI behavior reproducible enough that developers and agents do not accidentally reformat the repository while doing unrelated work.
+
+Mypy remains on the accepted compatible major-version range because it is a type checker rather than a formatter, and the attempted `>=1.11,<1.12` range did not match the currently accepted CI baseline. Any future mypy tightening must be done in its own Issue after proving the repository passes that narrower range.
 
 ## Ruff baseline
 
