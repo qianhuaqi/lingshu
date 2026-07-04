@@ -12,7 +12,15 @@ from lingshu.core.errors import FatalScope, HandlerContractError, LifecycleError
 from lingshu.http.message import Headers
 
 
-type JSONValue = None | bool | int | float | str | list[object] | dict[str, object]
+type JSONValue = (
+    None
+    | bool
+    | int
+    | float
+    | str
+    | list[object]
+    | dict[str, object]
+)
 
 
 class ResponseState(StrEnum):
