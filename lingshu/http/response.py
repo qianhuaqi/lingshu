@@ -97,7 +97,7 @@ class Response:
     ) -> Response:
         """Create a UTF-8 JSON response using the standard library encoder."""
 
-        body = json_module.dumps(  # type: ignore[arg-type]
+        body = json_module.dumps(
             value,
             ensure_ascii=False,
             allow_nan=False,
