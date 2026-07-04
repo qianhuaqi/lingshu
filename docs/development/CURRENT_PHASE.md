@@ -2,17 +2,21 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P2 - Roadmap, audit, and hardening preparation
+Current phase: P3 - Developer-facing API ergonomics planning
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
+Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed final P1 Issue: #76
 Completed final P1 Pull Request: #77
 P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
 P1 acceptance evidence: `docs/development/P1_ACCEPTANCE_EVIDENCE.md`
-Active Issue: #78 - P2-00 P1 closeout, phase state refresh, and P2 roadmap freeze
-Active branch: `human/dodo/p2-00-self`
+Completed final P2 Issue: #88
+Completed final P2 Pull Request: #89
+P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
+Active Issue: #90 - P3-00 phase transition and next roadmap
+Active branch: `human/dodo/p3-00-phase-transition`
 Primary writer: project lead / 小顾
-Status: P1 complete; P2 roadmap and LingShu 2.0 direction are being written into repository documents.
-Next dependent phase allowed: no implementation-heavy P2 task until P2-00 is merged.
+Status: P1 and P2 are complete; P3 planning is being written before implementation starts.
+Next dependent phase allowed: no P3 implementation task until P3-00 is merged.
 
 ## P1 closeout facts
 
@@ -28,35 +32,50 @@ P1 delivered the first installable and tested LingShu vertical slice:
 - CLI `version`, `check`, and `run --workers 1`;
 - examples, integration tests, clean packaging verification, and cross-platform CI.
 
-## P2 preparation goal
+## P2 closeout facts
 
-P2 must preserve P1 closeout facts, define the LingShu 2.0 product direction, and create a safe implementation sequence before feature work expands.
+P2 completed when PR #89 merged and Issue #88 closed as completed.
 
-Corrected P2 order:
+P2 delivered:
 
 ```text
-P2-00 governance docs and LingShu 2.0 roadmap
-P2-01 framework audit baseline
-P2-02 toolchain reproducibility
-P2-03 static configuration hardening
-P2-04 single-worker operational hardening
-P2-05 developer ergonomics and examples
+P2-00 #78: phase state and P2 roadmap refresh
+P2-01 #79: framework audit baseline
+P2-02 #82: toolchain reproducibility and Ruff baseline
+P2-03 #84: static configuration and protected diagnostics
+P2-04 #86: single-worker server operations
+P2-05 #88: developer ergonomics, examples, and test-client planning
 ```
 
-## Active P2-00 scope
+## P3 planning goal
 
-P2-00 may update only planning and status documents:
+P3 should improve developer-facing API ergonomics without breaking the current runtime boundary.
+
+Candidate P3 sequence:
+
+```text
+P3-00 phase transition and P3 roadmap
+P3-01 JSON response ergonomics and content-type contract
+P3-02 request body ergonomics and content negotiation planning
+P3-03 error experience and safe diagnostics polish
+P3-04 test client implementation decision
+P3-05 examples for the accepted public surface
+```
+
+## Active P3-00 scope
+
+P3-00 may update only planning and status documents:
 
 ```text
 docs/development/CURRENT_PHASE.md
 docs/development/HANDOFF.md
-docs/development/P2_ROADMAP.md
+docs/development/P3_ROADMAP.md
 README.md status section only if needed
 CHANGELOG.md only if needed
 ```
 
-P2-00 must not change framework runtime code, tests, package metadata, CI behavior, or public APIs.
+P3-00 must not change framework runtime code, tests, package metadata, CI behavior, or public APIs.
 
 ## Dependency gate
 
-The first implementation-heavy P2 task is blocked until P2-00 merges and the project lead confirms the roadmap.
+The first P3 implementation task is blocked until P3-00 merges and the project lead confirms the roadmap.
