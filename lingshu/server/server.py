@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import TYPE_CHECKING
 
 from lingshu.core.time import SystemMonotonicClock
@@ -76,16 +77,12 @@ class Server:
         """Idempotently close the server and application."""
         if self._server is not None:
             self._server.close()
-            import contextlib
-
             with contextlib.suppress(Exception):
                 await self._server.wait_closed()
             self._server = None
 
         for conn in tuple(self._connections):
             conn.close()
-
-        import contextlib
 
         with contextlib.suppress(Exception):
             await self._app.shutdown()
@@ -99,11 +96,14 @@ class Server:
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ) -> None:
         """Handle an incoming TCP connection."""
-        if len(self._connections) >= self._config.max_connections:
-            writer.close()
+        if self._app_scope is None:
+            await _close_writer_safely(writer)
             return
 
-        assert self._app_scope is not None
+        if len(self._connections) >= self._config.max_connections:
+            await _close_writer_safely(writer)
+            return
+
         conn_scope = self._app_scope.create_child(ScopeKind.CONNECTION)
 
         conn = HttpConnection(self._app, self._config, conn_scope, reader, writer)
@@ -113,6 +113,15 @@ class Server:
                 await conn.serve()
         finally:
             self._connections.discard(conn)
+
+
+async def _close_writer_safely(writer: asyncio.StreamWriter) -> None:
+    """Close a rejected connection without surfacing writer failures."""
+
+    with contextlib.suppress(Exception):
+        writer.close()
+    with contextlib.suppress(Exception):
+        await writer.wait_closed()
 
 
 async def serve(app: LingShu, config: ServerConfig) -> None:
