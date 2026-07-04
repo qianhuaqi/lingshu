@@ -40,6 +40,7 @@ class Server:
                 self._handle_connection,
                 host=self._config.host,
                 port=self._config.port,
+                limit=self._config.max_headers_bytes + 2,
             )
         except Exception:
             await self._app.shutdown()
@@ -68,7 +69,8 @@ class Server:
                     while self._connections:
                         await asyncio.sleep(0.01)
             except TimeoutError:
-                pass
+                for conn in tuple(self._connections):
+                    conn.close()
 
     async def close(self) -> None:
         """Idempotently close the server and application."""

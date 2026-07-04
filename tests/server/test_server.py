@@ -291,7 +291,7 @@ def test_duplicate_content_length(app: LingShu) -> None:
         reader, writer = await asyncio.open_connection(host, port)
 
         writer.write(
-            b"POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nContent-Length: 6\r\n\r\n"
+            b"POST / HTTP/1.1\r\nHost: localhost\r\nContent-Length: 5\r\nContent-Length: 5\r\n\r\n"
         )
         await writer.drain()
 
@@ -406,5 +406,52 @@ def test_startup_failure_cleanup(app: LingShu, monkeypatch: pytest.MonkeyPatch) 
         assert srv._app_scope is None
         await srv.close()
         await srv.close()  # repeated close is safe
+
+    asyncio.run(run())
+
+
+def test_server_drain_timeout(app: LingShu) -> None:
+    async def run() -> None:
+        @app.get("/slow")
+        async def slow(request: Request) -> Response:
+            await asyncio.sleep(2.0)
+            return Response.text("slow")
+
+        app.freeze()
+        # drain_timeout < 2.0 to trigger timeout
+        srv_config = ServerConfig(
+            host="127.0.0.1",
+            port=0,
+            drain_timeout=0.2,
+            request_timeout=3.0,
+            keepalive_timeout=1.0,
+        )
+        srv = Server(app, srv_config)
+        await srv.startup()
+        assert srv._server is not None
+        sock = srv._server.sockets[0]
+        host, port = sock.getsockname()
+
+        # Start a background request
+        reader, writer = await asyncio.open_connection(host, port)
+        writer.write(b"GET /slow HTTP/1.1\r\nHost: localhost\r\n\r\n")
+        await writer.drain()
+
+        # Wait slightly to ensure server picks it up
+        await asyncio.sleep(0.1)
+        assert len(srv._connections) == 1
+
+        # Drain, which should time out because handler takes 2.0s, drain takes 0.2s
+        await srv.drain()
+
+        # The drain should have closed the connections forcefully due to timeout
+        assert len(srv._connections) == 0
+
+        with pytest.raises(asyncio.IncompleteReadError):
+            await reader.readexactly(100)
+
+        writer.close()
+        await writer.wait_closed()
+        await srv.close()
 
     asyncio.run(run())

@@ -184,7 +184,7 @@ class HttpConnection:
                         break
 
                     content_length_values = headers.get_all("content-length")
-                    if len(content_length_values) > 1 and len(set(content_length_values)) > 1:
+                    if len(content_length_values) > 1:
                         await self._send_error(400, "Bad Request")
                         break
 
