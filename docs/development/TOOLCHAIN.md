@@ -46,7 +46,7 @@ dev = [
   "build>=1.2,<1.3",
   "mypy>=1.11,<1.12",
   "pytest>=8.3,<8.4",
-  "ruff>=0.8,<0.9",
+  "ruff>=0.13,<0.14",
 ]
 ```
 
@@ -61,6 +61,8 @@ python -m ruff format --check .
 ```
 
 with the bounded Ruff range declared in `pyproject.toml`.
+
+The first attempted P2-02 range used Ruff `>=0.8,<0.9`. CI showed that this older formatter range does not match the current accepted repository formatting baseline. P2-02 therefore aligns the narrow Ruff range to `>=0.13,<0.14` instead of forcing a broad reformat of unrelated source files.
 
 A Ruff upgrade must use a dedicated Issue and PR. It must not be mixed with feature work, server hardening, configuration changes, protocol work, or runtime refactoring.
 
