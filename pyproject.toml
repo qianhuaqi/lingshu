@@ -38,7 +38,7 @@ lingshu = "lingshu.cli:main"
 [project.optional-dependencies]
 dev = [
   "build>=1.2,<1.3",
-  "mypy>=1.11,<1.12",
+  "mypy>=1.11,<2",
   "pytest>=8.3,<8.4",
   "ruff>=0.13,<0.14",
 ]
