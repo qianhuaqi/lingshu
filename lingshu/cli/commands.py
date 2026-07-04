@@ -45,7 +45,7 @@ def run(target: str, is_factory: bool, workers: int, host: str, port: int) -> in
         asyncio.run(serve(app, config))
     except (KeyboardInterrupt, asyncio.CancelledError):
         # Safe cleanup handled by serve()'s context manager or internally
-        pass
+        return ExitCode.SUCCESS
     except Exception:
         print("Error: server runtime failure", file=sys.stderr)
         return ExitCode.RUNTIME_FAILURE

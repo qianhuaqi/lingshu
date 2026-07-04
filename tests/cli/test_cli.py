@@ -4,12 +4,10 @@ from typing import Any
 from unittest.mock import AsyncMock, patch
 
 import pytest
-
 from lingshu import LingShu
 from lingshu.cli import main
 from lingshu.cli.core import CliError, ExitCode
 from lingshu.cli.target import load_target
-
 
 # --- Dummy Apps for Testing ---
 app_instance = LingShu()
@@ -206,7 +204,7 @@ def test_main_run_custom_host_port(mock_serve: Any) -> None:
         == ExitCode.SUCCESS
     )
 
-    app, config = mock_serve.call_args[0]
+    _, config = mock_serve.call_args[0]
     assert config.host == "0.0.0.0"
     assert config.port == 9000
 

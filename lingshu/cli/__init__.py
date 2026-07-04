@@ -88,4 +88,4 @@ def main(argv: Sequence[str] | None = None) -> int:
     return ExitCode.USAGE_ERROR
 
 
-__all__ = ["main", "ExitCode"]
+__all__ = ["ExitCode", "main"]
