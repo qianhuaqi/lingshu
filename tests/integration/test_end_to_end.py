@@ -23,13 +23,14 @@ def test_full_request_response_cycle(app: LingShu) -> None:
     """Test a full request/response cycle including middleware and route parameters."""
     events = []
 
-    @app.middleware("request")
     async def add_custom_header(request: Request, call_next) -> Response:
         events.append("middleware_in")
-        response = await call_next(request)
-        response.headers.add("X-E2E-Status", "passed")
+        response = await call_next()
+        response.add_header("X-E2E-Status", "passed")
         events.append("middleware_out")
         return response
+
+    app.add_middleware(add_custom_header)
 
     @app.post("/items/{item_id}")
     async def process_item(request: Request) -> Response:
