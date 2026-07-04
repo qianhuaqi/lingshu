@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 from typing import TYPE_CHECKING
 
 from lingshu.core.errors import ProtocolError, ResourceLimitError
@@ -71,7 +72,8 @@ class HttpConnection:
         """Immediately close the connection."""
         if not self._closed:
             self._closed = True
-            self._writer.close()
+            with contextlib.suppress(Exception):
+                self._writer.close()
 
     async def serve(self) -> None:
         """Process requests on this connection sequentially."""
