@@ -48,6 +48,8 @@ Requirements:
 CPython 3.12 or newer
 ```
 
+The supported development toolchain and Ruff formatting baseline are documented in [`docs/development/TOOLCHAIN.md`](docs/development/TOOLCHAIN.md).
+
 Create and activate a virtual environment, then install the development extra:
 
 ```bash
@@ -73,11 +75,13 @@ python -m pip install -e ".[dev]"
 Run the baseline checks:
 
 ```bash
-ruff check .
-ruff format --check .
-mypy
-pytest
+python -m ruff check .
+python -m ruff format --check .
+python -m mypy lingshu
+python -m pytest
 python -m build
+python tests/packaging/check_artifacts.py validate dist
+git diff --check
 ```
 
 An editable installation is for development only. Release evidence comes from the CI clean-install job, which builds wheel and sdist, installs the wheel outside the checkout, validates artifact inventory, and rebuilds a wheel from the sdist.
@@ -138,13 +142,5 @@ The packages are placeholders in P1-00. Component behavior is implemented only b
 The previous Sanic-based repository state remains preserved at:
 
 ```text
-archive/legacy-sanic-20260628
+legacy/sanic_framework/
 ```
-
-Archived commit:
-
-```text
-b869270e0ec7cbc324d17ef246e39d0873aab14f
-```
-
-It is historical reference only and is not an implementation baseline.
