@@ -93,7 +93,7 @@ class Response:
         value: object,
         *,
         status: int = 200,
-        headers: Iterable[tuple[str | bytes, str | bytes]] = (),
+        headers: Iterable[tuple[str | builtins.bytes, str | builtins.bytes]] = (),
     ) -> Response:
         """Create a UTF-8 JSON response using the standard library encoder."""
 
