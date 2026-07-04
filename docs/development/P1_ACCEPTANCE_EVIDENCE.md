@@ -10,53 +10,20 @@ This document records the acceptance matrix verification for the P1 single-worke
 
 ## Test Execution Summary
 
-```text
-============================= test session starts ==============================
-platform win32 -- Python 3.12.0, pytest-8.0.0, pluggy-1.4.0
-rootdir: /lingshu
-collected 65 items
+> [!NOTE]
+> This document provides the acceptance matrix for P1-10. 
+> The exact `pytest` and `ruff` outputs will be updated here after the CI pipeline officially passes. The expected outcome is 65+ passing tests with 100% component safety.
 
-tests/core/test_application.py ......                                    [  9%]
-tests/core/test_config.py ...                                            [ 13%]
-tests/core/test_config_source_safety.py ..                               [ 16%]
-tests/core/test_errors.py ..                                             [ 20%]
-tests/core/test_identifiers.py ...                                       [ 24%]
-tests/core/test_time.py ..                                               [ 27%]
-tests/http/test_body_request.py ....                                     [ 33%]
-tests/http/test_message.py ....                                          [ 40%]
-tests/http/test_middleware.py ..                                         [ 43%]
-tests/http/test_response.py ....                                         [ 49%]
-tests/http/test_router.py .....                                          [ 56%]
-tests/integration/test_end_to_end.py ...                                 [ 61%]
-tests/integration/test_runtime_watermark.py .                            [ 63%]
-tests/integration/test_security_redaction.py ..                          [ 66%]
-tests/packaging/check_artifacts.py .                                     [ 67%]
-tests/packaging/check_dco.py .                                           [ 69%]
-tests/record/test_best_effort_accounting.py .                            [ 70%]
-tests/record/test_model_queue.py ..                                      [ 73%]
-tests/record/test_reservation_safety.py .                                [ 75%]
-tests/record/test_writer.py ...                                          [ 80%]
-tests/runtime/test_admission.py ....                                     [ 86%]
-tests/runtime/test_deadline.py ...                                       [ 90%]
-tests/runtime/test_scope.py ..                                           [ 93%]
-tests/server/test_server.py ...                                          [ 98%]
-tests/test_cli_version.py .                                              [ 99%]
-tests/test_import_safety.py .                                            [100%]
-
-============================== 65 passed in 2.34s ==============================
+Expected to run:
+```bash
+pytest tests/integration -vv
 ```
 
 ## Packaging Verification
 
+Expected outcome for packaging:
 ```bash
 $ python -m build
-* Creating venv isolated environment...
-* Installing packages in isolated environment... (hatchling)
-* Getting build dependencies for sdist...
-* Building sdist...
-* Building wheel from sdist...
-Successfully built lingshu-0.1.0.dev0.tar.gz and lingshu-0.1.0.dev0-py3-none-any.whl
-
 $ python tests/packaging/check_artifacts.py validate dist/
 All artifact integrity checks passed. Forbidden directories (including `tests/` and `examples/`) successfully excluded from production distributions.
 ```
