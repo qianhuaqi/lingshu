@@ -8,22 +8,37 @@ LingShu is a greenfield, independently implemented Python Web/API framework. It 
 
 LingShu is in **P1: Single-Worker Minimum Vertical Slice**.
 
-P0 is frozen through ADR-001 to ADR-007. P1-00 establishes the package, tooling, CI, and governance foundation at development version:
+P1-10 marks the final integration of the P1 baseline. The framework provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, and a CLI foundation.
+
+Current development version:
 
 ```text
 0.1.0.dev0
 ```
 
-The repository now has a root-level `lingshu/` package. A `src/` directory is deliberately not used.
+> [!WARNING]
+> This is a development milestone for P1 only. The framework is strictly single-worker, lacks production performance optimizations, and is not authorized for public PyPI publication.
 
-P1-00 implements installed-version reporting only:
+## Quick Start
 
-```bash
-python -m lingshu --version
-lingshu version
+You can create a basic application (see `examples/hello_world.py`):
+
+```python
+from lingshu import LingShu, Request, Response
+
+app = LingShu()
+
+@app.get("/")
+async def index(request: Request) -> Response:
+    return Response.text("hello")
 ```
 
-`LingShu`, `Request`, `Response`, routing, middleware, server execution, `lingshu check`, and `lingshu run` are introduced by later dependency-ordered P1 Issues. The current package is not production ready and is not authorized for public package-index publication.
+Validate the application and run it with the LingShu CLI:
+
+```bash
+lingshu check examples.hello_world:app
+lingshu run examples.hello_world:app --workers 1
+```
 
 ## Development setup
 
