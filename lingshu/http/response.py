@@ -12,17 +12,6 @@ from lingshu.core.errors import FatalScope, HandlerContractError, LifecycleError
 from lingshu.http.message import Headers
 
 
-type JSONValue = (
-    None
-    | bool
-    | int
-    | float
-    | str
-    | list[object]
-    | dict[str, object]
-)
-
-
 class ResponseState(StrEnum):
     """P1 buffered Response lifecycle."""
 
@@ -101,14 +90,14 @@ class Response:
     @classmethod
     def json(
         cls,
-        value: JSONValue,
+        value: object,
         *,
         status: int = 200,
         headers: Iterable[tuple[str | bytes, str | bytes]] = (),
     ) -> Response:
         """Create a UTF-8 JSON response using the standard library encoder."""
 
-        body = json_module.dumps(
+        body = json_module.dumps(  # type: ignore[arg-type]
             value,
             ensure_ascii=False,
             allow_nan=False,
