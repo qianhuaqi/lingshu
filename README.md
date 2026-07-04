@@ -6,9 +6,9 @@ LingShu is a greenfield, independently implemented Python Web/API framework. It 
 
 ## Current status
 
-LingShu has completed the **P1: Single-Worker Minimum Vertical Slice** baseline and is now in the P2 hardening track.
+LingShu has completed the **P1: Single-Worker Minimum Vertical Slice** baseline and the **P2 hardening track**. The repository is now in **P3: Developer-facing API ergonomics planning**.
 
-The framework currently provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, safe diagnostics, configuration hardening, operational hardening, and a CLI foundation.
+The framework currently provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, safe diagnostics, configuration hardening, operational hardening, developer guidance, and a CLI foundation.
 
 Current development version:
 
@@ -102,7 +102,7 @@ Read these before contributing:
 4. [Concurrent Development](docs/development/CONCURRENT_DEVELOPMENT.md)
 5. [Frozen Framework Blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
 6. accepted ADRs under [`docs/decisions/`](docs/decisions/)
-7. [P2 Roadmap](docs/development/P2_ROADMAP.md)
+7. [P3 Roadmap](docs/development/P3_ROADMAP.md)
 8. [Development Handoff](docs/development/HANDOFF.md)
 
 ## Contribution rules
