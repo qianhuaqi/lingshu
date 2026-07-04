@@ -47,7 +47,7 @@ def test_full_request_response_cycle(app: LingShu) -> None:
             separators=(",", ":"),
         )
         response = Response.text(payload)
-        response.add_header("content-type", "application/json")
+        response.set_header("content-type", "application/json")
         return response
 
     async def run() -> None:
@@ -79,7 +79,7 @@ def test_full_request_response_cycle(app: LingShu) -> None:
 
         resp_text = response_data.decode("latin-1")
         assert "HTTP/1.1 200 OK" in resp_text
-        assert "X-E2E-Status: passed" in resp_text
+        assert "x-e2e-status: passed" in resp_text.lower()
         assert '{"item_id":"abc-123","received":42}' in resp_text.replace(" ", "")
 
         assert events == ["middleware_in", "handler", "middleware_out"]
