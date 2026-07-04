@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import builtins
+import json as json_module
 from collections.abc import Iterable
 from dataclasses import dataclass
 from enum import StrEnum
@@ -84,6 +85,27 @@ class Response:
         response = cls(bytes(value), status=status, headers=headers)
         if not response._has_header("content-type"):
             response._headers.append(("content-type", "application/octet-stream"))
+        return response
+
+    @classmethod
+    def json(
+        cls,
+        value: object,
+        *,
+        status: int = 200,
+        headers: Iterable[tuple[str | bytes, str | bytes]] = (),
+    ) -> Response:
+        """Create a UTF-8 JSON response using the standard library encoder."""
+
+        body = json_module.dumps(
+            value,
+            ensure_ascii=False,
+            allow_nan=False,
+            separators=(",", ":"),
+        ).encode("utf-8")
+        response = cls(body, status=status, headers=headers)
+        if not response._has_header("content-type"):
+            response._headers.append(("content-type", "application/json; charset=utf-8"))
         return response
 
     @property
