@@ -39,7 +39,11 @@ def run(target: str, is_factory: bool, workers: int, host: str, port: int) -> in
         print("Error: application validation failed", file=sys.stderr)
         return ExitCode.CONTRACT_ERROR
 
-    config = ServerConfig(host=host, port=port)
+    try:
+        config = ServerConfig(host=host, port=port)
+    except ValueError:
+        print("Error: invalid server configuration", file=sys.stderr)
+        return ExitCode.USAGE_ERROR
 
     try:
         asyncio.run(serve(app, config))
