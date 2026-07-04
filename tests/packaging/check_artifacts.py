@@ -15,6 +15,7 @@ FORBIDDEN_PARTS = {
     ".ruff_cache",
     "__pycache__",
     "credentials",
+    "examples",
     "tests",
     "tools",
 }

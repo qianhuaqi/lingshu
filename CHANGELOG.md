@@ -17,6 +17,12 @@ The format uses `Added`, `Changed`, `Deprecated`, `Removed`, `Fixed`, and `Secur
 - Core wall/monotonic time contracts and strict RFC3339 UTC helpers.
 - Typed opaque runtime identifiers and deterministic SHA-256 RevisionId.
 - Stable framework error taxonomy, immutable safe details, and safe Problem Details mapping.
+- `LingShu` application kernel with immutable compile-time Freeze, extension hooks, and middleware pipeline.
+- `Request` and `Response` core primitives and type contracts.
+- Native HTTP/1.1 single-worker server (`serve()` and `Server`) with keep-alive, pipelining rejection, and graceful drain.
+- Runtime scopes, hard-deadline propagation, cancellation safety, and runtime admission record queue.
+- `lingshu check` and `lingshu run --workers 1` CLI surface.
+- P1 cross-cutting integration, security redaction, runtime watermark tests, and `examples/hello_world.py`.
 
 ### Changed
 
