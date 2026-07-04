@@ -11,9 +11,9 @@ from lingshu.http.body import RequestBody
 from lingshu.http.message import Headers, HTTPMethod, HTTPVersion, RequestTarget
 from lingshu.http.request import ConnectionInfo, Request
 from lingshu.http.response import Response
-from lingshu.runtime.cancellation import CancellationReason
 from lingshu.runtime.deadline import Deadline
 from lingshu.runtime.scope import ScopeKind
+from lingshu.runtime.cancellation import CancellationReason
 
 if TYPE_CHECKING:
     from lingshu.core.application import LingShu
@@ -174,7 +174,7 @@ class HttpConnection:
                     except (ValueError, ProtocolError, TypeError):
                         await self._send_error(400, "Bad Request")
                         break
-                    except ResourceLimitError:
+                    except ResourceLimitError as exc:
                         await self._send_error(431, "Request Header Fields Too Large")
                         break
 
