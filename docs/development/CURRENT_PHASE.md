@@ -16,11 +16,11 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: #102 - P3 closeout and P4 roadmap
-Active branch: `human/dodo/p4-00-phase-transition`
+Active Issue: none after P4-00 merge; next authorized task is P4-01 - async TestClient implementation
+Active branch: none after P4-00 merge; create the next branch from `main` for P4-01
 Primary writer: project lead / 小顾
-Status: P1, P2, and P3 are complete; P4 planning is being written before extension implementation starts.
-Next dependent phase allowed: no P4 implementation task until P4-00 is merged and the project lead confirms the roadmap.
+Status: P1, P2, and P3 are complete; P4-00 is merged and P4 roadmap planning is accepted.
+Next dependent phase allowed: P4-01 async TestClient implementation may proceed after project-lead confirmation.
 
 ## P1 closeout facts
 
@@ -99,9 +99,9 @@ P5 data extensions: Redis, MySQL, MongoDB
 P6 identity and access extensions
 ```
 
-## Active P4-00 scope
+## Completed P4-00 scope
 
-P4-00 may update only planning and status documents:
+P4-00 updated only planning and status documents:
 
 ```text
 docs/development/CURRENT_PHASE.md
@@ -112,8 +112,8 @@ README.md status section only if needed
 CHANGELOG.md only if needed
 ```
 
-P4-00 must not change framework runtime behavior, public APIs, tests, package metadata, CI behavior, or dependency declarations.
+P4-00 did not authorize framework runtime behavior, public API, test, package metadata, CI behavior, or dependency declaration changes.
 
 ## Dependency gate
 
-The first P4 implementation task is blocked until P4-00 merges and the project lead confirms the roadmap.
+P4-00 is merged. The next allowed task is P4-01 async TestClient implementation. Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, and adapter work remain blocked until later authorized issues and ADRs.

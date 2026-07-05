@@ -1,6 +1,6 @@
 # Development Handoff
 
-Updated at: 2026-07-04
+Updated at: 2026-07-05
 Project: LingShu Framework
 Phase: P4 - Extension foundation planning
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
@@ -16,10 +16,10 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: #102
-Active branch: `human/dodo/p4-00-phase-transition`
+Active Issue: none after P4-00 merge; next authorized task is P4-01 - async TestClient implementation
+Active branch: none after P4-00 merge; create the next branch from `main` for P4-01
 Primary writer: project lead / 小顾
-Status: P4-00 documentation refresh and P4 roadmap writing in progress.
+Status: P4-00 is complete; P4-01 async TestClient implementation is the next authorized task.
 
 ## Implemented through P1
 
@@ -59,9 +59,9 @@ P3 added the developer-facing ergonomics track:
 
 ## Current task
 
-P4-00 updates phase and handoff state, records P3 closeout, and writes the P4 roadmap.
+P4-00 is merged. The next task is P4-01 async TestClient implementation.
 
-P4-00 is documentation-only. It must not change framework runtime behavior, public APIs, CI behavior, packaging metadata, tests, or dependency declarations.
+P4-01 should stay narrow and implement only the async test-client surface accepted by `docs/development/TEST_CLIENT_PLAN.md`. It must not add Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, adapters, public package publication, or production-readiness claims.
 
 ## Recommended P4 sequence
 
@@ -88,4 +88,4 @@ P4-00 is documentation-only. It must not change framework runtime behavior, publ
 
 ## Next action
 
-Open a Draft PR for Issue #102 from `human/dodo/p4-00-phase-transition`, verify documentation scope and CI, then wait for project-lead final merge review.
+Open the P4-01 issue and Draft PR from a fresh branch based on `main`, implement the narrow async TestClient, verify CI, then wait for project-lead final merge review.
