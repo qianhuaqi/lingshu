@@ -107,15 +107,15 @@ P5 should start only after extension contract, resource lifecycle, configuration
 
 P6 should start only after P5 or a separate approved Issue confirms the application resource and extension foundation is stable enough for identity and access work.
 
-## 7. First implementable P4 issue
+## 7. Current implementable P4 issue
 
-After P4-00 merges, the first implementable Issue should be:
+The current implementable Issue is:
 
 ```text
-P4-01: async TestClient implementation
+P4-02: extension contract and package boundary
 ```
 
-P4-01 should stay narrow and implement only the public surface accepted by `docs/development/TEST_CLIENT_PLAN.md`.
+P4-02 defines the official extension contract without implementing concrete extensions.
 
 ## 8. Governance
 

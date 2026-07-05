@@ -16,10 +16,10 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: none after P4-00 merge; next authorized task is P4-01 - async TestClient implementation
-Active branch: none after P4-00 merge; create the next branch from `main` for P4-01
+Active Issue: #106 - P4-02: extension contract and package boundary
+Active branch: human/dodo/p4-02-extension-contract
 Primary writer: project lead / 小顾
-Status: P4-00 is complete; P4-01 async TestClient implementation is the next authorized task.
+Status: P4-01 is complete; P4-02 extension contract and package boundary is the active task.
 
 ## Implemented through P1
 
@@ -59,9 +59,9 @@ P3 added the developer-facing ergonomics track:
 
 ## Current task
 
-P4-00 is merged. The next task is P4-01 async TestClient implementation.
+P4-01 is complete. The active task is P4-02 extension contract and package boundary.
 
-P4-01 should stay narrow and implement only the async test-client surface accepted by `docs/development/TEST_CLIENT_PLAN.md`. It must not add Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, adapters, public package publication, or production-readiness claims.
+P4-02 focuses on defining the extension contract and package boundary without implementing concrete data stores.
 
 ## Recommended P4 sequence
 
@@ -88,4 +88,4 @@ P4-01 should stay narrow and implement only the async test-client surface accept
 
 ## Next action
 
-Open the P4-01 issue and Draft PR from a fresh branch based on `main`, implement the narrow async TestClient, verify CI, then wait for project-lead final merge review.
+Continue implementing the extension contract and package boundary in P4-02.
