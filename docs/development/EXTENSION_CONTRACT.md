@@ -21,7 +21,8 @@ Define how official LingShu extensions (e.g., Redis, MySQL, MongoDB, Identity) a
 
 ## 3. Core Interface vs. Helper Classes
 
-The core framework will provide minimal **Protocols and Helper Base Classes** to ensure consistent developer experience across extensions. 
+The framework provides core interfaces and typed contracts.
+For detailed resource lifecycle integration (startup, shutdown, and cancellation requirements), refer to [Application Resource Lifecycle Contract](./RESOURCE_LIFECYCLE_CONTRACT.md).
 
 - `lingshu.core.application` currently exposes `add_extension()` with raw `startup_hook` and `shutdown_hook`.
 - A future or minimal `lingshu.ext` module may provide an `Extension` base class or Protocol. However, currently, the raw hook registration is sufficient to establish lifecycle boundaries.

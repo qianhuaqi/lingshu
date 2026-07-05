@@ -112,10 +112,10 @@ P6 should start only after P5 or a separate approved Issue confirms the applicat
 The current implementable Issue is:
 
 ```text
-P4-02: extension contract and package boundary
+P4-03: application resource lifecycle contract
 ```
 
-P4-02 defines the official extension contract without implementing concrete extensions.
+P4-03 defines the official application resource lifecycle contract without implementing concrete extensions.
 
 ## 8. Governance
 
