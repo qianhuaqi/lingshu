@@ -24,6 +24,7 @@ PROVIDER_COMPONENTS = {
     "lingshu.record",
     "lingshu.runtime",
     "lingshu.server",
+    "lingshu.testing",
 }
 
 
