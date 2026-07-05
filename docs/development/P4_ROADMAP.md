@@ -1,10 +1,12 @@
 # P4 Roadmap
 
-Status: draft for Issue #102 / P4-00
+Status: accepted by PR #102 / P4-00
 Parent milestone: P3 developer-facing API ergonomics complete
 P3 final Issue: #100
 P3 final Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
+P4-00 final Pull Request: #102
+P4-00 merge commit: `f13a77892ea9e8960fd25aa4d51b554c51f36c84`
 
 ## 1. Why this document exists
 
@@ -125,9 +127,9 @@ No direct commits to `main`, no auto-merge, no shared writable branch, and no co
 
 ## 9. P4-00 exit condition
 
-P4-00 completes when:
+P4-00 completed when:
 
 - Issue #102 has a merged PR;
 - stale phase and handoff documents no longer point to active P3 work;
 - this roadmap is present on `main`;
-- the project lead confirms the first implementable P4 Issue can proceed.
+- the project lead confirms P4-01 async TestClient implementation can proceed.
