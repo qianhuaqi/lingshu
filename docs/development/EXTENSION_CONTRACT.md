@@ -1,6 +1,6 @@
 # Official Extension Contract and Package Boundary
 
-Status: accepted by P4-02
+Status: draft for P4-02 review
 Context: Issue #106
 
 ## 1. Goal
@@ -17,8 +17,7 @@ Define how official LingShu extensions (e.g., Redis, MySQL, MongoDB, Identity) a
 2. **Official Extension Packages (`lingshu-<extname>`)**:
    - Naming convention: `lingshu-<name>` (e.g., `lingshu-redis`, `lingshu-mysql`).
    - Import convention: `from lingshu.ext.<name> import ...` (via implicit namespace packages or standard subpackages if unified). 
-   - Distributed as independent PyPI packages. They declare `lingshu` as a dependency.
-   - Example: `pip install lingshu-redis` -> provides `lingshu.ext.redis`.
+   - Future official extension packages may be distributed independently after P4-05 defines packaging and dependency policy. P4-02 does not publish packages.
 
 ## 3. Core Interface vs. Helper Classes
 
