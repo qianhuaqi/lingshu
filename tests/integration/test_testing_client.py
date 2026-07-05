@@ -167,6 +167,24 @@ def test_request_cancellation(app: LingShu) -> None:
     asyncio.run(run())
 
 
+def test_query_string_routing(app: LingShu) -> None:
+    """Test that requests with query strings route correctly by parsed path."""
+
+    @app.get("/search")
+    async def search(request: Request) -> Response:
+        assert request.target.path == "/search"
+        assert request.target.query == "q=abc"
+        return Response.text("found")
+
+    async def run() -> None:
+        async with TestClient(app) as client:
+            response = await client.get("/search?q=abc")
+            assert response.status == 200
+            assert response.text == "found"
+
+    asyncio.run(run())
+
+
 def test_not_found(app: LingShu) -> None:
     """Test 404 behavior."""
 
