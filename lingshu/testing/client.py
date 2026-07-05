@@ -104,7 +104,7 @@ class TestClient:
                 request_body = RequestBody.from_bytes(
                     body,
                     scope=req_scope,
-                    max_bytes=max(len(body) if body else 0, 1048576),
+                    max_bytes=max(len(body), 1048576) if body else 1048576,
                 )
 
                 request = Request(
@@ -121,13 +121,10 @@ class TestClient:
 
                 response = await self._app.dispatch(http_method.value, target.path, request)
 
-                # Collect the response safely before scopes close
-                response_body = b"".join([chunk async for chunk in response.body])
-
                 return TestResponse(
                     status=response.status,
                     headers=response.headers,
-                    body=response_body,
+                    body=response.body,
                 )
 
     async def get(
