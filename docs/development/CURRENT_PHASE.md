@@ -32,7 +32,7 @@ P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: 
 
 Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
 Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
-Primary writer: project lead / 灏忛【
+Primary writer: project lead / 小顾
 Status: P1, P2, P3, and P4 are complete; P5-00 is active and only defines the P5 data-extension roadmap.
 Next dependent phase allowed: P5-01 Redis data extension track may proceed after P5-00 merge and project-lead confirmation.
 

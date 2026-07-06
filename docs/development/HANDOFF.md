@@ -22,7 +22,7 @@ Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
 Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
 Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
-Primary writer: project lead / 灏忛【
+Primary writer: project lead / 小顾
 Status: P4 is closed; P5-00 is active and only defines the P5 roadmap.
 
 ## P4 closeout
