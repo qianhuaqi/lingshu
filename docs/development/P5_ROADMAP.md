@@ -1,7 +1,7 @@
 # P5 Roadmap
 
-Status: draft for P5-00 review
-Context: Issue #114
+Status: active for P5-01 review
+Context: Issue #116
 
 ## 1. Why this document exists
 
