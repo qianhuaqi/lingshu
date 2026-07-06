@@ -1,81 +1,93 @@
 # P5 Roadmap
 
-Status: active for P5-01 review
-Context: Issue #116
+Status: active for framework audit and database layer planning
+Context: framework capability planning before further data-driver work
 
 ## 1. Why this document exists
 
-P5 starts after the P4 extension foundation is accepted. This roadmap defines the data-extension sequence for Redis, MySQL, and MongoDB without implementing any of them in P5-00.
+P5 starts after the P4 extension foundation is accepted. The previous P5 sequence listed Redis, MySQL, and MongoDB directly. That was not enough for a framework-level plan because it skipped the common `lingshu.db` database layer and broader framework completeness audit.
+
+This roadmap now defines the safer order:
+
+```text
+framework audit
+framework implementation plan
+stale documentation synchronization
+lingshu.db database layer architecture
+lingshu.db minimal code skeleton
+specific database drivers
+query / command / ORM / production layers
+```
 
 ## 2. P4 closeout summary
 
-P4 is closed. The accepted P4 contracts and final merge references are:
+P4 established the extension boundary, lifecycle rules, redaction rules, and packaging policy that P5 resource and data extensions must follow.
+
+Accepted P4 baseline:
 
 ```text
-P4-00 #102 / PR #102 / merge commit `f13a77892ea9e8960fd25aa4d51b554c51f36c84`: roadmap and phase closeout
-P4-01 #104 / PR #105 / merge commit `f4753d39f6f710fea56c37f2f2851efb3e2ee186`: async TestClient and testing ergonomics
-P4-02 #107 / PR #107 / merge commit `2998a3c42988ef8ccdb61bf54feb74ee5b7a72e9`: extension contract and package boundary
-P4-03 #109 / PR #109 / merge commit `d55a34d3cdef19684b027eb840be7f57f61aedec`: application resource lifecycle contract
-P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: configuration redaction contract for extensions
-P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
+P4-02 extension contract and package boundary
+P4-03 application resource lifecycle
+P4-04 configuration redaction for extensions
+P4-05 official extension packaging and dependency policy
 ```
-
-The P4 contracts establish the extension boundary, lifecycle rules, redaction rules, and packaging policy that P5 data extensions must follow.
 
 ## 3. P5 goals
 
-- Define the official P5 roadmap for data extensions.
-- Keep the core package free of new mandatory runtime dependencies.
-- Preserve the accepted P4 contracts as the baseline for any later implementation work.
-- Keep diagnostics, reprs, logs, and handoff summaries free of secret leakage.
-- Make the next P5 implementation issues explicit and ordered.
+- Record what the framework has already implemented.
+- Identify missing framework capabilities.
+- Compare LingShu with mature frameworks and record what to learn.
+- Synchronize stale README / phase / handoff / roadmap state.
+- Define `lingshu.db` as the official database layer before isolated MySQL / Redis / MongoDB driver work continues.
+- Keep the core package free of accidental mandatory runtime dependencies.
 
-## 4. P5 non-goals
+## 4. P5 non-goals for the current audit branch
 
-- Implementing Redis, MySQL, or MongoDB.
-- Implementing identity/access.
-- Implementing OpenAPI.
-- Implementing multi-worker mode.
-- Implementing reload/watch.
-- Implementing ASGI, WSGI, WebSocket, HTTP/2, or HTTP/3 adapters.
-- Publishing a public package.
-- Adding new core mandatory runtime dependencies.
+- Implementing real database clients.
+- Implementing ORM / ODM / Migration.
+- Implementing OpenAPI, Auth, multi-worker, reload, or adapters.
 - Making production-ready or performance claims.
 
-## 5. P5 dependency baseline
+These are not rejected forever; they are scheduled into later Plans after the correct lower layers exist.
 
-P5 depends on the accepted P4 contracts:
+## 5. Revised P5 order
 
-- P4-02 extension contract and package boundary;
-- P4-03 application resource lifecycle;
-- P4-04 configuration redaction for extensions;
-- P4-05 official extension packaging and dependency policy.
+```text
+Plan 01: framework completeness audit and documentation sync
+Plan 02: lingshu.db database layer architecture
+Plan 03: lingshu.db minimal code skeleton
+Plan 04: lingshu.db.mysql driver contract and skeleton
+Plan 05: lingshu.db.redis alignment
+Plan 06: lingshu.db.mongodb driver contract and skeleton
+Plan 07: real runtime adapter strategy
+Plan 08: SQL query and transaction layer
+Plan 09: NoSQL command layer
+Plan 10: ORM / ODM / Migration ADR
+Plan 11: OpenAPI / Schema / Validation
+Plan 12: Auth / Tenant / RBAC
+Plan 13: Production runtime
+```
 
-P5 implementation work must stay inside these boundaries and must not reopen P4 runtime scope.
+## 6. Current active Plan
 
-## 6. Suggested P5 order
+Current active Plan:
 
-Suggested sequence:
+```text
+Plan 01: framework completeness audit and documentation sync
+```
 
-1. P5-00: P4 closeout and P5 data extensions roadmap.
-2. P5-01: Redis data extension track.
-3. P5-02: MySQL data extension track.
-4. P5-03: MongoDB data extension track.
+Active branch:
 
-Suggested order rationale:
+```text
+human/dodo/framework-audit-plan-sync
+```
 
-- Redis first as the simplest official data extension baseline.
-- MySQL second to validate SQL-oriented packaging and lifecycle patterns.
-- MongoDB third to round out the initial data-extension set.
+## 7. Next implementable Plan
 
-## 7. Validation and CI expectations
+After Plan 01 is merged, the next implementable Plan is:
 
-- Keep the diff within the allowed documentation files.
-- Run the merge-conflict marker grep before submit.
-- Run `git diff --cached --stat` before submit.
-- When Python 3.12+ dev dependencies are available locally, run `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy`, and `python -m pytest`.
-- If Windows local dependency installation is blocked by `WinError 10013`, record the failure and rely on Draft PR plus GitHub CI for the final gate.
+```text
+Plan 02: lingshu.db database layer architecture
+```
 
-## 8. Next implementable issue
-
-The next implementable P5 issue after P5-02 is P5-03: MongoDB data extension track.
+That Plan must create `docs/architecture/DATABASE_LAYER_ARCHITECTURE.md` before continuing isolated MySQL, Redis, or MongoDB driver work.
