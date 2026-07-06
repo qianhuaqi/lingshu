@@ -2,78 +2,48 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5 - Data extensions roadmap
+Current phase: P5 - framework capability planning and database layer architecture
+
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
 Completed track: P4 - extension foundation planning
-Completed final P1 Issue: #76
-Completed final P1 Pull Request: #77
-P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
-P1 acceptance evidence: `docs/development/P1_ACCEPTANCE_EVIDENCE.md`
-Completed final P2 Issue: #88
-Completed final P2 Pull Request: #89
-P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
-Completed final P3 Issue: #100
-Completed final P3 Pull Request: #101
-P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Completed final P4 Issue: #112
-Completed final P4 Pull Request: #113
-P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-P4 accepted contracts and merge references:
 
-```text
-P4-00 #102 / PR #102 / merge commit `f13a77892ea9e8960fd25aa4d51b554c51f36c84`: P4 roadmap and phase closeout
-P4-01 #104 / PR #105 / merge commit `f4753d39f6f710fea56c37f2f2851efb3e2ee186`: async TestClient and testing ergonomics
-P4-02 #107 / PR #107 / merge commit `2998a3c42988ef8ccdb61bf54feb74ee5b7a72e9`: extension contract and package boundary
-P4-03 #109 / PR #109 / merge commit `d55a34d3cdef19684b027eb840be7f57f61aedec`: application resource lifecycle contract
-P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: configuration redaction contract for extensions
-P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
-```
+## Current active work
 
-Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
-Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
+Active work: framework completeness audit, competitive analysis, implementation plan, and documentation sync
+Active branch: `human/dodo/framework-audit-plan-sync`
 Primary writer: project lead / 小顾
-Status: P1, P2, P3, and P4 are complete; P5-00 is active and only defines the P5 data-extension roadmap.
-Next dependent phase allowed: P5-01 Redis data extension track may proceed after P5-00 merge and project-lead confirmation.
 
-## P5 closeout goal
+## Current status
 
-P5-00 closes P4, records the accepted P4 contracts, and defines the roadmap for Redis, MySQL, and MongoDB data extensions without implementing any runtime behavior.
+P1, P2, P3, and P4 are complete. P5 has started, but the previous P5 documentation was too narrow because it listed Redis, MySQL, and MongoDB tracks before defining the broader framework capability plan and `lingshu.db` database layer architecture.
 
-## P4 closeout facts
-
-P4 completed when PR #113 merged and Issue #112 closed as completed.
-
-P4 delivered the extension foundation:
-
-- extension contract and package boundary;
-- application resource lifecycle contract;
-- configuration redaction contract for extensions;
-- official extension packaging and dependency policy.
-
-## P5 roadmap goal
-
-P5 should turn the P4 extension foundation into a data-extension roadmap for Redis, MySQL, and MongoDB while keeping the core package thin and avoiding new mandatory runtime dependencies.
-
-## P5 sequencing
+The current correction is to establish:
 
 ```text
-P5-00 P4 closeout and P5 data extensions roadmap
-P5-01 Redis data extension track
-P5-02 MySQL data extension track
-P5-03 MongoDB data extension track
+1. what LingShu has implemented;
+2. what LingShu is still missing;
+3. what LingShu can learn from mature frameworks;
+4. which stale documents must be synchronized;
+5. the next plan sequence from audit to database-layer implementation.
 ```
 
-## Deferred until later authorization
+## Current planning documents
 
 ```text
-identity/access
-OpenAPI
-multi-worker
-reload/watch
-ASGI / WSGI / WebSocket / HTTP2 / HTTP3 adapters
-public package publication
-production-ready or performance claims
-new mandatory runtime dependencies in core
+docs/development/FRAMEWORK_COMPLETENESS_AUDIT.md
+docs/development/FRAMEWORK_COMPETITIVE_ANALYSIS.md
+docs/development/FRAMEWORK_IMPLEMENTATION_PLAN.md
+docs/development/FRAMEWORK_CLEANUP_AND_SYNC_PLAN.md
 ```
+
+## Next dependent work
+
+After this audit and sync branch is reviewed, the next task should define:
+
+```text
+docs/architecture/DATABASE_LAYER_ARCHITECTURE.md
+```
+
+That architecture must establish `lingshu.db` before continuing isolated MySQL, Redis, or MongoDB driver work.
