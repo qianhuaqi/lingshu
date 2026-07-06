@@ -1,14 +1,13 @@
 # P5 Roadmap
 
-Status: active for P5-05 review
-Context: Issue #126
+Status: active for P5-06 implementation
+Context: Issue #128
 
 ## 1. Why this document exists
 
 P5 starts after the P4 extension foundation is accepted. This roadmap now tracks
-the shared `lingshu.db` foundation and its minimal Application lifecycle
-boundary that later data extensions can consume without making database clients
-mandatory core dependencies.
+the shared `lingshu.db` foundation and minimal backend drivers that can consume
+it without making database clients mandatory dependencies of core.
 
 ## 2. P4 closeout summary
 
@@ -28,30 +27,23 @@ rules, and packaging policy that later implementation work must follow.
 
 ## 3. P5 goals
 
-- Establish an import-safe database foundation before backend-specific drivers.
-- Wire the foundation into Application lifecycle through a minimal `app.db`
-  developer API.
-- Keep the core package free of new mandatory runtime dependencies.
-- Preserve the accepted P4 contracts as the baseline for any later implementation work.
-- Keep diagnostics, reprs, logs, and handoff summaries free of secret leakage.
-- Make the next implementation entry point explicit after cleanup.
+- Keep core import-safe and free of mandatory database client dependencies.
+- Keep `lingshu.db` shared contracts in place and only add optional backend
+  boundaries.
+- Introduce a minimal MySQL driver boundary that can be exercised through
+  `LingShu.add_database_resource()`.
+- Preserve redaction rules and non-sensitive `repr`/`safe_details` behavior.
 
 ## 4. P5 non-goals
 
-- Implementing Redis, MySQL, MongoDB, ORM, query builders, migrations, or
-  connection pooling.
-- Implementing identity/access.
-- Implementing OpenAPI.
-- Implementing multi-worker mode.
-- Implementing reload/watch.
-- Implementing ASGI, WSGI, WebSocket, HTTP/2, or HTTP/3 adapters.
-- Publishing a public package.
-- Adding new core mandatory runtime dependencies.
-- Making production-ready or performance claims.
+- implementing full MySQL query APIs;
+- implementing migration frameworks;
+- implementing query builders or ORM;
+- implementing connection pooling;
+- implementing production-ready performance claims;
+- implementing runtime-wide MySQL access policies beyond startup/shutdown boundary.
 
 ## 5. P5 dependency baseline
-
-P5 depends on the accepted P4 contracts:
 
 - P4-02 extension contract and package boundary;
 - P4-03 application resource lifecycle;
@@ -63,35 +55,33 @@ P4 runtime scope.
 
 ## 6. Suggested P5 order
 
-Suggested sequence:
+1. P5-00: P4 closeout and P5 data extensions roadmap
+2. P5-01: Redis data extension track
+3. P5-02: MySQL data extension track
+4. P5-03: repository cleanup and documentation synchronization before implementation
+5. P5-04: lingshu.db database layer foundation
+6. P5-05: Application lifecycle and app.db injection boundary
+7. P5-06: Minimal MySQL data extension driver
 
-1. P5-00: P4 closeout and P5 data extensions roadmap.
-2. P5-01: Redis data extension track.
-3. P5-02: MySQL data extension track.
-4. P5-03: repository cleanup and documentation synchronization before implementation.
-5. P5-04: lingshu.db database layer foundation.
-6. P5-05: Application lifecycle and app.db injection boundary.
+## 7. P5-06 implementation objective
 
-Suggested order rationale:
+This issue adds:
 
-- Redis first as the simplest official data-extension baseline.
-- MySQL second to validate SQL-oriented packaging and lifecycle patterns.
-- Cleanup third to keep the repository state synchronized before new code.
-- `lingshu.db` fourth to provide a shared database-layer contract before any
-  backend-specific driver package.
-- Application lifecycle wiring fifth so later drivers can rely on a stable
-  `app.db` and `add_database_resource()` boundary.
+1. `lingshu.db.mysql`
+2. `MySQLDriver` (minimal contract-based async startup/shutdown boundary)
+3. `make_mysql_resource(...)` helper backed by `DatabaseResource`
+4. focused tests for import safety, registration/lifecycle behavior, optional
+   dependency handling, and startup failure propagation.
 
-## 7. Validation and CI expectations
+## 8. Validation and CI expectations
 
-- Keep the diff within the allowed documentation files.
-- Run the merge-conflict marker grep before submit.
-- Run `git diff --cached --stat` before submit.
-- When Python 3.12+ dev dependencies are available locally, run `python -m ruff format --check .`, `python -m ruff check .`, `python -m mypy`, and `python -m pytest`.
-- If Windows local dependency installation is blocked by `WinError 10013`, record the failure and rely on Draft PR plus GitHub CI for the final gate.
+- Keep diff within issue scope.
+- Run merge-conflict marker grep before submit.
+- Run `ruff check`, `mypy`, and `pytest`.
+- If local environment has baseline toolchain issues, record and report clearly.
 
-## 8. Next implementable issue
+## 9. Next implementable issue
 
-The next implementable issue after P5-05 should be a backend-specific driver
-track that consumes `lingshu.db` and `add_database_resource()` without adding
-mandatory database dependencies to core.
+The next implementable track after P5-06 is the minimal Redis/MySQL optional
+extension extension catalog sequencing defined in future backend issues.
+
