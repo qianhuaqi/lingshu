@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5 - Data extensions roadmap
+Current phase: P5-03 repository cleanup and documentation synchronization before implementation
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -31,15 +31,17 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
-Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
+Active Issue: #122 - P5-03: repository cleanup and documentation synchronization before implementation
+Active branch: human/dodo/p5-03-repository-cleanup-sync
 Primary writer: project lead / 小顾
-Status: P1, P2, P3, and P4 are complete; P5-00 is active and only defines the P5 data-extension roadmap.
-Next dependent phase allowed: P5-01 Redis data extension track may proceed after P5-00 merge and project-lead confirmation.
+Status: P5-03 is active; the repository cleanup track is document-first and runtime-free.
+Next dependent phase allowed: `lingshu.db` database layer architecture / minimal skeleton after cleanup sync merge and project-lead confirmation.
 
-## P5 closeout goal
+## P5-03 cleanup goal
 
-P5-00 closes P4, records the accepted P4 contracts, and defines the roadmap for Redis, MySQL, and MongoDB data extensions without implementing any runtime behavior.
+P5-03 audits repository cleanup, synchronizes the current phase and handoff
+documents, and records the next implementation entry point without changing any
+runtime behavior.
 
 ## P4 closeout facts
 
@@ -54,7 +56,9 @@ P4 delivered the extension foundation:
 
 ## P5 roadmap goal
 
-P5 should turn the P4 extension foundation into a data-extension roadmap for Redis, MySQL, and MongoDB while keeping the core package thin and avoiding new mandatory runtime dependencies.
+P5 should keep the repository entry points synchronized, preserve the accepted
+architecture and governance records, and leave runtime implementation for later
+issues.
 
 ## P5 sequencing
 
@@ -62,7 +66,7 @@ P5 should turn the P4 extension foundation into a data-extension roadmap for Red
 P5-00 P4 closeout and P5 data extensions roadmap
 P5-01 Redis data extension track
 P5-02 MySQL data extension track
-P5-03 MongoDB data extension track
+P5-03 repository cleanup and documentation synchronization before implementation
 ```
 
 ## Deferred until later authorization

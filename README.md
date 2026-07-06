@@ -1,152 +1,30 @@
-# LingShu Framework / 灵枢框架
+# LingShu Framework
 
 Canonical repository: `qianhuaqi/lingshu`
 
-LingShu is a greenfield, independently implemented Python Web/API framework. It does not depend on Sanic, FastAPI, Flask, Django, Starlette, or another upper-level Web framework.
+LingShu is a greenfield, independently implemented Python Web/API framework. It
+does not depend on Sanic, FastAPI, Flask, Django, Starlette, or another
+upper-level Web framework.
 
-## Current status
+## Current state
 
-LingShu has completed the **P1: Single-Worker Minimum Vertical Slice** baseline and the **P2 hardening track**. The repository is now in **P3: Developer-facing API ergonomics planning**.
+- Current phase: P5-03 repository cleanup and documentation synchronization before implementation
+- Issue: #122
+- Branch: `human/dodo/p5-03-repository-cleanup-sync`
+- Status: repository cleanup audit and documentation synchronization are active; no runtime implementation is in scope.
+- Next after cleanup: `lingshu.db` database layer architecture / minimal skeleton
 
-The framework currently provides immutable route plans, native single-worker HTTP/1.1 serving, request/response core primitives, scopes, safe diagnostics, configuration hardening, operational hardening, developer guidance, and a CLI foundation.
+## Authoritative entries
 
-Current development version:
+- [Current phase](docs/development/CURRENT_PHASE.md)
+- [Development handoff](docs/development/HANDOFF.md)
+- [P5 roadmap](docs/development/P5_ROADMAP.md)
+- [Repository cleanup audit](docs/development/REPOSITORY_CLEANUP_AUDIT.md)
+- [Framework blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
+- [Accepted decisions](docs/decisions)
 
-```text
-0.1.0.dev0
-```
+## Historical context
 
-> [!WARNING]
-> This is a pre-alpha development milestone. The framework is strictly single-worker, lacks production performance optimizations, and is not authorized for public PyPI publication.
-
-## Quick Start
-
-You can create a basic application (see `examples/hello_world.py`):
-
-```python
-from lingshu import LingShu, Request, Response
-
-app = LingShu()
-
-@app.get("/")
-async def index(request: Request) -> Response:
-    return Response.text("hello")
-```
-
-Validate the application and run it with the LingShu CLI:
-
-```bash
-python -m lingshu check examples.hello_world:app
-python -m lingshu run examples.hello_world:app --workers 1
-```
-
-Only one worker is supported. Passing any other worker count returns a safe unsupported-worker error.
-
-## Development setup
-
-Requirements:
-
-```text
-CPython 3.12 or newer
-```
-
-The supported development toolchain and Ruff formatting baseline are documented in [`docs/development/TOOLCHAIN.md`](docs/development/TOOLCHAIN.md).
-
-The current developer loop and CLI behavior are documented in [`docs/development/DEVELOPER_ERGONOMICS.md`](docs/development/DEVELOPER_ERGONOMICS.md).
-
-Future test-client boundaries are documented in [`docs/development/TEST_CLIENT_PLAN.md`](docs/development/TEST_CLIENT_PLAN.md).
-
-Create and activate a virtual environment, then install the development extra:
-
-```bash
-python -m venv .venv
-```
-
-Windows PowerShell:
-
-```powershell
-.\.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-Linux/macOS:
-
-```bash
-source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-```
-
-Run the baseline checks:
-
-```bash
-python -m ruff check .
-python -m ruff format --check .
-python -m mypy lingshu
-python -m pytest
-python -m build
-python tests/packaging/check_artifacts.py validate dist
-git diff --check
-```
-
-An editable installation is for development only. Release evidence comes from the CI clean-install job, which builds wheel and sdist, installs the wheel outside the checkout, validates artifact inventory, and rebuilds a wheel from the sdist.
-
-## Authoritative entry points
-
-Read these before contributing:
-
-1. [Development Constitution](docs/development/DEVELOPMENT_CONSTITUTION.md)
-2. the active GitHub Issue
-3. [Current Phase](docs/development/CURRENT_PHASE.md)
-4. [Concurrent Development](docs/development/CONCURRENT_DEVELOPMENT.md)
-5. [Frozen Framework Blueprint](docs/architecture/LINGSHU_FRAMEWORK_BLUEPRINT.md)
-6. accepted ADRs under [`docs/decisions/`](docs/decisions/)
-7. [P3 Roadmap](docs/development/P3_ROADMAP.md)
-8. [Development Handoff](docs/development/HANDOFF.md)
-
-## Contribution rules
-
-- One task uses one Issue, one primary writer, one writer-prefixed branch, one isolated worktree/environment, and one Pull Request.
-- Never commit directly to `main`.
-- Never enable auto-merge.
-- Every commit requires a DCO sign-off created with `git commit -s`.
-- Final merge authority belongs to the project lead.
-- Work must remain inside the active Issue's write scope and dependency order.
-
-See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), and [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md).
-
-## Architecture baseline
-
-```text
-Distribution:        lingshu
-Import package:      lingshu
-Production source:   lingshu/
-Package metadata:    pyproject.toml
-Build backend:       Hatchling
-Minimum Python:      CPython 3.12
-Mandatory runtime dependencies: none
-```
-
-The target component boundaries are:
-
-```text
-lingshu.core
-lingshu.runtime
-lingshu.http
-lingshu.server
-lingshu.record
-lingshu.extensions
-lingshu.cli
-lingshu.testing
-```
-
-Some target packages are still placeholders. Component behavior is implemented only by its assigned Issue.
-
-## Legacy archive
-
-The previous Sanic-based repository state remains preserved at:
-
-```text
-legacy/sanic_framework/
-```
+The frozen P0/P1/P2/P3/P4 architecture and governance record remains in the
+`docs/architecture/` and `docs/decisions/` trees. Historical archive material is
+documented there for reference and is not part of the active runtime surface.
