@@ -1,11 +1,13 @@
 # P5 Roadmap
 
-Status: active for P5-02 review
-Context: Issue #118
+Status: active for P5-03 review
+Context: Issue #122
 
 ## 1. Why this document exists
 
-P5 starts after the P4 extension foundation is accepted. This roadmap defines the data-extension sequence for Redis, MySQL, and MongoDB without implementing any of them in P5-00.
+P5 starts after the P4 extension foundation is accepted. This roadmap now keeps
+the repository cleanup and documentation synchronization state aligned with the
+next implementation entry point without changing runtime behavior.
 
 ## 2. P4 closeout summary
 
@@ -20,19 +22,20 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-The P4 contracts establish the extension boundary, lifecycle rules, redaction rules, and packaging policy that P5 data extensions must follow.
+The P4 contracts establish the extension boundary, lifecycle rules, redaction
+rules, and packaging policy that later implementation work must follow.
 
 ## 3. P5 goals
 
-- Define the official P5 roadmap for data extensions.
+- Keep the repository entry points synchronized with the active phase.
 - Keep the core package free of new mandatory runtime dependencies.
 - Preserve the accepted P4 contracts as the baseline for any later implementation work.
 - Keep diagnostics, reprs, logs, and handoff summaries free of secret leakage.
-- Make the next P5 implementation issues explicit and ordered.
+- Make the next implementation entry point explicit after cleanup.
 
 ## 4. P5 non-goals
 
-- Implementing Redis, MySQL, or MongoDB.
+- Implementing Redis, MySQL, MongoDB, or `lingshu.db`.
 - Implementing identity/access.
 - Implementing OpenAPI.
 - Implementing multi-worker mode.
@@ -51,7 +54,8 @@ P5 depends on the accepted P4 contracts:
 - P4-04 configuration redaction for extensions;
 - P4-05 official extension packaging and dependency policy.
 
-P5 implementation work must stay inside these boundaries and must not reopen P4 runtime scope.
+P5 implementation work must stay inside these boundaries and must not reopen
+P4 runtime scope.
 
 ## 6. Suggested P5 order
 
@@ -60,13 +64,14 @@ Suggested sequence:
 1. P5-00: P4 closeout and P5 data extensions roadmap.
 2. P5-01: Redis data extension track.
 3. P5-02: MySQL data extension track.
-4. P5-03: MongoDB data extension track.
+4. P5-03: repository cleanup and documentation synchronization before implementation.
 
 Suggested order rationale:
 
-- Redis first as the simplest official data extension baseline.
+- Redis first as the simplest official data-extension baseline.
 - MySQL second to validate SQL-oriented packaging and lifecycle patterns.
-- MongoDB third to round out the initial data-extension set.
+- Cleanup third to keep the repository state synchronized before any new
+  implementation track.
 
 ## 7. Validation and CI expectations
 
@@ -78,4 +83,5 @@ Suggested order rationale:
 
 ## 8. Next implementable issue
 
-The next implementable P5 issue after P5-02 is P5-03: MongoDB data extension track.
+The next implementable issue after cleanup is the `lingshu.db` database layer
+architecture / minimal skeleton track.
