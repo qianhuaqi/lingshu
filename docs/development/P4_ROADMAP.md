@@ -112,10 +112,10 @@ P6 should start only after P5 or a separate approved Issue confirms the applicat
 The current implementable Issue is:
 
 ```text
-P4-04: configuration redaction contract for extensions
+P4-05: official extension packaging and dependency policy
 ```
 
-P4-04 defines how optional extensions should accept configuration and keep sensitive values out of reprs, CLI diagnostics, logs, handoff summaries, and client-visible errors.
+P4-05 defines official extension package naming, dependency policy, and compatibility boundaries, and prepares the extension boundary and public contract surface for later P5 data extensions.
 
 ## 8. Governance
 

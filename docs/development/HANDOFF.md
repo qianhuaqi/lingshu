@@ -16,10 +16,10 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: #110 - P4-04: configuration redaction contract for extensions
-Active branch: human/dodo/p4-04-config-redaction-contract
+Active Issue: #112 - P4-05: official extension packaging and dependency policy
+Active branch: human/dodo/p4-05-extension-packaging-policy
 Primary writer: project lead / 小顾
-Status: P4-03 is complete; P4-04 configuration redaction contract is the active task.
+Status: P4-04 is complete; P4-05 official extension packaging and dependency policy is the active task.
 
 ## Implemented through P1
 
@@ -61,7 +61,7 @@ P3 added the developer-facing ergonomics track:
 
 P4-03 is complete. The active task is P4-04 configuration redaction contract for extensions.
 
-P4-04 focuses on defining how optional extensions should accept configuration and keep sensitive values out of reprs, CLI diagnostics, and client-visible errors.
+P4-05 focuses on official extension packaging and dependency policy, including naming, optional dependency strategy, and compatibility boundaries for later data-extension tracks.
 
 ## Recommended P4 sequence
 
@@ -88,4 +88,4 @@ P4-04 focuses on defining how optional extensions should accept configuration an
 
 ## Next action
 
-Continue defining the configuration redaction contract in P4-04.
+Continue defining official extension packaging and dependency policy in P4-05.

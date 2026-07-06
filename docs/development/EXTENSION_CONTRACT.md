@@ -1,7 +1,7 @@
 # Official Extension Contract and Package Boundary
 
-Status: draft for P4-02 review
-Context: Issue #106
+Status: draft for P4-05 review
+Context: Issue #112
 
 ## 1. Goal
 
@@ -17,7 +17,7 @@ Define how official LingShu extensions (e.g., Redis, MySQL, MongoDB, Identity) a
 2. **Official Extension Packages (`lingshu-<extname>`)**:
    - Naming convention: `lingshu-<name>` (e.g., `lingshu-redis`, `lingshu-mysql`).
    - Import convention: `from lingshu.ext.<name> import ...` once an official namespace model is in place.
-   - Official extension packages are packaged independently in later tracks.
+ - Official extension packages are packaged independently in later tracks according to the packaging policy in [Extension Packaging Policy](./EXTENSION_PACKAGING_POLICY.md).
 
 ## 3. Core Interface vs. Helper Classes
 
