@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-06
 Project: LingShu Framework
-Phase: P5-04 lingshu.db database layer foundation
+Phase: P5-05 Application lifecycle and app.db injection boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -20,10 +20,10 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #124 - P5-04: lingshu.db database layer foundation
-Active branch: human/dodo/p5-04-lingshu-db-foundation
+Active Issue: #126 - P5-05: Application lifecycle and app.db injection boundary
+Active branch: human/dodo/p5-05-app-db-lifecycle-boundary
 Primary writer: project lead / 小顾
-Status: P5-04 is active; the database foundation track adds an import-safe contract skeleton without real database drivers.
+Status: P5-05 is active; it wires `lingshu.db` into the Application lifecycle through a minimal `app.db` developer API.
 
 ## P4 closeout
 
@@ -43,14 +43,17 @@ Accepted P4 contracts:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5-04 scope
+## P5-05 scope
 
-P5-04 adds the minimal `lingshu.db` foundation: configuration redaction, driver
-contract, resource lifecycle boundary, manager registration, architecture docs,
-and focused tests.
-It does not implement `lingshu.db.mysql`, Redis, MongoDB, ORM integration, query
-builders, migration frameworks, connection pooling, `app.db` injection,
-Application lifecycle integration, identity/access, OpenAPI, multi-worker,
+P5-05 exposes `LingShu.db` as the application-owned `DatabaseManager` and adds
+`LingShu.add_database_resource(resource, *, dependencies=())` as the inert
+configuration-time registration entry point. Database resources use the existing
+extension lifecycle for startup, shutdown, dependency ordering, and startup
+rollback.
+
+It does not implement `lingshu.db.mysql`, Redis, MongoDB, ORM/ODM integration,
+query builders, migration frameworks, connection pooling, database permissions,
+untrusted plugin isolation, identity/access, OpenAPI, multi-worker,
 reload/watch, adapters, public package publication, or production/performance
 claims.
 
@@ -61,14 +64,15 @@ claims.
 3. P5-02: MySQL data extension track.
 4. P5-03: repository cleanup and documentation synchronization before implementation.
 5. P5-04: lingshu.db database layer foundation.
+6. P5-05: Application lifecycle and app.db injection boundary.
 
 ## Validation and CI
 
-- Keep the diff within the allowed documentation files.
+- Keep the diff within the Issue #126 allowed files.
 - Run the merge-conflict marker grep before submit.
 - When local Python 3.12+ dependencies are available, run `ruff format --check`, `ruff check`, `mypy`, and `pytest`.
 - If Windows local dependency installation is blocked by `WinError 10013`, record it and rely on Draft PR plus GitHub CI for final verification.
 
 ## Next action
 
-Continue with the `lingshu.db` foundation review, then decide which backend-specific driver track should consume it first.
+Continue with P5-05 review, then decide which backend-specific driver track should consume the lifecycle boundary first.

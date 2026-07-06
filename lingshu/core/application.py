@@ -19,6 +19,7 @@ from lingshu.core.plan import (
     ExtensionContribution,
     LifecycleHookRegistration,
 )
+from lingshu.db import DatabaseConfigurationError, DatabaseManager, DatabaseResource
 from lingshu.http.message import HTTPMethod
 from lingshu.http.middleware import MiddlewareDeclaration, Terminal
 from lingshu.http.request import Request
@@ -543,10 +544,11 @@ class LingShu:
     start tasks, open files, bind sockets, connect to services, or import user applications.
     """
 
-    __slots__ = ("_kernel",)
+    __slots__ = ("_db", "_kernel")
 
     def __init__(self) -> None:
         self._kernel = Application()
+        self._db = DatabaseManager()
 
     @property
     def state(self) -> ApplicationState:
@@ -557,6 +559,10 @@ class LingShu:
         """Expose the internal Kernel for protocol-layer integration (P1-08)."""
 
         return self._kernel
+
+    @property
+    def db(self) -> DatabaseManager:
+        return self._db
 
     @property
     def plan(self) -> ApplicationPlan | None:
@@ -703,6 +709,28 @@ class LingShu:
             shutdown_hook=shutdown_hook,
         )
         self._kernel.add_extension(contribution)
+
+    def add_database_resource(
+        self,
+        resource: DatabaseResource,
+        *,
+        dependencies: Iterable[str] = (),
+    ) -> DatabaseResource:
+        if resource.name in self._db.names():
+            raise DatabaseConfigurationError(
+                "db.configuration.duplicate_resource",
+                "Database resource names must be unique.",
+                safe_details=resource.safe_details,
+            )
+
+        self.add_extension(
+            resource.name,
+            dependencies=dependencies,
+            startup_hook=resource.startup,
+            shutdown_hook=resource.shutdown,
+        )
+        self._db.register(resource)
+        return resource
 
     def on_startup(self, name: str) -> Callable[[LifecycleHook], LifecycleHook]:
         def decorator(hook: LifecycleHook) -> LifecycleHook:
