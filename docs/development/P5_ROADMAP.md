@@ -1,13 +1,13 @@
 # P5 Roadmap
 
-Status: active for P5-03 review
-Context: Issue #122
+Status: active for P5-04 review
+Context: Issue #124
 
 ## 1. Why this document exists
 
-P5 starts after the P4 extension foundation is accepted. This roadmap now keeps
-the repository cleanup and documentation synchronization state aligned with the
-next implementation entry point without changing runtime behavior.
+P5 starts after the P4 extension foundation is accepted. This roadmap now tracks
+the shared `lingshu.db` foundation that later data extensions can consume
+without making database clients mandatory core dependencies.
 
 ## 2. P4 closeout summary
 
@@ -27,7 +27,7 @@ rules, and packaging policy that later implementation work must follow.
 
 ## 3. P5 goals
 
-- Keep the repository entry points synchronized with the active phase.
+- Establish an import-safe database foundation before backend-specific drivers.
 - Keep the core package free of new mandatory runtime dependencies.
 - Preserve the accepted P4 contracts as the baseline for any later implementation work.
 - Keep diagnostics, reprs, logs, and handoff summaries free of secret leakage.
@@ -35,7 +35,8 @@ rules, and packaging policy that later implementation work must follow.
 
 ## 4. P5 non-goals
 
-- Implementing Redis, MySQL, MongoDB, or `lingshu.db`.
+- Implementing Redis, MySQL, MongoDB, ORM, query builders, migrations, or
+  connection pooling.
 - Implementing identity/access.
 - Implementing OpenAPI.
 - Implementing multi-worker mode.
@@ -65,13 +66,15 @@ Suggested sequence:
 2. P5-01: Redis data extension track.
 3. P5-02: MySQL data extension track.
 4. P5-03: repository cleanup and documentation synchronization before implementation.
+5. P5-04: lingshu.db database layer foundation.
 
 Suggested order rationale:
 
 - Redis first as the simplest official data-extension baseline.
 - MySQL second to validate SQL-oriented packaging and lifecycle patterns.
-- Cleanup third to keep the repository state synchronized before any new
-  implementation track.
+- Cleanup third to keep the repository state synchronized before new code.
+- `lingshu.db` fourth to provide a shared database-layer contract before any
+  backend-specific driver package.
 
 ## 7. Validation and CI expectations
 
@@ -83,5 +86,6 @@ Suggested order rationale:
 
 ## 8. Next implementable issue
 
-The next implementable issue after cleanup is the `lingshu.db` database layer
-architecture / minimal skeleton track.
+The next implementable issue after P5-04 should be a backend-specific driver
+track that consumes `lingshu.db` without adding mandatory database dependencies
+to core.

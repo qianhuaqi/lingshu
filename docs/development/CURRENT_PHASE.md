@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-03 repository cleanup and documentation synchronization before implementation
+Current phase: P5-04 lingshu.db database layer foundation
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -31,17 +31,17 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #122 - P5-03: repository cleanup and documentation synchronization before implementation
-Active branch: human/dodo/p5-03-repository-cleanup-sync
+Active Issue: #124 - P5-04: lingshu.db database layer foundation
+Active branch: human/dodo/p5-04-lingshu-db-foundation
 Primary writer: project lead / 小顾
-Status: P5-03 is active; the repository cleanup track is document-first and runtime-free.
-Next dependent phase allowed: `lingshu.db` database layer architecture / minimal skeleton after cleanup sync merge and project-lead confirmation.
+Status: P5-04 is active; the database foundation track adds an import-safe contract skeleton without real database drivers.
+Next dependent phase allowed: backend-specific MySQL, Redis, or MongoDB driver integration only after P5-04 merge and project-lead confirmation.
 
-## P5-03 cleanup goal
+## P5-04 foundation goal
 
-P5-03 audits repository cleanup, synchronizes the current phase and handoff
-documents, and records the next implementation entry point without changing any
-runtime behavior.
+P5-04 establishes the shared `lingshu.db` configuration, driver, resource, and
+manager contracts without implementing MySQL, Redis, MongoDB, ORM, query
+builder, migrations, connection pooling, or `app.db` integration.
 
 ## P4 closeout facts
 
@@ -56,9 +56,8 @@ P4 delivered the extension foundation:
 
 ## P5 roadmap goal
 
-P5 should keep the repository entry points synchronized, preserve the accepted
-architecture and governance records, and leave runtime implementation for later
-issues.
+P5 should grow data-extension foundations through explicit contracts while
+keeping core free of mandatory database client dependencies.
 
 ## P5 sequencing
 
@@ -67,6 +66,7 @@ P5-00 P4 closeout and P5 data extensions roadmap
 P5-01 Redis data extension track
 P5-02 MySQL data extension track
 P5-03 repository cleanup and documentation synchronization before implementation
+P5-04 lingshu.db database layer foundation
 ```
 
 ## Deferred until later authorization
