@@ -1,11 +1,12 @@
 # Development Handoff
 
-Updated at: 2026-07-05
+Updated at: 2026-07-06
 Project: LingShu Framework
-Phase: P4 - Extension foundation planning
+Phase: P5 - data extensions roadmap
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
+Completed track: P4 - extension foundation planning
 Completed final P1 Issue: #76
 Completed final P1 Pull Request: #77
 P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
@@ -16,76 +17,50 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: #112 - P4-05: official extension packaging and dependency policy
-Active branch: human/dodo/p4-05-extension-packaging-policy
-Primary writer: project lead / 小顾
-Status: P4-04 is complete; P4-05 official extension packaging and dependency policy is the active task.
+Completed final P4 Issue: #112
+Completed final P4 Pull Request: #113
+P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
+Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
+Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
+Primary writer: project lead / 灏忛【
+Status: P4 is closed; P5-00 is active and only defines the P5 roadmap.
 
-## Implemented through P1
+## P4 closeout
 
-P1 produced a narrow, tested, installable vertical slice of the framework:
+P4 closeout references:
 
-- package, CI, DCO, type/lint/test/build governance, and clean-install artifact checks;
-- core time helpers, identifiers, framework errors, safe Problem Details, and redaction primitives;
-- immutable startup configuration snapshot;
-- runtime deadlines, scopes, cancellation, task ownership, admission, bounded cleanup, and minimum Runtime Record behavior;
-- HTTP value model, router, middleware, request, response, and handler contract safety;
-- `LingShu` application kernel with route decorators, immutable freeze, lifecycle, and root facade exports;
-- native single-worker HTTP/1.1 server;
-- CLI `version`, `check`, and `run --workers 1`;
-- integration, security, runtime watermark, packaging, example, and P1 acceptance evidence.
+- P4-00 #102 / PR #102 / `f13a77892ea9e8960fd25aa4d51b554c51f36c84`
+- P4-02 #107 / PR #107 / `2998a3c42988ef8ccdb61bf54feb74ee5b7a72e9`
+- P4-03 #109 / PR #109 / `d55a34d3cdef19684b027eb840be7f57f61aedec`
+- P4-04 #111 / PR #111 / `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`
+- P4-05 #113 / PR #113 / `65488f73383d043776ea48b0ab5a2c3cd201600b`
 
-## Implemented through P2
+Accepted P4 contracts:
 
-P2 added the planning and hardening track:
+- extension contract and package boundary;
+- application resource lifecycle contract;
+- configuration redaction contract for extensions;
+- official extension packaging and dependency policy.
 
-1. P2-00: phase state refresh and P2 roadmap.
-2. P2-01: framework audit baseline.
-3. P2-02: toolchain reproducibility and Ruff formatting baseline.
-4. P2-03: static configuration and protected diagnostics.
-5. P2-04: single-worker server operational edges.
-6. P2-05: developer ergonomics, example validation, and future test-client planning.
+## P5-00 scope
 
-## Implemented through P3
+P5-00 records the closeout above and publishes the P5 data-extension roadmap.
+It does not implement Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, adapters, public package publication, or production/performance claims.
 
-P3 added the developer-facing ergonomics track:
+## P5 roadmap
 
-1. P3-00: phase transition and P3 roadmap.
-2. P3-01: `Response.json(...)` and JSON response contract.
-3. P3-02: request body ergonomics planning.
-4. P3-03: safe error diagnostics policy.
-5. P3-04: future async-only test client decision.
-6. P3-05: validated public-surface examples.
+1. P5-00: P4 closeout and P5 data extensions roadmap.
+2. P5-01: Redis data extension track.
+3. P5-02: MySQL data extension track.
+4. P5-03: MongoDB data extension track.
 
-## Current task
+## Validation and CI
 
-P4-03 is complete. The active task is P4-04 configuration redaction contract for extensions.
-
-P4-05 focuses on official extension packaging and dependency policy, including naming, optional dependency strategy, and compatibility boundaries for later data-extension tracks.
-
-## Recommended P4 sequence
-
-1. P4-00: P3 closeout and P4 roadmap.
-2. P4-01: async TestClient implementation.
-3. P4-02: extension contract and package boundary.
-4. P4-03: application resource lifecycle contract.
-5. P4-04: configuration redaction contract for extensions.
-6. P4-05: official extension packaging and dependency policy.
-
-## Later tracks
-
-1. P5: Redis, MySQL, and MongoDB data extensions.
-2. P6: identity and access extensions.
-
-## Protected facts
-
-- LingShu remains a pre-alpha single-worker framework baseline, not a production-ready stable release.
-- Public package publication remains unauthorized.
-- Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, and adapter tracks remain deferred until explicitly authorized by later Issues and ADRs.
-- No direct commits to `main`.
-- No auto-merge.
-- Final merge authority belongs to the project lead.
+- Keep the diff within the allowed documentation files.
+- Run the merge-conflict marker grep before submit.
+- When local Python 3.12+ dependencies are available, run `ruff format --check`, `ruff check`, `mypy`, and `pytest`.
+- If Windows local dependency installation is blocked by `WinError 10013`, record it and rely on Draft PR + GitHub CI for final verification.
 
 ## Next action
 
-Continue defining official extension packaging and dependency policy in P4-05.
+Continue with P5-00 closeout and roadmap publication, then move to P5-01 Redis data extension planning.
