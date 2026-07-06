@@ -16,10 +16,10 @@ P2 final merge commit: `5dd74c2178121f52553d08cf3d8209094c1b8a69`
 Completed final P3 Issue: #100
 Completed final P3 Pull Request: #101
 P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
-Active Issue: #108 - P4-03: application resource lifecycle contract
-Active branch: human/dodo/p4-03-resource-lifecycle-contract
+Active Issue: #110 - P4-04: configuration redaction contract for extensions
+Active branch: human/dodo/p4-04-config-redaction-contract
 Primary writer: project lead / 小顾
-Status: P4-02 is complete; P4-03 application resource lifecycle contract is the active task.
+Status: P4-03 is complete; P4-04 configuration redaction contract is the active task.
 
 ## Implemented through P1
 
@@ -59,9 +59,9 @@ P3 added the developer-facing ergonomics track:
 
 ## Current task
 
-P4-02 is complete. The active task is P4-03 application resource lifecycle contract.
+P4-03 is complete. The active task is P4-04 configuration redaction contract for extensions.
 
-P4-03 focuses on defining the application resource lifecycle contract without implementing concrete data stores.
+P4-04 focuses on defining how optional extensions should accept configuration and keep sensitive values out of reprs, CLI diagnostics, and client-visible errors.
 
 ## Recommended P4 sequence
 
@@ -88,4 +88,4 @@ P4-03 focuses on defining the application resource lifecycle contract without im
 
 ## Next action
 
-Continue defining the application resource lifecycle contract in P4-03.
+Continue defining the configuration redaction contract in P4-04.
