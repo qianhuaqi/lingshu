@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-06
 Project: LingShu Framework
-Phase: P5 - data extensions roadmap
+Phase: P5 - Redis data extension track
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -20,10 +20,10 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #114 - P5-00: P4 closeout and P5 data extensions roadmap
-Active branch: human/dodo/p5-00-p4-closeout-p5-roadmap
+Active Issue: #116 - P5-01: Redis data extension track
+Active branch: human/dodo/p5-01-redis-data-extension
 Primary writer: project lead / 小顾
-Status: P4 is closed; P5-00 is active and only defines the P5 roadmap.
+Status: P5-01 is active; the Redis contract track is document-first and runtime-free.
 
 ## P4 closeout
 
@@ -43,10 +43,12 @@ Accepted P4 contracts:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5-00 scope
+## P5-01 scope
 
-P5-00 records the closeout above and publishes the P5 data-extension roadmap.
-It does not implement Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-worker, reload/watch, adapters, public package publication, or production/performance claims.
+P5-01 records the Redis extension contract and keeps the track document-first.
+It does not implement Redis, Redis Cluster, Redis Sentinel, identity/access,
+OpenAPI, multi-worker, reload/watch, adapters, public package publication, or
+production/performance claims.
 
 ## P5 roadmap
 
@@ -64,4 +66,4 @@ It does not implement Redis, MySQL, MongoDB, identity/access, OpenAPI, multi-wor
 
 ## Next action
 
-Continue with P5-00 closeout and roadmap publication, then move to P5-01 Redis data extension planning.
+Continue with Redis contract design, then determine whether a minimal testable skeleton is actually needed.
