@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-06
 Project: LingShu Framework
-Phase: P5-03 repository cleanup and documentation synchronization before implementation
+Phase: P5-04 lingshu.db database layer foundation
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -20,10 +20,10 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #122 - P5-03: repository cleanup and documentation synchronization before implementation
-Active branch: human/dodo/p5-03-repository-cleanup-sync
+Active Issue: #124 - P5-04: lingshu.db database layer foundation
+Active branch: human/dodo/p5-04-lingshu-db-foundation
 Primary writer: project lead / 小顾
-Status: P5-03 is active; the repository cleanup track is document-first and runtime-free.
+Status: P5-04 is active; the database foundation track adds an import-safe contract skeleton without real database drivers.
 
 ## P4 closeout
 
@@ -43,14 +43,16 @@ Accepted P4 contracts:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5-03 scope
+## P5-04 scope
 
-P5-03 audits repository cleanup, synchronizes the current phase and handoff
-documents, and keeps the track document-first.
-It does not implement `lingshu.db`, `lingshu.db.mysql`, Redis, MongoDB, ORM
-integration, query builders, migration frameworks, identity/access, OpenAPI,
-multi-worker, reload/watch, adapters, public package publication, or
-production/performance claims.
+P5-04 adds the minimal `lingshu.db` foundation: configuration redaction, driver
+contract, resource lifecycle boundary, manager registration, architecture docs,
+and focused tests.
+It does not implement `lingshu.db.mysql`, Redis, MongoDB, ORM integration, query
+builders, migration frameworks, connection pooling, `app.db` injection,
+Application lifecycle integration, identity/access, OpenAPI, multi-worker,
+reload/watch, adapters, public package publication, or production/performance
+claims.
 
 ## P5 roadmap
 
@@ -58,6 +60,7 @@ production/performance claims.
 2. P5-01: Redis data extension track.
 3. P5-02: MySQL data extension track.
 4. P5-03: repository cleanup and documentation synchronization before implementation.
+5. P5-04: lingshu.db database layer foundation.
 
 ## Validation and CI
 
@@ -68,4 +71,4 @@ production/performance claims.
 
 ## Next action
 
-Continue with repository cleanup audit, then determine whether a minimal `lingshu.db` skeleton is actually needed.
+Continue with the `lingshu.db` foundation review, then decide which backend-specific driver track should consume it first.
