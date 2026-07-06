@@ -47,6 +47,8 @@ def test_database_config_redacts_sensitive_values_from_repr_and_safe_details() -
 
 
 def test_database_config_validates_resource_name_backend_and_port() -> None:
+    assert DatabaseConfig(name="db.mysql.main", backend="mysql")
+
     with pytest.raises(DatabaseConfigurationError) as bad_name:
         DatabaseConfig(name="mysql.main", backend="mysql")
     assert bad_name.value.code == "db.configuration.invalid_resource_name"
@@ -54,6 +56,10 @@ def test_database_config_validates_resource_name_backend_and_port() -> None:
     with pytest.raises(DatabaseConfigurationError) as bad_backend:
         DatabaseConfig(name="db.mysql.main", backend="MySQL")
     assert bad_backend.value.code == "db.configuration.invalid_backend"
+
+    with pytest.raises(DatabaseConfigurationError) as backend_name_mismatch:
+        DatabaseConfig(name="db.redis.main", backend="mysql")
+    assert backend_name_mismatch.value.code == "db.configuration.backend_name_mismatch"
 
     with pytest.raises(DatabaseConfigurationError) as bad_port:
         DatabaseConfig(name="db.mysql.main", backend="mysql", port=70000)

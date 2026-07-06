@@ -51,6 +51,13 @@ class DatabaseConfig:
                 "Database backend names must be lowercase identifiers.",
                 safe_details={"name": self.name},
             )
+        name_backend = self.name.split(".", 2)[1]
+        if name_backend != self.backend:
+            raise DatabaseConfigurationError(
+                "db.configuration.backend_name_mismatch",
+                "Database resource name backend must match the configured backend.",
+                safe_details={"name": self.name, "backend": self.backend},
+            )
         if self.port is not None and not 1 <= self.port <= 65535:
             raise DatabaseConfigurationError(
                 "db.configuration.invalid_port",
