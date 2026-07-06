@@ -78,4 +78,4 @@ Suggested order rationale:
 
 ## 8. Next implementable issue
 
-The next implementable P5 issue after P5-00 is P5-01: Redis data extension track.
+The next implementable P5 issue after P5-02 is P5-03: MongoDB data extension track.
