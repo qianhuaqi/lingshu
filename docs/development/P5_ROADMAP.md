@@ -1,13 +1,14 @@
 # P5 Roadmap
 
-Status: active for P5-04 review
-Context: Issue #124
+Status: active for P5-05 review
+Context: Issue #126
 
 ## 1. Why this document exists
 
 P5 starts after the P4 extension foundation is accepted. This roadmap now tracks
-the shared `lingshu.db` foundation that later data extensions can consume
-without making database clients mandatory core dependencies.
+the shared `lingshu.db` foundation and its minimal Application lifecycle
+boundary that later data extensions can consume without making database clients
+mandatory core dependencies.
 
 ## 2. P4 closeout summary
 
@@ -28,6 +29,8 @@ rules, and packaging policy that later implementation work must follow.
 ## 3. P5 goals
 
 - Establish an import-safe database foundation before backend-specific drivers.
+- Wire the foundation into Application lifecycle through a minimal `app.db`
+  developer API.
 - Keep the core package free of new mandatory runtime dependencies.
 - Preserve the accepted P4 contracts as the baseline for any later implementation work.
 - Keep diagnostics, reprs, logs, and handoff summaries free of secret leakage.
@@ -67,6 +70,7 @@ Suggested sequence:
 3. P5-02: MySQL data extension track.
 4. P5-03: repository cleanup and documentation synchronization before implementation.
 5. P5-04: lingshu.db database layer foundation.
+6. P5-05: Application lifecycle and app.db injection boundary.
 
 Suggested order rationale:
 
@@ -75,6 +79,8 @@ Suggested order rationale:
 - Cleanup third to keep the repository state synchronized before new code.
 - `lingshu.db` fourth to provide a shared database-layer contract before any
   backend-specific driver package.
+- Application lifecycle wiring fifth so later drivers can rely on a stable
+  `app.db` and `add_database_resource()` boundary.
 
 ## 7. Validation and CI expectations
 
@@ -86,6 +92,6 @@ Suggested order rationale:
 
 ## 8. Next implementable issue
 
-The next implementable issue after P5-04 should be a backend-specific driver
-track that consumes `lingshu.db` without adding mandatory database dependencies
-to core.
+The next implementable issue after P5-05 should be a backend-specific driver
+track that consumes `lingshu.db` and `add_database_resource()` without adding
+mandatory database dependencies to core.

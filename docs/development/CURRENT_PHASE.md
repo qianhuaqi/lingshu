@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-04 lingshu.db database layer foundation
+Current phase: P5-05 Application lifecycle and app.db injection boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -31,17 +31,23 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #124 - P5-04: lingshu.db database layer foundation
-Active branch: human/dodo/p5-04-lingshu-db-foundation
+Active Issue: #126 - P5-05: Application lifecycle and app.db injection boundary
+Active branch: human/dodo/p5-05-app-db-lifecycle-boundary
 Primary writer: project lead / 小顾
-Status: P5-04 is active; the database foundation track adds an import-safe contract skeleton without real database drivers.
-Next dependent phase allowed: backend-specific MySQL, Redis, or MongoDB driver integration only after P5-04 merge and project-lead confirmation.
+Status: P5-05 is active; it wires the import-safe `lingshu.db` foundation into the LingShu Application lifecycle without real database drivers.
+Next dependent phase allowed: backend-specific MySQL, Redis, or MongoDB driver integration only after P5-05 merge and project-lead confirmation.
 
-## P5-04 foundation goal
+## P5-05 lifecycle boundary goal
 
-P5-04 establishes the shared `lingshu.db` configuration, driver, resource, and
-manager contracts without implementing MySQL, Redis, MongoDB, ORM, query
-builder, migrations, connection pooling, or `app.db` integration.
+P5-05 exposes `LingShu.db` as a `DatabaseManager` and adds
+`LingShu.add_database_resource(resource, *, dependencies=())` so database
+resources can use the existing extension lifecycle. Registration remains inert;
+startup is the earliest future driver resource acquisition point; shutdown
+releases startup-acquired resources.
+
+P5-05 does not implement MySQL, Redis, MongoDB, ORM, ODM, query builder,
+migrations, connection pooling, database permissions, untrusted plugin
+isolation, or real network I/O.
 
 ## P4 closeout facts
 
@@ -67,6 +73,7 @@ P5-01 Redis data extension track
 P5-02 MySQL data extension track
 P5-03 repository cleanup and documentation synchronization before implementation
 P5-04 lingshu.db database layer foundation
+P5-05 Application lifecycle and app.db injection boundary
 ```
 
 ## Deferred until later authorization
