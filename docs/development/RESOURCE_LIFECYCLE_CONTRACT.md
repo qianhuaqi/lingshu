@@ -5,15 +5,15 @@ Context: Issue #108
 
 ## 1. Goal
 
-Define the lifecycle contract for application-owned resources (e.g., database connection pools, message brokers, remote clients). This contract defines resource registration, startup, failure handling, cleanup, shutdown, and safe diagnostics, without providing concrete protocol implementations.
+Define the lifecycle contract for application-owned resources (e.g., database connection pools, message brokers, remote clients). This contract covers registration, startup, failure handling, cleanup, shutdown, and safe diagnostics, without providing concrete protocol implementations.
 
 ## 2. Application-Owned Resources
 
-An application-owned resource is a stateful component whose lifecycle (initialization, steady state, and termination) is strictly bound to the `Application` lifecycle. 
-It must:
-- Be registered during `ApplicationState.CONFIGURING`.
-- Initialize network connections or heavy allocations during `Application.startup()`.
-- Cleanly release handles, sockets, and memory during `Application.shutdown()`.
+An application-owned resource is a stateful component whose lifecycle (initialization, steady state, and termination) is strictly bound to the `Application` lifecycle. It must:
+
+- be registered during `ApplicationState.CONFIGURING`;
+- initialize network connections or heavy allocations during `Application.startup()`;
+- release handles, sockets, and memory during `Application.shutdown()`.
 
 ## 3. Registration and Freeze Limits
 
@@ -23,52 +23,67 @@ It must:
 
 ## 4. Startup and Shutdown Order
 
-- **Startup**: Resource startup hooks execute serially in the topological order of their extension dependencies. A resource can safely assume its declared dependencies are fully started and available.
-- **Shutdown**: Resource shutdown hooks execute serially in the exact reverse topological order of startup.
+- **Startup**: resource startup hooks execute serially in topological dependency order.
+- **Shutdown**: resource shutdown hooks execute serially in reverse topological order.
 
 ## 5. Partial Startup Failure and Cleanup
 
-If any resource startup hook fails:
-- The current baseline rolls back successfully started extensions in reverse startup order by calling their shutdown hooks with individual shutdown exceptions suppressed.
-- The started-extension list is cleared, the application state returns to `ApplicationState.FROZEN`, and the original startup exception is re-raised.
-- Later Issues may define a distinct failed/stopping state if needed.
+If any startup hook fails:
+
+- previously started extensions are rolled back in reverse startup order by invoking shutdown hooks with individual exceptions suppressed;
+- the started list is cleared;
+- the application returns to `ApplicationState.FROZEN`;
+- the original startup exception is re-raised.
 
 ## 6. Shutdown Failures
 
 If a shutdown hook fails during `Application.shutdown()`:
-- The current baseline suppresses individual shutdown-hook exceptions while continuing best-effort cleanup.
-- The shutdown sequence continues to execute remaining extension shutdown hooks and application shutdown hooks.
-- The application clears the started-extension list and transitions to `ApplicationState.STOPPED` after the best-effort shutdown pass.
-- P4-03 does not implement grouped shutdown failure reporting, shutdown-failure logging, or a configurable cleanup deadline budget.
-- A later authorized issue may add grouped reporting, diagnostics, or cleanup deadline enforcement.
+
+- individual shutdown exceptions are suppressed for continuation;
+- remaining extensions still receive shutdown;
+- the started list is cleared;
+- the application transitions to `ApplicationState.STOPPED`.
 
 ## 7. Fatal Scopes, Diagnostics, and Redaction
 
-- If a resource encounters an unrecoverable state (e.g., a connection pool is permanently broken), it can signal a failure using `FatalScope.WORKER` or `FatalScope.SUPERVISOR` via `LingShuError`.
-- Diagnostics exposed by resources must comply with `lingshu.core.errors.freeze_safe_details`.
-- Resources must strictly redact sensitive configurations (e.g., passwords, connection string tokens) before including them in error messages, logs, or diagnostics.
+If a resource encounters unrecoverable failure, it may signal through `LingShuError` using `FatalScope` values.
+
+Diagnostics must observe redaction safety:
+
+- `freeze_safe_details` is required for safe client-exposed detail payloads.
+- Sensitive resource metadata must come from redacted config output and not from runtime plaintext.
 
 ## 8. Cancellation and Deadlines
 
-- Resource operations must respect runtime `Scope` deadlines and `CancellationToken`.
-- Blocking I/O within a resource must be bounded by the current `Scope`'s remaining deadline.
-- When a `Scope` is cancelled (e.g., due to a client disconnect or timeout), the resource must abort pending operations gracefully and return the connection to the pool without leaking.
+- Resource operations should respect runtime scope deadlines and cancellation tokens.
+- Blocking I/O should be bounded by remaining deadlines.
+- On cancellation, operations should abort safely and release resources.
 
-## 9. Relationship to Existing Hooks
+## 9. Resource-safe metadata and redaction requirements
 
-- `app.add_extension(...)`: The primary entry point for resource registration.
-- `startup_hook` / `shutdown_hook`: Resources utilize the existing application startup and shutdown hook abstractions provided by `ExtensionContribution`. Resources must not invent their own ad-hoc lifecycle mechanisms.
+Extension resources that carry configuration-derived metadata in lifecycle events must:
 
-## 10. Testing Requirements for Future P5 Data Extensions
+- avoid storing plaintext secrets in started-resource state;
+- emit only redacted metadata in lifecycle logs and summaries;
+- route config field reporting through `ConfigSnapshot.redacted(...)` and `CONFIGURATION_REDACTION_CONTRACT.md`.
 
-Future concrete extensions (P5) that implement this contract must include tests verifying that:
-- Startup delays or failures are handled gracefully.
-- Shutdown cleanly releases all external handles and connections.
-- Deadlines and cancellations are respected under simulated latency.
-- Credentials are never leaked in exception traces or diagnostics.
+## 10. Relationship to Existing Hooks
 
-## 11. Non-Goals and Blocked Tracks
+- `app.add_extension(...)`: primary entry for resource registration.
+- `startup_hook` / `shutdown_hook`: lifecycle execution points.
 
-- Concrete implementations (e.g., Redis, MySQL, MongoDB, Identity) are explicitly out of scope.
-- Multi-worker orchestration, process supervision, and reload/watch mechanisms are deferred.
-- Adapter integrations (ASGI/WSGI) and public package publication are blocked until P4-05.
+## 11. Testing Requirements for P5 Data Extensions
+
+Concrete P5 resources must test:
+
+- startup failures and rollback cleanup;
+- graceful shutdown under simulated contention;
+- deadline and cancellation behavior;
+- redaction-safe diagnostics for lifecycle event metadata.
+
+## 12. Non-Goals and Blocked Tracks
+
+- concrete implementations (Redis, MySQL, MongoDB, Identity);
+- multi-worker orchestration and process supervision;
+- reload/watch and adapter integrations (ASGI/WSGI);
+- public package publication before P4-05.

@@ -112,10 +112,10 @@ P6 should start only after P5 or a separate approved Issue confirms the applicat
 The current implementable Issue is:
 
 ```text
-P4-03: application resource lifecycle contract
+P4-04: configuration redaction contract for extensions
 ```
 
-P4-03 defines the official application resource lifecycle contract without implementing concrete extensions.
+P4-04 defines how optional extensions should accept configuration and keep sensitive values out of reprs, CLI diagnostics, logs, handoff summaries, and client-visible errors.
 
 ## 8. Governance
 
