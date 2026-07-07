@@ -307,6 +307,7 @@ def test_mysql_driver_shutdown_closes_pool_adapter(
         await app.startup()
         assert raw_pool.closed is False
         await app.shutdown()
+
     asyncio.run(scenario())
     assert raw_pool.closed is True
     assert raw_pool.wait_closed_called is True

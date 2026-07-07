@@ -27,9 +27,7 @@ def test_full_request_response_cycle(app: LingShu) -> None:
     """Test a full request/response cycle including middleware and route parameters."""
     events = []
 
-    async def add_custom_header(
-        request: Request, call_next: object
-    ) -> Response:
+    async def add_custom_header(request: Request, call_next: object) -> Response:
         events.append("middleware_in")
         response = await cast(Callable[[], Awaitable[Response]], call_next)()
         response.add_header("X-E2E-Status", "passed")
