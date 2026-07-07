@@ -1,12 +1,13 @@
-# Development Handoff
+﻿# Development Handoff
 
 Updated at: 2026-07-07
 Project: LingShu Framework
-Phase: P5-07 MySQL connection pool lifecycle boundary
+Phase: P5-08 MySQL pool acquire/release adapter boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
 Completed track: P4 - extension foundation planning
+Completed track: P5 - MySQL boundary foundation
 Completed final P1 Issue: #76
 Completed final P1 Pull Request: #77
 P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
@@ -20,11 +21,11 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #130 - P5-07: Minimal MySQL connection pool lifecycle boundary
-Active branch: human/dodo/p5-07-minimal-connection-pool-boundary
+Active Issue: #131 - P5-08: Minimal MySQL pool acquire/release adapter boundary
+Active branch: human/dodo/p5-08-minimal-mysql-pool-acquire-release-boundary
 Primary writer: project lead
-Status: P5-07 is active; it adds minimal `aiomysql.create_pool(...)`-based startup
-and `close()+wait_closed()` shutdown for MySQL resources.
+Status: P5-08 is active; it adds a minimal internal acquire/release adapter boundary
+for MySQL pools while preserving current lifecycle contracts.
 
 ## P4 closeout
 
@@ -44,32 +45,19 @@ Accepted P4 contracts:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5-06 scope
+## P5 scope status
 
-P5-06 introduced `lingshu.db.mysql` as the minimal optional MySQL boundary:
+P5-06 delivered optional MySQL boundary and startup/shutdown.
+P5-07 added pool acquisition through `aiomysql.create_pool(...)` handle lifecycle.
 
-- `MySQLDriver` implementing `DatabaseDriver`;
-- `make_mysql_resource(config, *, driver)` factory for `DatabaseResource`;
-- `LingShu.add_database_resource()` integration remains inert at registration and
-  startup/shutdown-bound at lifecycle.
+P5-08 now adds minimal internal pool adapter boundary in `lingshu.db.mysql`:
 
-## P5-07 scope
+- `_MySQLPoolHandle` with async `acquire()`, `release()`, and `close()`.
+- `MySQLDriver.startup()` returns adapter not raw pool.
+- missing raw `acquire/release` returns dedicated configuration errors.
+- no changes to public lifecycle contracts.
 
-P5-07 extends only the startup/shutdown boundary:
-
-- `MySQLDriver` startup now uses `aiomysql.create_pool(...)` instead of
-  `aiomysql.connect(...)`.
-- startup still defers optional dependency import to runtime path.
-- startup returns the pool handle as an opaque object.
-- startup validates `create_pool` availability and raises
-  `DatabaseConfigurationError("db.mysql.pool_unavailable")` when unavailable.
-- shutdown preserves close and wait-closed behavior.
-- existing public contracts remain unchanged:
-  no new protocols, no `DatabaseDriver`/`DatabaseResource`/`DatabaseManager`
-  signature changes.
-
-It still does not implement SQL execution, query API, acquire/release, transaction,
-migration, ORM/ODM, retry/reconnect policy, or production tuning.
+It does not add query APIs, ORM, query builder, or transaction primitives.
 
 ## P5 roadmap
 
@@ -81,10 +69,11 @@ migration, ORM/ODM, retry/reconnect policy, or production tuning.
 6. P5-05: Application lifecycle and app.db injection boundary.
 7. P5-06: Minimal MySQL data extension driver.
 8. P5-07: Minimal MySQL connection pool lifecycle boundary.
+9. P5-08: Minimal MySQL pool acquire/release adapter boundary.
 
 ## Validation and CI
 
-- Keep the diff within the current issue write scope.
+- Keep diff within the current issue write scope.
 - Run merge-conflict marker checks before submit.
 - Run `ruff check`, `mypy`, and `pytest`.
 - If local dependency installation is blocked or baseline toolchain issues happen,
@@ -92,5 +81,5 @@ migration, ORM/ODM, retry/reconnect policy, or production tuning.
 
 ## Next action
 
-Finish remaining P5-07 validation for the connected pool boundary, then prepare
+Finish remaining P5-08 validation for adapter boundary behavior, then prepare
 Draft PR summary for review.
