@@ -1,8 +1,8 @@
-# Current Phase
+﻿# Current Phase
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-07 MySQL connection pool lifecycle boundary
+Current phase: P5-08 Minimal MySQL pool acquire/release adapter boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -32,13 +32,11 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #130 - P5-07: Minimal MySQL connection pool lifecycle boundary
-Active branch: human/dodo/p5-07-minimal-connection-pool-boundary
+Active Issue: #131 - P5-08: Minimal MySQL pool acquire/release adapter boundary
+Active branch: human/dodo/p5-08-minimal-mysql-pool-acquire-release-boundary
 Primary writer: project lead
-Status: P5-07 is active; it adds a minimal MySQL pool lifecycle boundary while
-keeping core free of mandatory MySQL client dependencies.
-Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks
-after P5-07 and project lead confirmation.
+Status: P5-08 is active; it adds an internal MySQL pool acquire/release adapter boundary.
+Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks after P5-08 and project lead confirmation.
 
 ## P5-06 milestone
 
@@ -51,15 +49,25 @@ P5-06 delivered:
 - `app.startup()` / `app.shutdown()` lifecycle wiring
 - optional `aiomysql` dependency strategy with missing dependency error path
 
-## P5-07 goal
+## P5-07 milestone
 
-P5-07 adds a minimal pool lifecycle boundary using `aiomysql.create_pool()`:
+P5-07 delivered:
 
-- `MySQLDriver` startup prefers `create_pool(...)` and returns the opaque handle.
-- `MySQLDriver` shutdown invokes `close()` then `wait_closed()`.
-- startup keeps using `db` argument when building MySQL kwargs.
+- MySQL startup uses `aiomysql.create_pool(...)`.
+- startup returns an opaque pool handle.
+- shutdown calls close/wait_closed lifecycle semantics.
 - missing `create_pool` raises `db.mysql.pool_unavailable`.
-- dependency loading remains lazy and startup-only.
+
+## P5-08 goal
+
+P5-08 adds an internal acquire/release adapter boundary:
+
+- Introduce `_MySQLPoolHandle` wrapping raw `aiomysql` pool objects.
+- Expose async `acquire/release/close` on the adapter.
+- `MySQLDriver.startup()` returns `_MySQLPoolHandle`.
+- missing pool adapter operations raise `db.mysql.pool_acquire_unavailable` and
+  `db.mysql.pool_release_unavailable`.
+- keep startup lazy dependency import and lifecycle registration inert.
 
 ## P5-05 lifecycle boundary fact
 
@@ -87,7 +95,8 @@ P5-03 repository cleanup and documentation synchronization before implementation
 P5-04 lingshu.db database layer foundation
 P5-05 Application lifecycle and app.db injection boundary
 P5-06 Minimal MySQL data extension driver
-P5-07 MySQL connection pool lifecycle boundary
+P5-07 Minimal MySQL connection pool lifecycle boundary
+P5-08 Minimal MySQL pool acquire/release adapter boundary
 ```
 
 ## Deferred until later authorization

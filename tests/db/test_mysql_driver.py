@@ -11,6 +11,31 @@ from lingshu.db import DatabaseConfigurationError, DatabaseLifecycleError, mysql
 from lingshu.db.config import DatabaseConfig
 
 
+class _FakeRawPool:
+    def __init__(self, *, async_ops: bool = True) -> None:
+        self.async_ops = async_ops
+        self.acquire_called = False
+        self.release_called = False
+        self.closed = False
+        self.wait_closed_called = False
+        self.acquired_connection = object()
+        self.released_connection: object | None = None
+
+    async def acquire(self) -> object:
+        self.acquire_called = True
+        return self.acquired_connection
+
+    async def release(self, connection: object) -> None:
+        self.release_called = True
+        self.released_connection = connection
+
+    def close(self) -> None:
+        self.closed = True
+
+    def wait_closed(self) -> None:
+        self.wait_closed_called = True
+
+
 async def _fake_connect(_: DatabaseConfig) -> object:
     return {"connected": True}
 
@@ -18,18 +43,6 @@ async def _fake_connect(_: DatabaseConfig) -> object:
 async def _fake_shutdown(handle: object) -> None:
     if isinstance(handle, dict):
         handle["closed"] = True
-
-
-class _FakePool:
-    def __init__(self) -> None:
-        self.close_called = False
-        self.wait_closed_called = False
-
-    def close(self) -> None:
-        self.close_called = True
-
-    async def wait_closed(self) -> None:
-        self.wait_closed_called = True
 
 
 def test_import_lingshu_db_mysql_is_import_safe_without_aiomysql() -> None:
@@ -97,6 +110,152 @@ def test_mysql_resource_is_started_with_app_startup_and_shutdown_uses_fake_hooks
         ("startup", "db.mysql.main"),
         ("shutdown", True),
     ]
+
+
+def test_mysql_driver_startup_returns_pool_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_pool = _FakeRawPool()
+
+    async def fake_create_pool(**_: object) -> _FakeRawPool:
+        return raw_pool
+
+    class FakeAiomysql:
+        create_pool = staticmethod(fake_create_pool)
+
+    monkeypatch.setattr(mysql, "_load_aiomysql", lambda: FakeAiomysql())
+
+    driver = mysql.MySQLDriver()
+    config = DatabaseConfig(
+        name="db.mysql.main",
+        backend="mysql",
+        dsn="mysql://user:secret@db.example/mysql_db",
+    )
+
+    async def scenario() -> None:
+        handle = await driver.startup(config)
+        assert isinstance(handle, mysql._MySQLPoolHandle)
+        assert hasattr(handle, "acquire")
+        assert hasattr(handle, "release")
+        assert hasattr(handle, "close")
+        assert handle._pool is raw_pool
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_acquire_calls_raw_pool_acquire(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_pool = _FakeRawPool()
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+    monkeypatch.setattr(mysql, "_load_aiomysql", lambda: object())
+
+    async def scenario() -> None:
+        conn = await adapter.acquire()
+        assert raw_pool.acquire_called is True
+        assert conn is raw_pool.acquired_connection
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_release_calls_raw_pool_release(monkeypatch: pytest.MonkeyPatch) -> None:
+    raw_pool = _FakeRawPool()
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+    monkeypatch.setattr(mysql, "_load_aiomysql", lambda: object())
+
+    async def scenario() -> None:
+        connection = object()
+        await adapter.release(connection)
+        assert raw_pool.release_called is True
+        assert raw_pool.released_connection is connection
+
+    asyncio.run(scenario())
+
+
+def test_mysql_driver_shutdown_closes_pool_adapter(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    raw_pool = _FakeRawPool()
+
+    async def fake_create_pool(**_: object) -> _FakeRawPool:
+        return raw_pool
+
+    class FakeAiomysql:
+        create_pool = staticmethod(fake_create_pool)
+
+    monkeypatch.setattr(mysql, "_load_aiomysql", lambda: FakeAiomysql())
+    app = LingShu()
+    app.add_database_resource(
+        mysql.make_mysql_resource(
+            DatabaseConfig(
+                name="db.mysql.main",
+                backend="mysql",
+                dsn="mysql://user:secret@db.example/mysql_db",
+            )
+        )
+    )
+    app.freeze()
+
+    async def scenario() -> None:
+        await app.startup()
+        assert raw_pool.closed is False
+        await app.shutdown()
+        assert raw_pool.closed is True
+        assert raw_pool.wait_closed_called is True
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_without_acquire_raises_configuration_error() -> None:
+    class _RawNoAcquire:
+        close_called = False
+
+        def close(self) -> None:
+            self.close_called = True
+
+    raw_pool = _RawNoAcquire()
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        with pytest.raises(DatabaseConfigurationError) as exc_info:
+            await adapter.acquire()
+
+        assert exc_info.value.code == "db.mysql.pool_acquire_unavailable"
+        assert "dsn" not in exc_info.value.safe_details
+        assert "host" not in exc_info.value.safe_details
+        assert "user" not in exc_info.value.safe_details
+        assert "password" not in exc_info.value.safe_details
+        assert "database" not in exc_info.value.safe_details
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_without_release_raises_configuration_error() -> None:
+    class _RawNoRelease:
+        close_called = False
+
+        def close(self) -> None:
+            self.close_called = True
+
+        async def acquire(self) -> object:
+            return object()
+
+    raw_pool = _RawNoRelease()
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        connection = object()
+        with pytest.raises(DatabaseConfigurationError) as exc_info:
+            await adapter.release(connection)
+
+        assert exc_info.value.code == "db.mysql.pool_release_unavailable"
+        assert "dsn" not in exc_info.value.safe_details
+        assert "host" not in exc_info.value.safe_details
+        assert "user" not in exc_info.value.safe_details
+        assert "password" not in exc_info.value.safe_details
+        assert "database" not in exc_info.value.safe_details
+
+    asyncio.run(scenario())
 
 
 def test_mysql_driver_optional_dependency_is_required_at_startup(
@@ -180,17 +339,15 @@ def test_mysql_driver_startup_failure_is_wrapped_during_app_startup(
     asyncio.run(scenario())
 
 
-def test_app_startup_uses_aiomysql_create_pool_and_shutdown_calls_close_wait_closed(
+def test_app_startup_uses_aiomysql_create_pool_and_shutdown_calls_close(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    events: list[str] = []
     captured: dict[str, object] = {}
-    fake_pool = _FakePool()
+    raw_pool = _FakeRawPool()
 
-    async def fake_create_pool(**kwargs: object) -> _FakePool:
-        events.append("create_pool")
+    async def fake_create_pool(**kwargs: object) -> _FakeRawPool:
         captured["kwargs"] = kwargs
-        return fake_pool
+        return raw_pool
 
     class FakeAiomysql:
         create_pool = staticmethod(fake_create_pool)
@@ -216,8 +373,8 @@ def test_app_startup_uses_aiomysql_create_pool_and_shutdown_calls_close_wait_clo
 
     assert captured["kwargs"]["db"] == "mysql_db"
     assert "database" not in captured["kwargs"]
-    assert fake_pool.close_called is True
-    assert fake_pool.wait_closed_called is True
+    assert raw_pool.closed is True
+    assert raw_pool.wait_closed_called is True
 
 
 def test_mysql_driver_without_create_pool_raises_pool_unavailable(
@@ -249,9 +406,9 @@ def test_mysql_driver_without_create_pool_raises_pool_unavailable(
 def test_mysql_driver_uses_configured_host_defaults_for_aiomysql_create_pool(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async def fake_create_pool(**kwargs: object) -> object:
+    async def fake_create_pool(**kwargs: object) -> _FakeRawPool:
         captured["kwargs"] = kwargs
-        return _FakePool()
+        return _FakeRawPool()
 
     captured: dict[str, object] = {}
 

@@ -71,6 +71,56 @@ def _build_connection_kwargs(config: DatabaseConfig) -> dict[str, object]:
     return {k: v for k, v in values.items() if v is not None}
 
 
+class _MySQLPoolHandle:
+    """Adapter around an `aiomysql` pool handle.
+
+    This wrapper keeps the raw pool object internal and exposes only the minimum
+    acquire/release/close boundary needed by the current phase.
+    """
+
+    def __init__(self, pool: object) -> None:
+        self._pool = pool
+
+    async def acquire(self) -> object:
+        acquire_callable = getattr(self._pool, "acquire", None)
+        if not callable(acquire_callable):
+            raise DatabaseConfigurationError(
+                "db.mysql.pool_acquire_unavailable",
+                "aiomysql pool handle does not provide 'acquire'.",
+                safe_details={"backend": "mysql"},
+            )
+
+        result = acquire_callable()
+        if inspect.isawaitable(result):
+            return await result
+        return result
+
+    async def release(self, connection: object) -> None:
+        release_callable = getattr(self._pool, "release", None)
+        if not callable(release_callable):
+            raise DatabaseConfigurationError(
+                "db.mysql.pool_release_unavailable",
+                "aiomysql pool handle does not provide 'release'.",
+                safe_details={"backend": "mysql"},
+            )
+
+        result = release_callable(connection)
+        if inspect.isawaitable(result):
+            await result
+
+    async def close(self) -> None:
+        close_callable = getattr(self._pool, "close", None)
+        if callable(close_callable):
+            result = close_callable()
+            if inspect.isawaitable(result):
+                await result
+        wait_closed_callable = getattr(self._pool, "wait_closed", None)
+        if callable(wait_closed_callable):
+            wait_result = wait_closed_callable()
+            if inspect.isawaitable(wait_result):
+                await wait_result
+
+
 async def _default_connect(config: DatabaseConfig) -> object:
     aiomysql = _load_aiomysql()
     kwargs = _build_connection_kwargs(config)
@@ -90,8 +140,8 @@ async def _default_connect(config: DatabaseConfig) -> object:
         )
     result = create_pool(**kwargs)
     if inspect.isawaitable(result):
-        return await result
-    return result
+        result = await result
+    return _MySQLPoolHandle(result)
 
 
 async def _default_shutdown(handle: object) -> None:
@@ -100,11 +150,6 @@ async def _default_shutdown(handle: object) -> None:
         result = close_callable()
         if inspect.isawaitable(result):
             await result
-    awaitable_wait_closed = getattr(handle, "wait_closed", None)
-    if callable(awaitable_wait_closed):
-        wait_result = awaitable_wait_closed()
-        if inspect.isawaitable(wait_result):
-            await wait_result
 
 
 class MySQLDriver(DatabaseDriver):

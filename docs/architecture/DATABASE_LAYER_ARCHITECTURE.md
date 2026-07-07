@@ -1,7 +1,7 @@
 # Database Layer Architecture
 
-Status: P5-07 minimal MySQL pool lifecycle boundary
-Issue: #130
+Status: P5-08 minimal MySQL pool acquire/release adapter boundary
+Issue: #131
 
 ## 1. Why `lingshu.db` comes before backend drivers
 
@@ -96,28 +96,30 @@ P5-05 added the minimal `app.db` boundary:
 - startup rollback and shutdown suppress-and-continue behavior remain owned by
   the existing application lifecycle.
 
-## 7. Minimal MySQL driver lifecycle boundary (P5-07)
+## 7. Minimal MySQL pool acquire/release adapter boundary (P5-08)
 
-P5-07 updates `lingshu.db.mysql` to use `aiomysql.create_pool(...)` for startup:
+P5-08 updates `lingshu.db.mysql` to introduce an internal adapter around
+`aiomysql.create_pool(...)` results:
 
-- `MySQLDriver.startup()` lazily resolves `aiomysql`.
-- startup builds MySQL connection kwargs with `db` parameter and defaults `port`
-  to `3306`.
-- when `create_pool` callable is missing, startup raises
-  `DatabaseConfigurationError("db.mysql.pool_unavailable")`.
-- startup returns the pool handle as an opaque object.
-- `shutdown()` calls `close()`, then `wait_closed()` when available.
+- startup still lazily resolves `aiomysql`;
+- startup returns an internal `_MySQLPoolHandle`;
+- `_MySQLPoolHandle` exposes async `acquire()`, `release(connection)`,
+  and async `close()`;
+- missing raw pool `acquire`/`release` results in:
+  - `DatabaseConfigurationError("db.mysql.pool_acquire_unavailable")`
+  - `DatabaseConfigurationError("db.mysql.pool_release_unavailable")`.
+
+`MySQLDriver.startup()` returns the adapter as an opaque handle. `MySQLDriver`
+shutdown calls `handle.close()` through the default shutdown path.
 
 Error handling remains boundary-local:
 
 - missing `aiomysql` raises `db.mysql.missing_dependency`;
 - invalid DSN shape still raises `db.mysql.invalid_dsn`;
-- `create_pool` exceptions during startup are wrapped by app lifecycle startup
-  as `DatabaseLifecycleError` through existing resource/application contracts.
+- missing `create_pool` still raises `db.mysql.pool_unavailable`.
 
-Backend-specific lifecycle details above are intentionally narrow: no query,
-acquire/release, transaction, health-check, reconnect, or tuning APIs are added
-at this stage.
+This is an internal acquire/release adapter boundary only, not SQL execute,
+transaction, cursor, or query APIs.
 
 ## 8. Future backend integration
 
