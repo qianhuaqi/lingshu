@@ -569,8 +569,8 @@ def test_mysql_pool_handle_transaction_reuses_single_connection_for_multiple_ope
             assert connection.begin_call_count == 1
         assert connection.commit_called is True
         assert connection.rollback_called is False
-        assert raw_pool.release_called is True
-        assert raw_pool.released_connection is connection
+        assert raw_pool.released_connection is not None
+        assert cast(_RawConnection, raw_pool.released_connection) is connection
         assert connection.commit_call_count == 1
 
     asyncio.run(scenario())
