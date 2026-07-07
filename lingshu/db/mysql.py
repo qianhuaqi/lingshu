@@ -146,7 +146,7 @@ class _MySQLPoolHandle:
                 return await _maybe_await(cursor.fetchone())
             if fetch == "all":
                 rows = await _maybe_await(cursor.fetchall())
-                if isinstance(rows, (tuple, list)):
+                if isinstance(rows, tuple | list):
                     return list(rows)
                 return rows
             return execute_result

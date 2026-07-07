@@ -86,3 +86,15 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
 
 Finish remaining P5-08 validation for adapter boundary behavior, then prepare
 Draft PR summary for review.
+
+## P5-Baseline-03 status
+
+Date: 2026-07-07
+Scope: CLI console script baseline
+
+- P5-Baseline-03 fix: `tests/test_cli_version.py`
+- Resolution: console-script version test now resolves the executable from the
+  current virtual environment `Scripts` directory (and PATH fallback), preventing
+  false failures when `lingshu` is not on global PATH.
+- Validation: `test_console_script_reports_installed_version` now verifies a command
+  from current test environment rather than requiring global PATH availability.
