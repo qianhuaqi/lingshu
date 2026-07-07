@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-07
 Project: LingShu Framework
-Phase: P5-10 Minimal MySQL transaction boundary
+Phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -21,11 +21,11 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #135 - P5-10: Minimal MySQL transaction boundary
-Active branch: human/dodo/p5-10-on-clean-baseline
+Completed Issue: #135 - P5-10: Minimal MySQL transaction boundary
+Completed PR: #137 (merge commit `7cf533c655ae1a3d829557368e5e84f036b3d0e4`)
 Primary writer: project lead
-Status: P5-10 is active; it adds a minimal MySQL transaction adapter boundary
-inside `lingshu.db.mysql` while preserving current lifecycle contracts.
+Status: P5-10 is completed and accepted; the minimal MySQL transaction
+boundary changes are present in `lingshu.db.mysql`.
 
 ## P4 closeout
 
@@ -37,6 +37,10 @@ P4 closeout references:
 - P4-03 #109 / PR #109 / `d55a34d3cdef19684b027eb840be7f57f61aedec`
 - P4-04 #111 / PR #111 / `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`
 - P4-05 #113 / PR #113 / `65488f73383d043776ea48b0ab5a2c3cd201600b`
+Completed final P5 Issue: #135
+Completed final P5 Pull Request: #137
+P5 final merge commit: `7cf533c655ae1a3d829557368e5e84f036b3d0e4`
+P5 acceptance evidence: `ruff`, `ruff format --check`, `mypy`, `pytest` passed
 
 Accepted P4 contracts:
 
@@ -113,4 +117,4 @@ Scope: CLI console script baseline
 
 ## Next action
 
-Finish P5-10 implementation checks and prepare Draft PR summary for review.
+等待项目负责人确认下一阶段 / 下一 issue。
