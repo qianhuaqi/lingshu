@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import MutableMapping
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import FrozenInstanceError
+from typing import cast
 
 import pytest
 from lingshu.core import RoutingError
@@ -37,7 +39,8 @@ def test_static_specificity_precedes_dynamic_before_method_selection() -> None:
     assert dynamic_match.route is dynamic
     assert dynamic_match.path_params == {"user_id": "42"}
     with pytest.raises(TypeError):
-        dynamic_match.path_params["user_id"] = "43"  # type: ignore[index]
+        dynamic_path_params = cast(MutableMapping[str, str], dynamic_match.path_params)
+        dynamic_path_params["user_id"] = "43"
 
     assert router.match("GET", "/missing").kind is RouteMatchKind.NOT_FOUND
     assert router.get_named("user") is dynamic

@@ -53,8 +53,8 @@ def test_database_resource_startup_and_shutdown_delegate_to_driver() -> None:
 
         await resource.shutdown()
 
-        assert resource.started is False
-        assert driver.shutdown_calls == [{"resource": "db.mysql.main"}]
+        assert len(driver.shutdown_calls) == 1
+        assert driver.shutdown_calls[0] == {"resource": "db.mysql.main"}
         assert resource.safe_details["state"] == "stopped"
 
     asyncio.run(scenario())

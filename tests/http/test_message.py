@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pytest
+from lingshu.core.errors import LingShuError
 from lingshu.http import Headers, HTTPMethod, HTTPVersion, RequestTarget
 
 
@@ -15,7 +16,7 @@ def test_method_target_and_version_are_canonical() -> None:
 
 @pytest.mark.parametrize("value", ["", "relative", "/has#fragment", "/nul\x00"])
 def test_invalid_request_targets_fail_safely(value: str) -> None:
-    with pytest.raises(Exception) as captured:
+    with pytest.raises(LingShuError) as captured:
         RequestTarget.parse(value)
     assert captured.value.code in {"protocol.invalid_target", "request.target_too_large"}
 
@@ -28,7 +29,7 @@ def test_headers_are_immutable_bounded_and_duplicate_preserving() -> None:
     assert headers.contains("X-TEST")
     assert tuple(headers) == headers.items()
 
-    with pytest.raises(Exception) as too_many:
+    with pytest.raises(LingShuError) as too_many:
         Headers((("x-a", "1"), ("x-b", "2")), max_fields=1)
     assert too_many.value.code == "request.headers_too_many"
 
@@ -41,6 +42,6 @@ def test_headers_are_immutable_bounded_and_duplicate_preserving() -> None:
     ],
 )
 def test_invalid_headers_fail_safely(name: str, value: str, code: str) -> None:
-    with pytest.raises(Exception) as captured:
+    with pytest.raises(LingShuError) as captured:
         Headers(((name, value),))
     assert captured.value.code == code

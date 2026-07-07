@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, MutableMapping
+from typing import cast
 
 import pytest
 from lingshu.core import ConnectionId, RequestId
+from lingshu.core.errors import LingShuError
 from lingshu.http import (
     Headers,
     HTTPMethod,
@@ -41,13 +43,13 @@ def test_body_is_single_consumer_and_bounded() -> None:
     async def scenario() -> None:
         application, _, request = make_request()
         assert await request.body.read() == b"hello"
-        with pytest.raises(Exception) as consumed:
+        with pytest.raises(LingShuError) as consumed:
             await request.body.read()
         assert consumed.value.code == "request.body_already_consumed"
         await application.close()
 
         application, _, request = make_request(b"too-large", max_bytes=4)
-        with pytest.raises(Exception) as limited:
+        with pytest.raises(LingShuError) as limited:
             await request.body.read()
         assert limited.value.code == "request.body_too_large"
         await application.close()
@@ -67,7 +69,7 @@ def test_body_chunk_iteration_preserves_order_and_single_use() -> None:
 
         body = RequestBody(source(), scope=request_scope, max_bytes=6)
         assert [chunk async for chunk in body.iter_chunks()] == [b"one", b"two"]
-        with pytest.raises(Exception) as consumed:
+        with pytest.raises(LingShuError) as consumed:
             body.iter_chunks()
         assert consumed.value.code == "request.body_already_consumed"
         await application.close()
@@ -86,13 +88,14 @@ def test_request_metadata_route_state_and_scope_lifetime() -> None:
         assert request.route_name == "user-detail"
         assert request.path_params == {"user_id": "42"}
         with pytest.raises(TypeError):
-            request.path_params["user_id"] = "43"  # type: ignore[index]
-        with pytest.raises(Exception) as duplicate:
+            path_params = cast(MutableMapping[str, str], request.path_params)
+            path_params["user_id"] = "43"
+        with pytest.raises(LingShuError) as duplicate:
             request.publish_route("again", {})
         assert duplicate.value.code == "request.route_already_published"
 
         await application.close()
-        with pytest.raises(Exception) as closed:
+        with pytest.raises(LingShuError) as closed:
             _ = request.path
         assert closed.value.code == "request.scope_closed"
 
@@ -106,10 +109,10 @@ def test_scope_cancellation_remains_control_flow() -> None:
         caught_by_exception = False
         try:
             await request.body.read()
+        except ScopeCancelled:
+            caught_by_exception = False
         except Exception:
             caught_by_exception = True
-        except ScopeCancelled:
-            pass
         assert not caught_by_exception
         await application.close()
 

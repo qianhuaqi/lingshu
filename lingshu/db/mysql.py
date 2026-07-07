@@ -146,7 +146,7 @@ class _MySQLPoolHandle:
                 return await _maybe_await(cursor.fetchone())
             if fetch == "all":
                 rows = await _maybe_await(cursor.fetchall())
-                if isinstance(rows, (tuple, list)):
+                if isinstance(rows, tuple | list):
                     return list(rows)
                 return rows
             return execute_result
@@ -181,7 +181,14 @@ class _MySQLPoolHandle:
 
 
 async def _default_connect(config: DatabaseConfig) -> object:
-    aiomysql = _load_aiomysql()
+    try:
+        aiomysql = _load_aiomysql()
+    except ModuleNotFoundError as exc:
+        raise DatabaseConfigurationError(
+            "db.mysql.missing_dependency",
+            "Optional MySQL dependency 'aiomysql' is not installed.",
+            safe_details={"backend": "mysql", "name": config.name},
+        ) from exc
     kwargs = _build_connection_kwargs(config)
     if "host" not in kwargs:
         raise DatabaseConfigurationError(

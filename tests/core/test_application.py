@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable, MutableMapping
+from typing import Any, cast
 
 import pytest
 from lingshu.core.application import ApplicationState, LingShu
@@ -123,7 +125,8 @@ class TestHTTPException:
         exc = HTTPException(401, headers={"WWW-Authenticate": "Bearer"})
         assert exc.headers["WWW-Authenticate"] == "Bearer"
         with pytest.raises(TypeError):
-            exc.headers["X"] = "Y"
+            headers = cast(MutableMapping[str, str], exc.headers)
+            headers["X"] = "Y"
 
     def test_does_not_leak_cause_or_traceback(self) -> None:
         exc = HTTPException(500, "fail")
@@ -187,9 +190,9 @@ class TestLifecycle:
             await app.startup()
             assert app.state is ApplicationState.RUNNING
             await app.drain()
-            assert app.state is ApplicationState.DRAINING
+            assert app.state.value == ApplicationState.DRAINING.value
             await app.shutdown()
-            assert app.state is ApplicationState.STOPPED
+            assert app.state.value == ApplicationState.STOPPED.value
 
         asyncio.run(run())
 
@@ -294,7 +297,7 @@ class TestFreeze:
             return Response.text("ok")
 
         async def mw(request: Request, call_next: object) -> Response:
-            return await call_next()  # type: ignore[misc]
+            return await cast(Callable[[], Awaitable[Response]], call_next)()
 
         app2.add_middleware(mw)
         plan2 = app2.freeze()
@@ -535,7 +538,7 @@ class TestDispatch:
 
         async def mw(request: Request, call_next: object) -> Response:
             seen.append("ingress")
-            response = await call_next()  # type: ignore[misc]
+            response = await cast(Callable[[], Awaitable[Response]], call_next)()
             seen.append("egress")
             return response
 
@@ -563,7 +566,7 @@ class TestDispatch:
 
         async def route_mw(request: Request, call_next: object) -> Response:
             route_mw_called.append("called")
-            return await call_next()  # type: ignore[misc]
+            return await cast(Callable[[], Awaitable[Response]], call_next)()
 
         @app.get("/special", name="special", middleware=[MiddlewareDeclaration(route_mw)])
         async def special(request: Request) -> Response:
@@ -601,7 +604,7 @@ class TestDispatch:
 
         async def app_mw(request: Request, call_next: object) -> Response:
             events.append("app:in")
-            response = await call_next()  # type: ignore[misc]
+            response = await cast(Callable[[], Awaitable[Response]], call_next)()
             events.append("app:out")
             return response
 
@@ -609,7 +612,7 @@ class TestDispatch:
 
         async def route_mw(request: Request, call_next: object) -> Response:
             events.append("route:in")
-            response = await call_next()  # type: ignore[misc]
+            response = await cast(Callable[[], Awaitable[Response]], call_next)()
             events.append("route:out")
             return response
 
@@ -646,7 +649,7 @@ class TestDispatch:
 
         async def app_mw(request: Request, call_next: object) -> Response:
             events.append("app:in")
-            response = await call_next()  # type: ignore[misc]
+            response = await cast(Callable[[], Awaitable[Response]], call_next)()
             events.append("app:out")
             return response
 
@@ -654,7 +657,7 @@ class TestDispatch:
 
         async def route_mw(request: Request, call_next: object) -> Response:
             events.append("route:in")
-            return await call_next()  # type: ignore[misc]
+            return await cast(Callable[[], Awaitable[Response]], call_next)()
 
         @app.get("/exists", name="root", middleware=[MiddlewareDeclaration(route_mw)])
         async def root(request: Request) -> Response:
@@ -684,7 +687,7 @@ class TestDispatch:
 
         async def app_mw(request: Request, call_next: object) -> Response:
             events.append("app:in")
-            response = await call_next()  # type: ignore[misc]
+            response = await cast(Callable[[], Awaitable[Response]], call_next)()
             events.append("app:out")
             return response
 
@@ -692,7 +695,7 @@ class TestDispatch:
 
         async def route_mw(request: Request, call_next: object) -> Response:
             events.append("route:in")
-            return await call_next()  # type: ignore[misc]
+            return await cast(Callable[[], Awaitable[Response]], call_next)()
 
         @app.post("/items", name="items", middleware=[MiddlewareDeclaration(route_mw)])
         async def items(request: Request) -> Response:
@@ -722,7 +725,7 @@ class TestDispatch:
 
         async def route_mw(request: Request, call_next: object) -> Response:
             route_mw_called.append("called")
-            return await call_next()  # type: ignore[misc]
+            return await cast(Callable[[], Awaitable[Response]], call_next)()
 
         @app.get("/", middleware=[MiddlewareDeclaration(route_mw)])
         async def root(request: Request) -> Response:
@@ -872,8 +875,8 @@ class TestExceptionMapper:
         async def root(request: Request) -> Response:
             raise ValueError("x")
 
-        def bad_mapper(error: Exception) -> int:
-            return 42  # type: ignore[return-value]
+        def bad_mapper(error: Exception) -> Response:
+            return cast(Response, 42)
 
         app.exception_mapper(ValueError, bad_mapper)
         app.freeze()
@@ -1358,7 +1361,7 @@ class TestHandlerSignature:
         def sync_handler(request: Request) -> Response:
             return Response.text("sync")
 
-        app.get("/sync")(sync_handler)
+        app.get("/sync")(cast(Any, sync_handler))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1368,7 +1371,7 @@ class TestHandlerSignature:
         async def no_args() -> Response:
             return Response.text("noargs")
 
-        app.get("/noargs")(no_args)
+        app.get("/noargs")(cast(Any, no_args))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1378,7 +1381,7 @@ class TestHandlerSignature:
         async def two_args(request: Request, extra: int) -> Response:
             return Response.text("two")
 
-        app.get("/two")(two_args)
+        app.get("/two")(cast(Any, two_args))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1388,7 +1391,7 @@ class TestHandlerSignature:
         async def var_args(request: Request, *args: object) -> Response:
             return Response.text("varargs")
 
-        app.get("/varargs")(var_args)
+        app.get("/varargs")(cast(Any, var_args))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1398,7 +1401,7 @@ class TestHandlerSignature:
         async def var_kwargs(request: Request, **kwargs: object) -> Response:
             return Response.text("varkwargs")
 
-        app.get("/varkwargs")(var_kwargs)
+        app.get("/varkwargs")(cast(Any, var_kwargs))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1408,7 +1411,7 @@ class TestHandlerSignature:
         async def kw_only(request: Request, *, required: str) -> Response:
             return Response.text(required)
 
-        app.get("/kwonly")(kw_only)
+        app.get("/kwonly")(cast(Any, kw_only))
         with pytest.raises(HandlerContractError):
             app.freeze()
 
@@ -1438,7 +1441,8 @@ class TestPlanImmutability:
 
         plan = app.freeze()
         # Plan properties are read-only.
+        plan_mut = cast(Any, plan)
         with pytest.raises((AttributeError, TypeError)):
-            plan.router = None  # type: ignore[misc]
+            plan_mut.router = None
         with pytest.raises((AttributeError, TypeError)):
-            plan.revision_id = RevisionId.parse("0" * 64)  # type: ignore[misc]
+            plan_mut.revision_id = RevisionId.parse("0" * 64)
