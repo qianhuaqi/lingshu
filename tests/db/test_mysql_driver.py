@@ -145,4 +145,5 @@ def test_mysql_driver_uses_configured_host_defaults_for_aiomysql_connect(
     assert captured["kwargs"]["port"] == 3306
     assert captured["kwargs"]["user"] == "user"
     assert captured["kwargs"]["password"] == "secret"
-    assert captured["kwargs"]["database"] == "mysql_db"
+    assert captured["kwargs"]["db"] == "mysql_db"
+    assert "database" not in captured["kwargs"]

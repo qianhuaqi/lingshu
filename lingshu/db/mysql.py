@@ -48,7 +48,7 @@ def _parse_dsn(dsn: str) -> dict[str, str | int | None]:
         "port": parsed.port,
         "user": parsed.username,
         "password": parsed.password,
-        "database": parsed.path.removeprefix("/") if parsed.path else None,
+        "db": parsed.path.removeprefix("/") if parsed.path else None,
     }
 
 
@@ -62,7 +62,7 @@ def _build_connection_kwargs(config: DatabaseConfig) -> dict[str, object]:
         "port": config.port,
         "user": config.username,
         "password": config.password,
-        "database": config.database,
+        "db": config.database,
     }
     for key, value in fallback.items():
         if key not in values and value is not None:
