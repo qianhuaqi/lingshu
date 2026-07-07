@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from typing import Any, cast
 
 import pytest
 from lingshu.core.config import (
@@ -183,7 +184,7 @@ def test_snapshot_is_immutable_and_redacted() -> None:
     secret = snapshot.require("database.password", SecretValue)
     assert secret.reveal() == "super-secret"
     with pytest.raises(AttributeError):
-        secret._value = "changed"  # type: ignore[misc]
+        cast(Any, secret)._value = "changed"
 
     public = snapshot.redacted()
     assert public["server"]["port"] == 8000  # type: ignore[index]

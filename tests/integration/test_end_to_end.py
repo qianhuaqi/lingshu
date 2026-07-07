@@ -2,6 +2,8 @@
 
 import asyncio
 import json
+from collections.abc import Awaitable, Callable
+from typing import cast
 
 import pytest
 from lingshu import LingShu, Request, Response
@@ -25,9 +27,11 @@ def test_full_request_response_cycle(app: LingShu) -> None:
     """Test a full request/response cycle including middleware and route parameters."""
     events = []
 
-    async def add_custom_header(request: Request, call_next) -> Response:
+    async def add_custom_header(
+        request: Request, call_next: object
+    ) -> Response:
         events.append("middleware_in")
-        response = await call_next()
+        response = await cast(Callable[[], Awaitable[Response]], call_next)()
         response.add_header("X-E2E-Status", "passed")
         events.append("middleware_out")
         return response

@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 from lingshu.core import RequestId, RevisionId, StorageError, WorkerId
+from lingshu.core.errors import LingShuError
 from lingshu.record import (
     AttributeRule,
     BoundedRecordQueue,
@@ -93,7 +94,7 @@ def test_flush_queue_and_bounded_shutdown(tmp_path: Path) -> None:
             revision_id=RevisionId.parse("c" * 64),
         )
         assert record.append("request.one", component="record", outcome="ok")
-        with pytest.raises(Exception) as timeout:
+        with pytest.raises(LingShuError) as timeout:
             await writer.flush_queue(queue, deadline=expired)
         assert timeout.value.code == "record.flush_timeout"
         writer.close()
@@ -124,7 +125,7 @@ def test_writer_lock_symlink_and_watermarks(tmp_path: Path) -> None:
     first = LocalRecordWriter(root)
     first.start()
     second = LocalRecordWriter(root)
-    with pytest.raises(Exception) as locked:
+    with pytest.raises(LingShuError) as locked:
         second.start()
     assert locked.value.code == "record.writer_locked"
 
@@ -142,7 +143,7 @@ def test_writer_lock_symlink_and_watermarks(tmp_path: Path) -> None:
         link.symlink_to(target, target_is_directory=True)
     except OSError:
         pytest.skip("symbolic links are unavailable")
-    with pytest.raises(Exception) as unsafe:
+    with pytest.raises(LingShuError) as unsafe:
         LocalRecordWriter(link).start()
     assert unsafe.value.code == "record.unsafe_path"
 

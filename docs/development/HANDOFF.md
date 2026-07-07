@@ -91,6 +91,11 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
   - This keeps pytest discovery unchanged and remains an internal test-only
     correction (no runtime logic changes).
 
+- 2026-07-07: Started P5-Baseline-02 to eliminate strict mypy errors in tests
+  introduced by enabling strict test checking of `tests` package types. This
+  includes adding missing annotations, return typing, and adapter-safe helper
+  casts in test code, while keeping production behavior unchanged.
+
 ## Next action
 
 Finish remaining P5-08 validation for adapter boundary behavior, then prepare

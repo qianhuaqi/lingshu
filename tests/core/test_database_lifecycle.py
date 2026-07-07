@@ -4,6 +4,7 @@ import asyncio
 import importlib
 import sys
 from collections.abc import MutableSequence
+from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -71,7 +72,7 @@ def make_resource(
             database="customer_db",
             schema="tenant_schema",
             query_text="select * from payroll_private",
-            options=config_options or {},
+            options=MappingProxyType(config_options or {}),
         ),
         FakeDriver(
             events,

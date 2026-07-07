@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import hashlib
+from typing import Any, cast
 
 import pytest
 from lingshu.core import (
@@ -29,7 +30,7 @@ def test_identifier_types_are_not_interchangeable() -> None:
     value = "a" * 32
     request_id = RequestId.parse(value)
     connection_id = ConnectionId.parse(value)
-    assert request_id != connection_id
+    assert cast(Any, request_id) != cast(Any, connection_id)
     assert type(request_id) is RequestId
     assert type(connection_id) is ConnectionId
 
