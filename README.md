@@ -8,11 +8,11 @@ upper-level Web framework.
 
 ## Current state
 
-- Current phase: P5-03 repository cleanup and documentation synchronization before implementation
-- Issue: #122
-- Branch: `human/dodo/p5-03-repository-cleanup-sync`
-- Status: repository cleanup audit and documentation synchronization are active; no runtime implementation is in scope.
-- Next after cleanup: `lingshu.db` database layer architecture / minimal skeleton
+- Current phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
+- Final P5 issue: #135
+- Closing PR: #138
+- Current status: P5 implementation and closeout are accepted; this issue performs post-P5 audit and release-readiness cleanup.
+- Next action: complete cleanup in #140, then wait for project-owner authorization for the next backend track.
 
 ## Authoritative entries
 
