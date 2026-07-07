@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import importlib
 import inspect
 from collections.abc import Awaitable, Callable
@@ -29,6 +30,121 @@ class _MySQLCursor(Protocol):
 
 class _MySQLConnection(Protocol):
     def cursor(self) -> object | Awaitable[object]: ...
+
+
+class _MySQLTransactionHandle:
+    """Minimal internal transaction boundary for a single pooled connection."""
+
+    def __init__(self, pool: _MySQLPoolHandle) -> None:
+        self._pool = pool
+        self._connection: object | None = None
+        self._transaction_error: BaseException | None = None
+        self._release_error: BaseException | None = None
+
+    async def _run_connection_method(
+        self,
+        method_name: str,
+        connection: object,
+    ) -> None:
+        method = getattr(connection, method_name, None)
+        if callable(method):
+            await _maybe_await(method())
+
+    async def _run_cursor_operation(
+        self,
+        sql: str,
+        params: object | None,
+        *,
+        fetch: str | None = None,
+    ) -> object:
+        if self._connection is None:
+            raise RuntimeError("Transaction is not entered.")
+
+        connection = cast(_MySQLConnection, self._connection)
+        cursor: object | None = None
+        primary_error = False
+        cursor_close_error: BaseException | None = None
+        try:
+            cursor = cast(_MySQLCursor, await _maybe_await(connection.cursor()))
+            execute_result = await _maybe_await(cursor.execute(sql, params))
+            if fetch == "one":
+                return await _maybe_await(cursor.fetchone())
+            if fetch == "all":
+                rows = await _maybe_await(cursor.fetchall())
+                if isinstance(rows, tuple | list):
+                    return list(rows)
+                return rows
+            return execute_result
+        except BaseException:
+            primary_error = True
+            raise
+        finally:
+            if cursor is not None:
+                try:
+                    await self._pool._close_cursor(cursor)
+                except BaseException as exc:
+                    cursor_close_error = exc
+            if cursor_close_error is not None and not primary_error:
+                raise cursor_close_error
+
+    async def __aenter__(self) -> _MySQLTransactionHandle:
+        connection: object | None = None
+        try:
+            self._transaction_error = None
+            self._release_error = None
+            connection = await self._pool.acquire()
+            self._connection = connection
+            await self._run_connection_method("begin", connection)
+            return self
+        except BaseException:
+            if connection is not None:
+                with contextlib.suppress(BaseException):
+                    await self._pool.release(connection)
+            self._connection = None
+            raise
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        exc_traceback: object | None,
+    ) -> None:
+        connection = self._connection
+        try:
+            if connection is not None:
+                if exc_type is None:
+                    try:
+                        await self._run_connection_method("commit", connection)
+                    except BaseException as exc:
+                        self._transaction_error = exc
+                else:
+                    try:
+                        await self._run_connection_method("rollback", connection)
+                    except BaseException as exc:
+                        self._transaction_error = exc
+        finally:
+            if connection is not None:
+                try:
+                    await self._pool.release(connection)
+                except BaseException as exc:
+                    self._release_error = exc
+            self._connection = None
+
+        if exc_value is not None:
+            return
+        if self._transaction_error is not None:
+            raise self._transaction_error
+        if self._release_error is not None:
+            raise self._release_error
+
+    async def execute(self, sql: str, params: object | None = None) -> object:
+        return await self._run_cursor_operation(sql, params)
+
+    async def fetch_one(self, sql: str, params: object | None = None) -> object | None:
+        return await self._run_cursor_operation(sql, params, fetch="one")
+
+    async def fetch_all(self, sql: str, params: object | None = None) -> object:
+        return await self._run_cursor_operation(sql, params, fetch="all")
 
 
 def _load_aiomysql() -> Any:
@@ -146,7 +262,7 @@ class _MySQLPoolHandle:
                 return await _maybe_await(cursor.fetchone())
             if fetch == "all":
                 rows = await _maybe_await(cursor.fetchall())
-                if isinstance(rows, (tuple, list)):
+                if isinstance(rows, tuple | list):
                     return list(rows)
                 return rows
             return execute_result
@@ -169,6 +285,9 @@ class _MySQLPoolHandle:
                     raise cursor_close_error
                 if release_error is not None:
                     raise release_error
+
+    def transaction(self) -> _MySQLTransactionHandle:
+        return _MySQLTransactionHandle(self)
 
     async def execute(self, sql: str, params: object | None = None) -> object:
         return await self._execute_internal(sql, params)

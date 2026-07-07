@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-07
 Project: LingShu Framework
-Phase: P5-09 Minimal MySQL execute/fetch boundary
+Phase: P5-10 Minimal MySQL transaction boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -21,10 +21,10 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #133 - P5-09: Minimal MySQL execute/fetch boundary
-Active branch: human/dodo/p5-09-minimal-mysql-execute-fetch-boundary
+Active Issue: #135 - P5-10: Minimal MySQL transaction boundary
+Active branch: human/dodo/p5-10-minimal-mysql-transaction-boundary
 Primary writer: project lead
-Status: P5-09 is active; it adds a minimal MySQL execute/fetch adapter boundary
+Status: P5-10 is active; it adds a minimal MySQL transaction adapter boundary
 inside `lingshu.db.mysql` while preserving current lifecycle contracts.
 
 ## P4 closeout
@@ -50,16 +50,20 @@ Accepted P4 contracts:
 P5-06 delivered optional MySQL boundary and startup/shutdown.
 P5-07 added pool acquisition through `aiomysql.create_pool(...)` handle lifecycle.
 
-P5-09 adds minimal internal SQL execution/fetch behavior on the existing
-`_MySQLPoolHandle`:
+P5-09 added minimal internal SQL execute/fetch behavior on the existing
+`_MySQLPoolHandle`.
 
-- `execute(sql, params=None)` with parameter forwarding.
-- `fetch_one(sql, params=None)` and `fetch_all(sql, params=None)`.
-- internal `acquire -> cursor -> operation -> cursor.close -> release` boundary.
-- missing cursor/operation behavior remains local adapter boundary errors and
-  lifecycle behavior.
+P5-10 adds a minimal transaction boundary:
 
-This is intentionally not a query API, ORM, cursor API, or transaction API.
+- `_MySQLPoolHandle.transaction()`.
+- `_MySQLTransactionHandle`:
+  - `__aenter__()` acquires one connection and calls `begin` if present.
+  - `execute(sql, params=None)`, `fetch_one(sql, params=None)`,
+    `fetch_all(sql, params=None)`.
+  - `__aexit__()` commits on success, rolls back on failure, and always
+    attempts release.
+
+This is intentionally not a query API, ORM, or query builder.
 
 ## P5 roadmap
 
@@ -73,6 +77,7 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
 8. P5-07: Minimal MySQL connection pool lifecycle boundary.
 9. P5-08: Minimal MySQL pool acquire/release adapter boundary.
 10. P5-09: Minimal MySQL execute/fetch boundary.
+11. P5-10: Minimal MySQL transaction boundary.
 
 ## Validation and CI
 
@@ -84,5 +89,4 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
 
 ## Next action
 
-Finish remaining P5-08 validation for adapter boundary behavior, then prepare
-Draft PR summary for review.
+Finish P5-10 implementation checks and prepare Draft PR summary for review.
