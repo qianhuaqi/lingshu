@@ -1,7 +1,7 @@
 # Database Layer Architecture
 
-Status: P5-08 minimal MySQL pool acquire/release adapter boundary
-Issue: #131
+Status: P5-09 minimal MySQL execute/fetch boundary
+Issue: #133
 
 ## 1. Why `lingshu.db` comes before backend drivers
 
@@ -96,30 +96,34 @@ P5-05 added the minimal `app.db` boundary:
 - startup rollback and shutdown suppress-and-continue behavior remain owned by
   the existing application lifecycle.
 
-## 7. Minimal MySQL pool acquire/release adapter boundary (P5-08)
+## 7. Minimal MySQL execute/fetch boundary (P5-09)
 
-P5-08 updates `lingshu.db.mysql` to introduce an internal adapter around
-`aiomysql.create_pool(...)` results:
+P5-09 updates `lingshu.db.mysql` to add a minimal internal execute/fetch
+boundary on top of the P5-08 pool adapter:
 
 - startup still lazily resolves `aiomysql`;
-- startup returns an internal `_MySQLPoolHandle`;
-- `_MySQLPoolHandle` exposes async `acquire()`, `release(connection)`,
-  and async `close()`;
-- missing raw pool `acquire`/`release` results in:
-  - `DatabaseConfigurationError("db.mysql.pool_acquire_unavailable")`
-  - `DatabaseConfigurationError("db.mysql.pool_release_unavailable")`.
+- `_MySQLPoolHandle` now also exposes async `execute(sql, params=None)`,
+  `fetch_one(sql, params=None)` and `fetch_all(sql, params=None)`.
+- each query execution is wrapped by internal `acquire` -> `cursor` -> operation ->
+  `close` -> `release` flow.
+- execute/fetch paths support sync or awaitable operations returned by mocked
+  cursor methods to avoid hard-coupling to aiomysql async behavior details.
+- parameterized SQL execution is required (`sql`, `params`) and query text remains
+  an opaque boundary input.
 
-`MySQLDriver.startup()` returns the adapter as an opaque handle. `MySQLDriver`
-shutdown calls `handle.close()` through the default shutdown path.
+`MySQLDriver.startup()` still returns `_MySQLPoolHandle` as an opaque handle.
+`MySQLDriver` shutdown still uses `handle.close()`, which preserves the close + 
+`wait_closed()` semantics.
 
-Error handling remains boundary-local:
+Error handling for adapter boundaries remains local:
 
 - missing `aiomysql` raises `db.mysql.missing_dependency`;
-- invalid DSN shape still raises `db.mysql.invalid_dsn`;
+- invalid DSN still raises `db.mysql.invalid_dsn`;
 - missing `create_pool` still raises `db.mysql.pool_unavailable`.
 
-This is an internal acquire/release adapter boundary only, not SQL execute,
-transaction, cursor, or query APIs.
+This remains a minimal execute/fetch boundary only. It does not expose cursor or
+connection APIs, and still does not provide ORM, transaction, query builder, or
+migration behavior.
 
 ## 8. Future backend integration
 

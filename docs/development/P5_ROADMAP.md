@@ -1,7 +1,7 @@
 ﻿# P5 Roadmap
 
-Status: active for P5-08 implementation
-Context: Issue #131
+Status: active for P5-09 implementation
+Context: Issue #133
 
 ## 1. Why this document exists
 
@@ -30,8 +30,8 @@ rules, and packaging policy that later implementation work must follow.
 - Keep core import-safe and free of mandatory database client dependencies.
 - Keep `lingshu.db` shared contracts in place and only add optional backend
   boundaries.
-- For MySQL, implement a minimal pool acquire/release adapter through
-  `MySQLDriver.startup()` returning `_MySQLPoolHandle`.
+- For MySQL, implement a minimal execute/fetch boundary through
+  `MySQLDriver.startup()` returning `_MySQLPoolHandle` with execute/fetch methods.
 - Preserve redaction rules and non-sensitive `repr`/`safe_details` behavior.
 
 ## 4. P5 non-goals
@@ -66,16 +66,25 @@ runtime scope.
 7. P5-06: Minimal MySQL data extension driver
 8. P5-07: Minimal MySQL connection pool lifecycle boundary
 9. P5-08: Minimal MySQL pool acquire/release adapter boundary
+10. P5-09: Minimal MySQL execute/fetch boundary
 
-## 7. P5-08 implementation objective
+## 7. P5-09 implementation objective
 
-Issue #131 adds:
+Issue #133 adds:
 
-1. `_MySQLPoolHandle` in `lingshu.db.mysql`.
-2. `MySQLDriver.startup()` returns the handle.
-3. `MySQLDriver.shutdown()` uses handle `close()`.
-4. `db.mysql.pool_acquire_unavailable` and
-   `db.mysql.pool_release_unavailable` errors for missing raw pool methods.
+1. `_MySQLPoolHandle` in `lingshu.db.mysql` adds:
+   - `execute(sql, params=None)`
+   - `fetch_one(sql, params=None)`
+   - `fetch_all(sql, params=None)`
+2. Each operation acquires a connection, uses a cursor, closes the cursor, and
+   finally releases the connection.
+3. Operations support either sync return values or awaitables from mocked cursor
+   calls.
+4. `db.mysql` remains a boundary-only adapter for lifecycle + minimal execute/fetch
+   and does not expose query APIs.
+5. Keep close semantics through `MySQLDriver.shutdown()` and adapter `close()`.
+
+P5-09 is intentionally not a query API, ORM, transaction boundary, or cursor API.
 
 ## 8. Validation and CI expectations
 

@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-07
 Project: LingShu Framework
-Phase: P5-08 MySQL pool acquire/release adapter boundary
+Phase: P5-09 Minimal MySQL execute/fetch boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -21,11 +21,11 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #131 - P5-08: Minimal MySQL pool acquire/release adapter boundary
-Active branch: human/dodo/p5-08-minimal-mysql-pool-acquire-release-boundary
+Active Issue: #133 - P5-09: Minimal MySQL execute/fetch boundary
+Active branch: human/dodo/p5-09-minimal-mysql-execute-fetch-boundary
 Primary writer: project lead
-Status: P5-08 is active; it adds a minimal internal acquire/release adapter boundary
-for MySQL pools while preserving current lifecycle contracts.
+Status: P5-09 is active; it adds a minimal MySQL execute/fetch adapter boundary
+inside `lingshu.db.mysql` while preserving current lifecycle contracts.
 
 ## P4 closeout
 
@@ -50,14 +50,16 @@ Accepted P4 contracts:
 P5-06 delivered optional MySQL boundary and startup/shutdown.
 P5-07 added pool acquisition through `aiomysql.create_pool(...)` handle lifecycle.
 
-P5-08 now adds minimal internal pool adapter boundary in `lingshu.db.mysql`:
+P5-09 adds minimal internal SQL execution/fetch behavior on the existing
+`_MySQLPoolHandle`:
 
-- `_MySQLPoolHandle` with async `acquire()`, `release()`, and `close()`.
-- `MySQLDriver.startup()` returns adapter not raw pool.
-- missing raw `acquire/release` returns dedicated configuration errors.
-- no changes to public lifecycle contracts.
+- `execute(sql, params=None)` with parameter forwarding.
+- `fetch_one(sql, params=None)` and `fetch_all(sql, params=None)`.
+- internal `acquire -> cursor -> operation -> cursor.close -> release` boundary.
+- missing cursor/operation behavior remains local adapter boundary errors and
+  lifecycle behavior.
 
-It does not add query APIs, ORM, query builder, or transaction primitives.
+This is intentionally not a query API, ORM, cursor API, or transaction API.
 
 ## P5 roadmap
 
@@ -70,6 +72,7 @@ It does not add query APIs, ORM, query builder, or transaction primitives.
 7. P5-06: Minimal MySQL data extension driver.
 8. P5-07: Minimal MySQL connection pool lifecycle boundary.
 9. P5-08: Minimal MySQL pool acquire/release adapter boundary.
+10. P5-09: Minimal MySQL execute/fetch boundary.
 
 ## Validation and CI
 
