@@ -104,10 +104,12 @@ def test_draining_and_unhealthy_reject_queued_and_new_work() -> None:
 def test_async_context_releases_capacity() -> None:
     async def scenario() -> None:
         admission = BoundedAdmission(1, 0)
+        lease_state: list[bool] = []
         async with await admission.acquire() as lease:
             assert not lease.released
             assert admission.active == 1
-        assert lease.released
+            lease_state.append(lease.released)
+        assert lease_state == [False]
         assert admission.active == 0
 
     asyncio.run(scenario())

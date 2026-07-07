@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import importlib
 import sys
-from typing import Any
+from typing import Any, cast
 
 import pytest
 from lingshu.core.application import LingShu
@@ -38,21 +38,21 @@ class _FakeRawPool:
 
 
 class _FakeRawConnectionWithAsyncCursor:
-    def __init__(self, cursor: object) -> None:
+    def __init__(self, cursor: _BaseFakeCursor) -> None:
         self.cursor_called = False
         self.cursor_to_return = cursor
 
-    async def cursor(self) -> object:
+    async def cursor(self) -> _BaseFakeCursor:
         self.cursor_called = True
         return self.cursor_to_return
 
 
 class _FakeRawConnectionWithSyncCursor:
-    def __init__(self, cursor: object) -> None:
+    def __init__(self, cursor: _BaseFakeCursor) -> None:
         self.cursor_called = False
         self.cursor_to_return = cursor
 
-    def cursor(self) -> object:
+    def cursor(self) -> _BaseFakeCursor:
         self.cursor_called = True
         return self.cursor_to_return
 
@@ -135,6 +135,9 @@ class _FakeCursorSync(_BaseFakeCursor):
         self.close_called = True
         if self.fail_close:
             raise RuntimeError("cursor close failed")
+
+
+type _RawConnection = _FakeRawConnectionWithAsyncCursor | _FakeRawConnectionWithSyncCursor
 
 
 async def _fake_connect(_: DatabaseConfig) -> object:
@@ -304,10 +307,9 @@ def test_mysql_driver_shutdown_closes_pool_adapter(
         await app.startup()
         assert raw_pool.closed is False
         await app.shutdown()
-        assert raw_pool.closed is True
-        assert raw_pool.wait_closed_called is True
-
     asyncio.run(scenario())
+    assert raw_pool.closed is True
+    assert raw_pool.wait_closed_called is True
 
 
 @pytest.mark.parametrize(
@@ -318,8 +320,8 @@ def test_mysql_driver_shutdown_closes_pool_adapter(
     ],
 )
 def test_mysql_pool_handle_execute_uses_cursor_and_releases_connection(
-    connection_class: type,
-    cursor_class: type,
+    connection_class: type[_RawConnection],
+    cursor_class: type[_BaseFakeCursor],
 ) -> None:
     connection = connection_class(
         cursor_class(execute_return=1, fetch_one_result=(), fetch_all_result=[("a", 1)])
@@ -335,7 +337,7 @@ def test_mysql_pool_handle_execute_uses_cursor_and_releases_connection(
         assert raw_pool.acquire_called is True
         assert raw_pool.release_called is True
         assert raw_pool.released_connection is connection
-        cursor = _extract_cursor(raw_pool.connection)
+        cursor = _extract_cursor(cast(_RawConnection, raw_pool.connection))
         assert cursor.execute_called is True
         assert cursor.last_sql == "INSERT INTO t (id, name) VALUES (%s, %s)"
         assert cursor.last_params == params
@@ -352,8 +354,8 @@ def test_mysql_pool_handle_execute_uses_cursor_and_releases_connection(
     ],
 )
 def test_mysql_pool_handle_fetch_one_uses_cursor_and_returns_row(
-    connection_class: type,
-    cursor_class: type,
+    connection_class: type[_RawConnection],
+    cursor_class: type[_BaseFakeCursor],
 ) -> None:
     connection = connection_class(cursor_class(fetch_one_result=("row", 1)))
     raw_pool = _FakeRawPool(connection)
@@ -362,7 +364,7 @@ def test_mysql_pool_handle_fetch_one_uses_cursor_and_returns_row(
     async def scenario() -> None:
         row = await adapter.fetch_one("SELECT id, value FROM t WHERE id=%s", (1,))
         assert row == ("row", 1)
-        cursor = _extract_cursor(raw_pool.connection)
+        cursor = _extract_cursor(cast(_RawConnection, raw_pool.connection))
         assert cursor.fetchone_called is True
         assert cursor.close_called is True
         assert raw_pool.release_called is True
@@ -379,8 +381,8 @@ def test_mysql_pool_handle_fetch_one_uses_cursor_and_returns_row(
     ],
 )
 def test_mysql_pool_handle_fetch_all_uses_cursor_and_returns_rows(
-    connection_class: type,
-    cursor_class: type,
+    connection_class: type[_RawConnection],
+    cursor_class: type[_BaseFakeCursor],
 ) -> None:
     connection = connection_class(cursor_class(fetch_all_result=[("r1",), ("r2",)]))
     raw_pool = _FakeRawPool(connection)
@@ -389,7 +391,7 @@ def test_mysql_pool_handle_fetch_all_uses_cursor_and_returns_rows(
     async def scenario() -> None:
         rows = await adapter.fetch_all("SELECT id, value FROM t")
         assert rows == [("r1",), ("r2",)]
-        cursor = _extract_cursor(raw_pool.connection)
+        cursor = _extract_cursor(cast(_RawConnection, raw_pool.connection))
         assert cursor.fetchall_called is True
         assert cursor.close_called is True
         assert raw_pool.release_called is True
@@ -476,7 +478,7 @@ def test_mysql_pool_handle_fetch_all_releases_connection_when_fetch_all_fails() 
     asyncio.run(scenario())
 
 
-def _extract_cursor(connection: object) -> _BaseFakeCursor:
+def _extract_cursor(connection: _RawConnection) -> _BaseFakeCursor:
     if isinstance(connection, _FakeRawConnectionWithAsyncCursor):
         return connection.cursor_to_return
     if isinstance(connection, _FakeRawConnectionWithSyncCursor):
@@ -539,10 +541,10 @@ def test_mysql_pool_handle_without_release_raises_configuration_error() -> None:
 def test_mysql_driver_optional_dependency_is_required_at_startup(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    def missing_import_module(_: str) -> Any:
+    def missing_import_module() -> Any:
         raise ModuleNotFoundError("No module named 'aiomysql'")
 
-    monkeypatch.setattr(mysql.importlib, "import_module", missing_import_module)
+    monkeypatch.setattr(mysql, "_load_aiomysql", missing_import_module)
     driver = mysql.MySQLDriver()
     config = DatabaseConfig(name="db.mysql.main", backend="mysql")
 
@@ -620,11 +622,11 @@ def test_mysql_driver_startup_failure_is_wrapped_during_app_startup(
 def test_app_startup_uses_aiomysql_create_pool_and_shutdown_calls_close(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    captured: dict[str, object] = {}
+    captured: dict[str, dict[str, object]] = {}
     raw_connection = object()
     raw_pool = _FakeRawPool(raw_connection)
 
-    async def fake_create_pool(**kwargs: object) -> _FakeRawPool:
+    async def fake_create_pool(**kwargs: Any) -> _FakeRawPool:
         captured["kwargs"] = kwargs
         return raw_pool
 
@@ -685,11 +687,11 @@ def test_mysql_driver_without_create_pool_raises_pool_unavailable(
 def test_mysql_driver_uses_configured_host_defaults_for_aiomysql_create_pool(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    async def fake_create_pool(**kwargs: object) -> _FakeRawPool:
+    async def fake_create_pool(**kwargs: Any) -> _FakeRawPool:
         captured["kwargs"] = kwargs
         return _FakeRawPool(object())
 
-    captured: dict[str, object] = {}
+    captured: dict[str, dict[str, object]] = {}
 
     class FakeAiomysql:
         create_pool = staticmethod(fake_create_pool)

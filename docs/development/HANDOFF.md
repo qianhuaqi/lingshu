@@ -90,6 +90,9 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
   - `tests/server/test_config.py` -> `tests/server/test_server_config.py`
   - This keeps pytest discovery unchanged and remains an internal test-only
     correction (no runtime logic changes).
+- 2026-07-07: Fixed baseline strict mypy errors in tests after enabling strict
+  type checking for `tests` and `lingshu` together. This completed P5-Baseline-02
+  with test-only typing updates while preserving runtime behavior.
 
 ## Next action
 

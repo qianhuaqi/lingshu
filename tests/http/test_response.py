@@ -4,23 +4,24 @@ import math
 
 import pytest
 from lingshu.core import LifecycleError
+from lingshu.core.errors import LingShuError
 from lingshu.http import Response, ResponseState, normalize_response
 
 
 def test_response_factories_prepare_commit_and_complete() -> None:
     response = Response.text("hello")
-    assert response.state is ResponseState.NEW
+    assert response.state == ResponseState.NEW
     assert response.headers.get("content-type") == "text/plain; charset=utf-8"
 
     head = response.prepare()
-    assert response.state is ResponseState.PREPARED
+    assert response.state.value == ResponseState.PREPARED.value
     assert head.headers.get("content-length") == "5"
 
     response.write(b"!")
-    assert response.state is ResponseState.NEW
+    assert response.state == ResponseState.NEW
     head = response.commit()
     assert head.headers.get("content-length") == "6"
-    assert response.state is ResponseState.COMMITTED
+    assert response.state.value == ResponseState.COMMITTED.value
 
     with pytest.raises(LifecycleError) as duplicate:
         response.commit()
@@ -28,7 +29,7 @@ def test_response_factories_prepare_commit_and_complete() -> None:
     with pytest.raises(LifecycleError):
         response.set_header("x-test", "value")
     response.complete()
-    assert response.state is ResponseState.COMPLETED
+    assert response.state.value == ResponseState.COMPLETED.value
     with pytest.raises(LifecycleError):
         response.abort()
 
@@ -86,13 +87,13 @@ def test_return_normalization_is_exactly_once() -> None:
 
     response = Response.bytes(b"ok")
     assert normalize_response(response) is response
-    with pytest.raises(Exception) as duplicate:
+    with pytest.raises(LingShuError) as duplicate:
         normalize_response(response)
     assert duplicate.value.code == "handler.return_already_normalized"
 
 
 @pytest.mark.parametrize("value", [None, ("body", 200), iter([b"body"]), object()])
 def test_invalid_return_values_fail_explicitly(value: object) -> None:
-    with pytest.raises(Exception) as captured:
+    with pytest.raises(LingShuError) as captured:
         normalize_response(value)
     assert captured.value.code == "handler.invalid_return"
