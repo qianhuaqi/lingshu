@@ -1,7 +1,10 @@
 ﻿# P5 Roadmap
 
-Status: active for P5-10 implementation
+Status: P5-10 transaction boundary implementation is completed and accepted
 Context: Issue #135
+Acceptance evidence: PR #137 (`7cf533c655ae1a3d829557368e5e84f036b3d0e4`) merged to main.
+Validation: `ruff check`, `ruff format --check`, `mypy`, and `pytest` passed
+(`333 passed, 1 skipped`).
 
 ## 1. Why this document exists
 

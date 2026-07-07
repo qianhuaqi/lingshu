@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-10 Minimal MySQL transaction boundary
+Current phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -21,6 +21,10 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
+Completed final P5 Issue: #135
+Completed final P5 Pull Request: #137
+P5 final merge commit: `7cf533c655ae1a3d829557368e5e84f036b3d0e4`
+P5 acceptance evidence: `ruff`, `ruff format --check`, `mypy`, `pytest` passed
 P4 accepted contracts and merge references:
 
 ```text
@@ -32,11 +36,11 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #135 - P5-10: Minimal MySQL transaction boundary
-Active branch: human/dodo/p5-10-minimal-mysql-transaction-boundary
+Completed Issue: #135 - P5-10: Minimal MySQL transaction boundary
+Completed PR: #137 (merge commit `7cf533c655ae1a3d829557368e5e84f036b3d0e4`)
 Primary writer: project lead
-Status: P5-10 is active; it adds a minimal MySQL transaction boundary.
-Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks after P5-08 and project lead confirmation.
+Status: P5-10 is completed and accepted.
+Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks after P5-10 and project lead confirmation.
 
 ## P5-06 milestone
 
@@ -115,6 +119,7 @@ P5-06 Minimal MySQL data extension driver
 P5-07 Minimal MySQL connection pool lifecycle boundary
 P5-08 Minimal MySQL pool acquire/release adapter boundary
 P5-09 Minimal MySQL execute/fetch boundary
+P5-10 Minimal MySQL transaction boundary
 ```
 
 ## Deferred until later authorization
