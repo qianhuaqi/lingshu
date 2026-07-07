@@ -3,6 +3,8 @@
 Updated at: 2026-07-07
 Project: LingShu Framework
 Phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
+Post-P5 audit and release-baseline verification: Issue #140 closed, PR #141 merged.
+Current planning state: release-readiness baseline recorded, entering P6 planning.
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics

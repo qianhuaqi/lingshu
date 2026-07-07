@@ -11,8 +11,10 @@ upper-level Web framework.
 - Current phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
 - Final P5 issue: #135
 - Closing PR: #138
-- Current status: P5 implementation and closeout are accepted; this issue performs post-P5 audit and release-readiness cleanup.
-- Next action: complete cleanup in #140, then wait for project-owner authorization for the next backend track.
+- Post-P5 audit PR: #141 (merged)
+- Post-P5 audit status: issue #140 closed.
+- Current status: P5 completed; release baseline is recorded, and project is entering P6 planning / release-readiness work (Issue #143).
+- Next action: begin P6 planning after release-baseline verification.
 
 ## Authoritative entries
 
