@@ -86,7 +86,10 @@ def test_mysql_driver_optional_dependency_is_required_at_startup(
     assert exc_info.value.code == "db.mysql.missing_dependency"
 
 
-@pytest.mark.parametrize("dsn", ["mysql://user:secret@db.example/mysql_db", "mysql+aiomysql://user:secret@db.example/mysql_db"])
+@pytest.mark.parametrize(
+    "dsn",
+    ["mysql://user:secret@db.example/mysql_db", "mysql+aiomysql://user:secret@db.example/mysql_db"],
+)
 def test_parse_supported_mysql_dsn_schemes(dsn: str) -> None:
     assert mysql._parse_dsn(dsn)
 
