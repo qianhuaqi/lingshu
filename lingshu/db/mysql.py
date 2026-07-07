@@ -36,7 +36,7 @@ def _load_aiomysql() -> Any:
 
 def _parse_dsn(dsn: str) -> dict[str, str | int | None]:
     parsed = urlsplit(dsn)
-    if parsed.scheme and parsed.scheme not in {"mysql", "mysql+aiomysql", "mysql+asyncmy"}:
+    if parsed.scheme and parsed.scheme not in {"mysql", "mysql+aiomysql"}:
         raise DatabaseConfigurationError(
             "db.mysql.invalid_dsn",
             "MySQL DSN must use mysql scheme.",

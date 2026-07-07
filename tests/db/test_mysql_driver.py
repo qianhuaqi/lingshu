@@ -86,6 +86,37 @@ def test_mysql_driver_optional_dependency_is_required_at_startup(
     assert exc_info.value.code == "db.mysql.missing_dependency"
 
 
+@pytest.mark.parametrize("dsn", ["mysql://user:secret@db.example/mysql_db", "mysql+aiomysql://user:secret@db.example/mysql_db"])
+def test_parse_supported_mysql_dsn_schemes(dsn: str) -> None:
+    assert mysql._parse_dsn(dsn)
+
+
+def test_mysql_driver_rejects_unsupported_asyncmy_dsn_scheme(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def fake_load_aiomysql() -> object:
+        return object()
+
+    monkeypatch.setattr(mysql, "_load_aiomysql", fake_load_aiomysql)
+    driver = mysql.MySQLDriver()
+    config = DatabaseConfig(
+        name="db.mysql.main",
+        backend="mysql",
+        dsn="mysql+asyncmy://user:secret@db.example/mysql_db",
+    )
+
+    with pytest.raises(DatabaseConfigurationError) as exc_info:
+        asyncio.run(driver.startup(config))
+
+    assert exc_info.value.code == "db.mysql.invalid_dsn"
+    assert exc_info.value.safe_details["dsn_scheme"] == "mysql+asyncmy"
+    assert "dsn" not in exc_info.value.safe_details
+    assert "host" not in exc_info.value.safe_details
+    assert "user" not in exc_info.value.safe_details
+    assert "password" not in exc_info.value.safe_details
+    assert "database" not in exc_info.value.safe_details
+
+
 def test_mysql_driver_startup_failure_is_wrapped_during_app_startup() -> None:
     async def fail_connect(_: DatabaseConfig) -> object:
         raise RuntimeError("connect failed")
