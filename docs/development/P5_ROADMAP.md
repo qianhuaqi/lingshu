@@ -1,11 +1,11 @@
 # P5 Roadmap
 
-Status: active for P5-06 implementation
-Context: Issue #128
+Status: active for P5-07 implementation
+Context: Issue #130
 
 ## 1. Why this document exists
 
-P5 starts after the P4 extension foundation is accepted. This roadmap now tracks
+P5 started after the P4 extension foundation is accepted. This roadmap now tracks
 the shared `lingshu.db` foundation and minimal backend drivers that can consume
 it without making database clients mandatory dependencies of core.
 
@@ -30,8 +30,8 @@ rules, and packaging policy that later implementation work must follow.
 - Keep core import-safe and free of mandatory database client dependencies.
 - Keep `lingshu.db` shared contracts in place and only add optional backend
   boundaries.
-- Introduce a minimal MySQL driver boundary that can be exercised through
-  `LingShu.add_database_resource()`.
+- For MySQL, implement a minimal pool lifecycle boundary through
+  `MySQLDriver.startup()` and `shutdown()`.
 - Preserve redaction rules and non-sensitive `repr`/`safe_details` behavior.
 
 ## 4. P5 non-goals
@@ -39,9 +39,10 @@ rules, and packaging policy that later implementation work must follow.
 - implementing full MySQL query APIs;
 - implementing migration frameworks;
 - implementing query builders or ORM;
-- implementing connection pooling;
-- implementing production-ready performance claims;
-- implementing runtime-wide MySQL access policies beyond startup/shutdown boundary.
+- adding pool tuning options, health checks, reconnect/retry policy, or query
+  routing.
+- expanding startup/shutdown to acquire/release/query helpers or transaction APIs;
+- implementing runtime-wide performance claims.
 
 ## 5. P5 dependency baseline
 
@@ -50,10 +51,10 @@ rules, and packaging policy that later implementation work must follow.
 - P4-04 configuration redaction for extensions;
 - P4-05 official extension packaging and dependency policy.
 
-P5 implementation work must stay inside these boundaries and must not reopen
-P4 runtime scope.
+P5 implementation work must stay inside these boundaries and must not reopen P4
+runtime scope.
 
-## 6. Suggested P5 order
+## 6. P5 sequencing
 
 1. P5-00: P4 closeout and P5 data extensions roadmap
 2. P5-01: Redis data extension track
@@ -62,16 +63,18 @@ P4 runtime scope.
 5. P5-04: lingshu.db database layer foundation
 6. P5-05: Application lifecycle and app.db injection boundary
 7. P5-06: Minimal MySQL data extension driver
+8. P5-07: Minimal MySQL connection pool lifecycle boundary
 
-## 7. P5-06 implementation objective
+## 7. P5-07 implementation objective
 
-This issue adds:
+Issue #130 adds:
 
-1. `lingshu.db.mysql`
-2. `MySQLDriver` (minimal contract-based async startup/shutdown boundary)
-3. `make_mysql_resource(...)` helper backed by `DatabaseResource`
-4. focused tests for import safety, registration/lifecycle behavior, optional
-   dependency handling, and startup failure propagation.
+1. `MySQLDriver` startup migration from `aiomysql.connect(...)` to
+   `aiomysql.create_pool(...)`.
+2. Opaque pool-handle lifecycle return from startup.
+3. `shutdown()` still using `close()` + `await wait_closed()`.
+4. `DatabaseConfigurationError` for missing `create_pool` callable
+   (`db.mysql.pool_unavailable`).
 
 ## 8. Validation and CI expectations
 
@@ -82,6 +85,5 @@ This issue adds:
 
 ## 9. Next implementable issue
 
-The next implementable track after P5-06 is the minimal Redis/MySQL optional
-extension extension catalog sequencing defined in future backend issues.
-
+The next implementable track after P5-07 is the minimal Redis/MySQL optional
+driver catalog sequencing defined in future backend issues.

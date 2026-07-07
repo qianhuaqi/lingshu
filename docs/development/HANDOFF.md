@@ -1,8 +1,8 @@
 # Development Handoff
 
-Updated at: 2026-07-06
+Updated at: 2026-07-07
 Project: LingShu Framework
-Phase: P5-06 Minimal MySQL data extension driver
+Phase: P5-07 MySQL connection pool lifecycle boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -20,12 +20,11 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #128 - P5-06: Minimal MySQL data extension driver
-Active branch: human/dodo/p5-06-minimal-mysql-driver
+Active Issue: #130 - P5-07: Minimal MySQL connection pool lifecycle boundary
+Active branch: human/dodo/p5-07-minimal-connection-pool-boundary
 Primary writer: project lead
-Status: P5-06 is active; it adds the minimal optional MySQL integration boundary in
-`lingshu.db.mysql` using existing `lingshu.db` contracts and application
-lifecycle hooks.
+Status: P5-07 is active; it adds minimal `aiomysql.create_pool(...)`-based startup
+and `close()+wait_closed()` shutdown for MySQL resources.
 
 ## P4 closeout
 
@@ -47,18 +46,30 @@ Accepted P4 contracts:
 
 ## P5-06 scope
 
-P5-06 introduces `lingshu.db.mysql` as the minimal optional MySQL boundary:
+P5-06 introduced `lingshu.db.mysql` as the minimal optional MySQL boundary:
 
 - `MySQLDriver` implementing `DatabaseDriver`;
 - `make_mysql_resource(config, *, driver)` factory for `DatabaseResource`;
 - `LingShu.add_database_resource()` integration remains inert at registration and
-  startup/shutdown-bound at lifecycle;
-- registration is not network-connected and startup is the first boundary where
-  concrete acquisition may happen.
+  startup/shutdown-bound at lifecycle.
 
-It does not implement ORM/ODM, query builder, migration, connection pooling,
-untrusted plugin isolation, identity/access, OpenAPI, multi-worker, reload/watch,
-HTTP adapters, or production performance claims.
+## P5-07 scope
+
+P5-07 extends only the startup/shutdown boundary:
+
+- `MySQLDriver` startup now uses `aiomysql.create_pool(...)` instead of
+  `aiomysql.connect(...)`.
+- startup still defers optional dependency import to runtime path.
+- startup returns the pool handle as an opaque object.
+- startup validates `create_pool` availability and raises
+  `DatabaseConfigurationError("db.mysql.pool_unavailable")` when unavailable.
+- shutdown preserves close and wait-closed behavior.
+- existing public contracts remain unchanged:
+  no new protocols, no `DatabaseDriver`/`DatabaseResource`/`DatabaseManager`
+  signature changes.
+
+It still does not implement SQL execution, query API, acquire/release, transaction,
+migration, ORM/ODM, retry/reconnect policy, or production tuning.
 
 ## P5 roadmap
 
@@ -69,6 +80,7 @@ HTTP adapters, or production performance claims.
 5. P5-04: lingshu.db database layer foundation.
 6. P5-05: Application lifecycle and app.db injection boundary.
 7. P5-06: Minimal MySQL data extension driver.
+8. P5-07: Minimal MySQL connection pool lifecycle boundary.
 
 ## Validation and CI
 
@@ -80,5 +92,5 @@ HTTP adapters, or production performance claims.
 
 ## Next action
 
-Finish remaining P5-06 validation, then prepare Draft PR summary for review.
-
+Finish remaining P5-07 validation for the connected pool boundary, then prepare
+Draft PR summary for review.

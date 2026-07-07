@@ -2,11 +2,12 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-06 Minimal MySQL data extension driver
+Current phase: P5-07 MySQL connection pool lifecycle boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
 Completed track: P4 - extension foundation planning
+Completed track: P5 - MySQL boundary foundation
 Completed final P1 Issue: #76
 Completed final P1 Pull Request: #77
 P1 final merge commit: `dbb69a44fb186b9b82f763fb9a33fb76e5e1264f`
@@ -31,23 +32,34 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #128 - P5-06: Minimal MySQL data extension driver
-Active branch: human/dodo/p5-06-minimal-mysql-driver
+Active Issue: #130 - P5-07: Minimal MySQL connection pool lifecycle boundary
+Active branch: human/dodo/p5-07-minimal-connection-pool-boundary
 Primary writer: project lead
-Status: P5-06 is active; it adds a minimal optional MySQL driver boundary while
+Status: P5-07 is active; it adds a minimal MySQL pool lifecycle boundary while
 keeping core free of mandatory MySQL client dependencies.
 Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks
-after P5-06 and project lead confirmation.
+after P5-07 and project lead confirmation.
 
-## P5-06 goal
+## P5-06 milestone
 
-P5-06 adds the first official MySQL boundary implementation:
+P5-06 delivered:
 
-- `lingshu.db.mysql` boundary module,
-- `MySQLDriver` implementing `DatabaseDriver` without changing public lifecycle
-  semantics,
-- resource factory helpers that produce `DatabaseResource`,
-- startup/shutdown integration through `LingShu.add_database_resource()`.
+- `lingshu.db.mysql` package boundary
+- `MySQLDriver` startup/shutdown hooks
+- `make_mysql_resource(...)` helper
+- inert registration through `LingShu.add_database_resource()`
+- `app.startup()` / `app.shutdown()` lifecycle wiring
+- optional `aiomysql` dependency strategy with missing dependency error path
+
+## P5-07 goal
+
+P5-07 adds a minimal pool lifecycle boundary using `aiomysql.create_pool()`:
+
+- `MySQLDriver` startup prefers `create_pool(...)` and returns the opaque handle.
+- `MySQLDriver` shutdown invokes `close()` then `wait_closed()`.
+- startup keeps using `db` argument when building MySQL kwargs.
+- missing `create_pool` raises `db.mysql.pool_unavailable`.
+- dependency loading remains lazy and startup-only.
 
 ## P5-05 lifecycle boundary fact
 
@@ -56,7 +68,7 @@ P5-05 exposed `LingShu.db` as the application-owned `DatabaseManager` and added
 
 ## P4 closeout facts
 
-P4 completed when PR #113 merged and Issue #112 closed as completed.
+P4 is closed when PR #113 merged and Issue #112 closed as completed.
 
 P4 delivered the extension foundation:
 
@@ -75,6 +87,7 @@ P5-03 repository cleanup and documentation synchronization before implementation
 P5-04 lingshu.db database layer foundation
 P5-05 Application lifecycle and app.db injection boundary
 P5-06 Minimal MySQL data extension driver
+P5-07 MySQL connection pool lifecycle boundary
 ```
 
 ## Deferred until later authorization
@@ -89,4 +102,3 @@ public package publication
 production-ready or performance claims
 new mandatory runtime dependencies in core
 ```
-
