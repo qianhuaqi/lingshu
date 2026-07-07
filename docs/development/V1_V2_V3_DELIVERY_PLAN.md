@@ -5,395 +5,367 @@ Owner: 多多
 Planner / PM: 小顾
 Status: active delivery plan
 
-## 0. Delivery principle
+## 0. Core delivery rule
 
-LingShu 的后续推进只按可交付能力判断，不再按边界、审计、阶段叙事判断进展。
+LingShu 后续不再以“边界、审计、阶段叙事”作为主要进展口径。
 
-每个版本必须回答四个问题：
+主进展只看：
 
-1. 业务开发者能不能直接用？
-2. 有没有稳定 API？
-3. 有没有测试证明它能跑？
-4. 有没有减少后续业务项目开发成本？
+| 口径 | 必须回答的问题 |
+| --- | --- |
+| 能不能用 | 业务开发者是否可以直接调用 API |
+| 能不能跑 | 是否有可运行示例或命令 |
+| 能不能测 | 是否有自动化测试证明能力有效 |
+| 能不能省事 | 是否减少剧栈、柿子量化等业务项目的重复开发成本 |
 
-如果一个工作项没有产生可调用 API、可运行示例、测试或项目模板，它只能算辅助工作，不能算主进展。
+如果一个任务没有产生可调用 API、可运行示例、测试、命令或项目模板，它只能算辅助工作，不能算主进展。
 
 ## 1. Three-version target
 
-三个版本内，LingShu 必须从“有地基的框架”变成“可以支撑内部后台/API 项目的框架”。
-
-最终必须具备：
-
-- database：数据库访问、事务、SQLite、本地开发、MySQL 业务使用入口；
-- cache：内存缓存、Redis 缓存、app.cache 使用入口；
-- openapi：接口文档 JSON 和浏览器文档页；
-- upload：multipart 文件上传、本地保存、大小限制；
-- auth：登录、token、当前用户；
-- rbac：角色、权限、接口权限校验；
-- app integration：app.db、app.cache、request.user 等业务使用方式；
-- examples：basic API 示例和 admin 示例；
-- cli：项目生成、启动、检查、路由查看、数据库初始化；
-- tests：模块测试、集成测试、模板生成测试、admin 全链路测试。
-
-## 2. Version layout
+三个版本内，LingShu 必须达到内部业务可用框架状态。
 
 ```text
-V1: Capability completion
-V2: CLI and project generation
-V3: Testing, stability, and acceptance hardening
+V1: 完成框架业务能力模块
+V2: 完成 CLI 与项目生成体验
+V3: 完成测试、稳定性和验收硬化
 ```
 
-V1 先把业务必需能力补齐。
-V2 再把项目生成和开发体验补齐。
-V3 最后把测试、稳定性和验收链路补扎实。
+三个版本完成后，LingShu 必须能支撑：
 
-## 3. Role split
+| 场景 | 结果 |
+| --- | --- |
+| 普通 API 项目 | 能创建、启动、写接口、连数据库、看文档 |
+| 后台管理项目 | 能登录、鉴权、管理用户/角色/权限、上传文件 |
+| 数据驱动项目 | 能使用 SQL/NoSQL、事务、迁移、查询构造器、基础 ORM |
+| 本地开发 | 能用 SQLite、Memory/Redis、docs、测试命令快速启动 |
+| 内部业务落地 | 能支撑剧栈、柿子量化等项目起步 |
 
-### 小顾 owns
+## 2. Responsibility split
 
-- version planning;
-- issue writing;
-- acceptance criteria;
-- PR title and PR body;
-- final documentation;
-- review and merge recommendation;
-- follow-up task split.
+### 小顾负责
 
-### Developer owns
+| 工作 | 说明 |
+| --- | --- |
+| 版本规划 | 明确 V1/V2/V3 交付目标 |
+| issue 编写 | 把任务拆成开发者能直接执行的短任务 |
+| 验收标准 | 写清可运行命令、测试、API、示例 |
+| PR 标题/正文 | 统一写 PR summary、validation、risk |
+| 最终文档 | 功能实现后补充用户文档和开发文档 |
+| 合并建议 | 判断是否合并、是否返工、下一步做什么 |
 
-- implementation code;
-- tests;
-- validation commands;
-- short factual handoff report.
+### 开发者负责
 
-Developer should not spend time writing long planning documents. Planning and final documentation are PM work.
+| 工作 | 说明 |
+| --- | --- |
+| 代码 | 按 issue 实现模块能力 |
+| 测试 | 单元测试、集成测试、必要的示例测试 |
+| 验证 | ruff、format、mypy、pytest |
+| 简短汇报 | 只交付事实：分支、commit、API、验证结果 |
 
-## 4. V1: Capability completion
+开发者不负责长文档、路线规划、PR 包装、验收口径设计。
 
-### 4.1 V1 goal
+## 3. V1: framework capability completion
 
-V1 must make LingShu usable for a real backend/API service without relying on external project glue.
+### 3.1 V1 goal
 
-A developer must be able to write:
+V1 目标是一次性补齐当前框架缺失的业务能力模块，让 LingShu 可以开始承载真实后台/API 项目。
+
+V1 不再只做“数据库边界”。V1 要把框架常见基础能力全部建起来。
+
+### 3.2 V1 modules
+
+V1 必须完成以下模块：
+
+| 模块 | 目标 |
+| --- | --- |
+| `lingshu.db` | 统一数据库模块，包含 SQL 与 NoSQL |
+| `lingshu.db.sql` | MySQL、PostgreSQL、SQLite、SQL 执行、查询构造器、ORM、迁移、事务、连接池、安全防护 |
+| `lingshu.db.nosql` | Redis、MongoDB 基础能力 |
+| `lingshu.cache` | 面向业务缓存的统一入口，可基于 memory/redis |
+| `lingshu.openapi` | `/openapi.json` 和 `/docs` |
+| `lingshu.upload` | multipart 文件上传、本地保存、限制和安全处理 |
+| `lingshu.auth` | 登录、密码、token、当前用户 |
+| `lingshu.rbac` | 用户、角色、权限、接口鉴权 |
+| `lingshu.config` practical layer | `.env`、环境变量、DATABASE_URL、REDIS_URL、MONGO_URL 等业务配置体验 |
+| `lingshu.errors` practical layer | 统一错误码和安全错误响应 |
+| examples | `basic_api` 和 `admin` 可运行示例 |
+
+## 4. V1 database design: `lingshu.db`
+
+### 4.1 Database module target
+
+V1 数据库模块统一命名为：
+
+```text
+lingshu.db
+```
+
+结构目标：
+
+```text
+lingshu/db/
+  __init__.py
+  config.py
+  errors.py
+  urls.py
+  manager.py
+  sql/
+    __init__.py
+    database.py
+    connection.py
+    pool.py
+    query.py
+    orm.py
+    migration.py
+    transaction.py
+    safety.py
+    sqlite.py
+    mysql.py
+    postgresql.py
+  nosql/
+    __init__.py
+    redis.py
+    mongodb.py
+```
+
+统一入口目标：
 
 ```python
+from lingshu.db import DB
+
+db = DB.sqlite("dev.db")
+rows = db.query("select id, name from users")
+```
+
+应用入口目标：
+
+```python
+app.db = DB.from_url("sqlite:///dev.db")
+
 @app.get("/users")
-async def list_users(request):
+async def users(request):
     rows = request.app.db.query("select id, name from users")
     return {"data": rows}
 ```
 
-A developer must be able to write:
+### 4.2 SQL database capability table
+
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| 数据库连接 | 连接 MySQL、PostgreSQL、SQLite 等数据库 | `DB.sqlite(...)`、`DB.mysql(...)`、`DB.postgresql(...)`、`DB.from_url(...)` | 能成功连接 SQLite；MySQL/PostgreSQL 有清晰可配置入口和可测适配边界 |
+| 执行 SQL | 直接执行查询、插入、更新、删除语句 | `execute(sql, params=None)`、`query(sql, params=None)`、`query_one(sql, params=None)` | create table、insert、select、update、delete 测试通过 |
+| 查询构造器 | 用代码拼查询，减少手写 SQL | `db.table("users").select(...).where(...).order_by(...).limit(...)` | 生成 SQL 正确、参数绑定正确、能查询 SQLite |
+| ORM 映射 | 把数据库表变成代码里的对象或模型 | 最小 Model / Table 映射，支持字段定义、insert、get、update、delete | 定义 User 模型并完成增删改查测试 |
+| 数据迁移 | 用代码管理建表、改字段、加索引 | migration 文件、迁移记录表、`upgrade()`、`downgrade()`、执行顺序 | 新建表迁移、加字段迁移、重复执行不重复应用 |
+| 事务处理 | 多个操作要么全部成功，要么全部回滚 | `with db.transaction(): ...`，成功 commit，异常 rollback | commit/rollback 测试通过 |
+| 连接池 | 复用数据库连接，提高性能 | MySQL/PostgreSQL 使用连接池；SQLite 明确连接策略 | acquire/release、关闭池、异常释放测试 |
+| 安全防护 | 参数绑定，防止 SQL 注入 | 所有 execute/query/query builder 必须支持参数绑定，不拼接用户输入 | 参数转义/注入字符串测试不破坏 SQL |
+| 错误封装 | 把底层异常变成稳定框架错误 | `DBConnectionError`、`DBExecutionError`、`DBTransactionError`、`DBMigrationError` | 错误 code、safe message 测试 |
+| 生命周期 | 应用启动/关闭时管理数据库资源 | `app.db` 注册、startup 初始化、shutdown 关闭 | app startup/shutdown 测试 |
+
+### 4.3 SQL backends
+
+| 后端 | V1 目标 | 说明 |
+| --- | --- | --- |
+| SQLite | 完整可用 | 本地开发和测试默认数据库，必须不依赖外部服务 |
+| MySQL | 业务可用入口 | 基于已有 `lingshu.db.mysql` 边界产品化，提供统一 API |
+| PostgreSQL | 适配入口 | V1 建立统一接口和可配置入口，至少完成适配骨架和测试替身；后续可接真实驱动 |
+
+### 4.4 Query builder target
+
+目标 API：
 
 ```python
-@app.get("/me")
-@require_login
-async def me(request):
-    return request.user
+rows = (
+    db.table("users")
+    .select("id", "name")
+    .where("status", "=", "active")
+    .order_by("id", desc=True)
+    .limit(20)
+    .all()
+)
 ```
 
-A developer must be able to write:
+能力表：
+
+| 能力 | 作用 | V1 实现要求 |
+| --- | --- | --- |
+| select | 选择字段 | 支持字段列表，默认 `*` |
+| where | 条件过滤 | 支持 `=`, `!=`, `>`, `<`, `>=`, `<=`, `like`, `in` |
+| order_by | 排序 | 支持 asc/desc |
+| limit/offset | 分页 | 支持限制数量和偏移 |
+| insert | 插入记录 | dict 输入转 SQL 参数 |
+| update | 更新记录 | dict 输入 + where 条件 |
+| delete | 删除记录 | where 条件必须显式 |
+| 参数绑定 | 防注入 | 所有值走参数绑定 |
+
+### 4.5 Minimal ORM target
+
+目标 API：
 
 ```python
-@app.post("/assets")
-@require_permission("asset:create")
-async def create_asset(request):
-    return {"ok": True}
+from lingshu.db.sql import Model, field
+
+class User(Model):
+    __table__ = "users"
+    id = field.integer(primary_key=True)
+    name = field.text()
+    status = field.text(default="active")
+
+user = User(name="dodo")
+db.save(user)
+found = db.get(User, user.id)
 ```
 
-### 4.2 V1 module list
+能力表：
 
-V1 includes these modules:
+| 能力 | 作用 | V1 实现要求 |
+| --- | --- | --- |
+| Model 定义 | 表映射到类 | 支持 `__table__` 和字段声明 |
+| 字段类型 | 描述列类型 | integer、text、boolean、datetime 基础类型 |
+| 主键 | 定位记录 | 支持单字段主键 |
+| insert/save | 保存对象 | 对象转 insert/update |
+| get | 按主键查询 | 返回模型对象或 None |
+| update | 修改对象 | 保存变更 |
+| delete | 删除对象 | 按主键删除 |
+| dict 转换 | API 返回方便 | `to_dict()` |
 
-1. `lingshu.database`
-2. `lingshu.cache`
-3. `lingshu.openapi`
-4. `lingshu.upload`
-5. `lingshu.auth`
-6. `lingshu.rbac`
-7. app integration: `app.db`, `app.cache`, `request.user`
-8. examples: `examples/basic_api`, `examples/admin`
+### 4.6 Migration target
 
-### 4.3 V1-01 database module
-
-Current primary issue: #146
-
-#### Goal
-
-Create a real database API for LingShu.
-
-#### Public API target
+目标命令/API：
 
 ```python
-from lingshu.database import Database
-
-db = Database.sqlite("dev.db")
-db.execute("create table users (id integer primary key, name text)")
-db.execute("insert into users (name) values (?)", ("dodo",))
-rows = db.query("select id, name from users")
-one = db.query_one("select id, name from users where id = ?", (1,))
+db.migrations.apply("migrations")
+db.migrations.status()
 ```
 
-Transaction target:
+迁移文件示例：
 
 ```python
-with db.transaction():
-    db.execute("insert into users (name) values (?)", ("dodo",))
+def upgrade(db):
+    db.execute("create table users (id integer primary key, name text)")
+
+def downgrade(db):
+    db.execute("drop table users")
 ```
 
-Async project compatibility may be added through an adapter or future async wrapper, but the V1 local SQLite path must be directly usable and testable.
+能力表：
 
-#### Implementation plan
+| 能力 | 作用 | V1 实现要求 |
+| --- | --- | --- |
+| 迁移目录 | 存放迁移文件 | 默认 `migrations/` |
+| 迁移记录表 | 记录已执行迁移 | `_lingshu_migrations` |
+| apply | 执行未应用迁移 | 按文件名顺序执行 |
+| status | 查看迁移状态 | 列出已执行/未执行 |
+| rollback | 回滚最近迁移 | 支持 downgrade |
+| 幂等 | 避免重复执行 | 已执行迁移不重复应用 |
 
-Implement package:
+### 4.7 NoSQL module target
+
+NoSQL 统一位于：
 
 ```text
-lingshu/database/
-  __init__.py
-  config.py
-  errors.py
-  protocol.py
-  database.py
-  sqlite.py
-  mysql.py
+lingshu.db.nosql
 ```
 
-Minimum objects:
-
-```text
-DatabaseConfig
-Database
-DatabaseAdapter protocol
-SQLiteAdapter
-MySQLAdapter or MySQLDatabase wrapper over existing lingshu.db.mysql boundary
-DatabaseError
-DatabaseConnectionError
-DatabaseExecutionError
-DatabaseTransactionError
-```
-
-Required behavior:
-
-- `Database.sqlite(path)` returns a usable local database object.
-- `Database.mysql(config or url)` exposes the existing MySQL boundary through a cleaner public entry.
-- `execute(sql, params=None)` executes DDL/DML.
-- `query(sql, params=None)` returns list-like rows.
-- `query_one(sql, params=None)` returns one row or `None`.
-- `transaction()` commits on success and rolls back on exception.
-- `close()` closes owned connection resources.
-- errors are converted to stable LingShu database errors.
-
-Row format:
-
-- V1 should return dict-like rows for business convenience where practical.
-- SQLite should use `sqlite3.Row` and convert to plain dicts or expose a stable row object.
-
-#### Tests
-
-Add tests proving:
-
-- create table;
-- insert;
-- query;
-- query_one;
-- update;
-- delete;
-- transaction commit;
-- transaction rollback;
-- close behavior;
-- error wrapping for invalid SQL.
-
-Suggested test files:
-
-```text
-tests/database/test_sqlite_database.py
-tests/database/test_transaction.py
-tests/database/test_database_errors.py
-```
-
-#### Acceptance
-
-- `Database.sqlite(...)` works without external dependencies.
-- existing MySQL boundary remains compatible.
-- no mandatory external database service is required for default tests.
-- ruff, format check, mypy, pytest pass.
-
-### 4.4 V1-02 app.db and DATABASE_URL
-
-#### Goal
-
-Make database access natural inside a LingShu app.
-
-#### Public API target
+目标入口：
 
 ```python
-from lingshu import LingShu
-from lingshu.database import Database
+from lingshu.db import NoSQL
 
-app = LingShu()
-app.db = Database.sqlite("dev.db")
-
-@app.get("/users")
-async def users(request):
-    return {"data": request.app.db.query("select id, name from users")}
+redis = NoSQL.redis("redis://localhost:6379/0")
+mongo = NoSQL.mongodb("mongodb://localhost:27017/app")
 ```
 
-Configuration target:
+### 4.8 Redis capability table
 
-```text
-DATABASE_URL=sqlite:///dev.db
-```
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| 连接 Redis | 连接 Redis 服务 | `NoSQL.redis(url)`、`RedisClient.from_url(url)` | 缺依赖/连接失败有清晰错误；可用 mock/fake 测试基础行为 |
+| key/value | 字符串与 JSON 缓存 | `get`、`set`、`delete`、`exists` | set/get/delete 测试 |
+| TTL | 过期时间 | `set(..., ttl=seconds)`、`ttl(key)` | TTL 过期测试 |
+| Hash | 存储对象字段 | `hget`、`hset`、`hgetall`、`hdel` | hash round-trip 测试 |
+| List | 队列/列表 | `lpush`、`rpush`、`lpop`、`rpop`、`llen` | list 行为测试 |
+| Set | 去重集合 | `sadd`、`srem`、`smembers` | set 行为测试 |
+| Counter | 计数器 | `incr`、`decr` | 计数测试 |
+| Lock | 简单分布式锁 | `lock(name, ttl)` 上下文 | fake 实现测试获得/释放 |
+| Pub/Sub | 简单发布订阅 | `publish`、`subscribe` 接口边界 | 接口和 fake 行为测试 |
+| 序列化 | dict/list/scalar 自动序列化 | JSON serializer | round-trip 测试 |
+| 命名空间 | 避免 key 冲突 | prefix/namespace | namespace 隔离测试 |
+| app.cache | 业务缓存入口 | `app.cache` 可绑定 redis/memory | handler 内可使用 |
 
-#### Implementation plan
+### 4.9 MongoDB capability table
 
-Add or standardize:
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| 连接 MongoDB | 连接 MongoDB 数据库 | `NoSQL.mongodb(url)`、`MongoClient.from_url(url)` | 缺依赖/连接失败有清晰错误；fake 测试基础行为 |
+| Collection | 获取集合 | `mongo.collection("users")` | collection 对象可用 |
+| Insert | 插入文档 | `insert_one`、`insert_many` | 插入测试 |
+| Find | 查询文档 | `find_one`、`find` | 查询测试 |
+| Update | 更新文档 | `update_one`、`update_many` | 更新测试 |
+| Delete | 删除文档 | `delete_one`、`delete_many` | 删除测试 |
+| Index | 索引管理 | `create_index`、`drop_index` | fake 行为测试 |
+| Aggregation | 聚合查询 | `aggregate(pipeline)` | pipeline 传递测试 |
+| Transaction | 多文档事务边界 | 如果后端支持，提供 `transaction()` 边界 | 接口行为测试 |
+| ObjectId 处理 | 文档 ID 规范 | 统一 ID 转换和安全返回 | ID round-trip 测试 |
+| 错误封装 | 稳定错误码 | `MongoConnectionError`、`MongoExecutionError` | 错误测试 |
 
-```text
-app.db registration / injection
-Database.from_url(...)
-DatabaseConfig.from_env(...)
-```
+## 5. V1 cache module
 
-Supported URL forms in V1:
+缓存模块是业务友好入口，底层可以使用 memory 或 Redis。
 
-```text
-sqlite:///relative/path.db
-sqlite:////absolute/path.db
-mysql://user:password@host:port/database
-```
-
-The app should be able to initialize database from config without business code managing connection lifecycle manually.
-
-#### Tests
-
-- app.db can be assigned and accessed from request handler;
-- `Database.from_url("sqlite:///...")` works;
-- invalid database URL returns a readable config error;
-- database resource closes during app shutdown if lifecycle hook exists.
-
-### 4.5 V1-03 cache module
-
-#### Goal
-
-Provide cache API for business code with memory cache and Redis cache.
-
-#### Public API target
+目标入口：
 
 ```python
 await request.app.cache.set("user:1", {"name": "dodo"}, ttl=3600)
 user = await request.app.cache.get("user:1")
-await request.app.cache.delete("user:1")
 ```
 
-#### Implementation plan
+能力表：
 
-Implement package:
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| MemoryCache | 本地开发无需 Redis | `MemoryCache()` | set/get/delete/ttl 测试 |
+| RedisCache | 生产缓存入口 | 基于 `lingshu.db.nosql.redis` | fake 或 optional dependency 测试 |
+| get/set/delete | 基础缓存 | 统一 async API | 行为测试 |
+| exists | 判断 key 是否存在 | `exists(key)` | 存在/不存在测试 |
+| ttl | 获取剩余时间 | `ttl(key)` | TTL 测试 |
+| namespace | key 隔离 | prefix/namespace | 隔离测试 |
+| serializer | JSON 序列化 | dict/list/scalar round-trip | 序列化测试 |
+| app.cache | app 注入 | handler 通过 `request.app.cache` 使用 | handler 测试 |
 
-```text
-lingshu/cache/
-  __init__.py
-  config.py
-  errors.py
-  protocol.py
-  memory.py
-  redis.py
-  serializer.py
-```
+## 6. V1 OpenAPI / docs module
 
-Minimum objects:
+目标：让业务接口自动有文档。
 
-```text
-Cache
-CacheConfig
-CacheAdapter protocol
-MemoryCache
-RedisCache
-CacheError
-CacheConnectionError
-CacheSerializationError
-```
-
-Required behavior:
-
-- `MemoryCache` works without external service.
-- `RedisCache` is implemented as optional backend.
-- `get(key)` returns cached value or `None`.
-- `set(key, value, ttl=None)` stores value.
-- `delete(key)` removes value.
-- `exists(key)` checks existence.
-- `ttl(key)` returns remaining TTL when supported.
-- namespace/prefix is supported.
-- JSON serialization is available for dict/list/scalar values.
-- `app.cache` exposes cache to handlers.
-
-#### Tests
-
-- memory cache set/get/delete;
-- memory cache TTL expiry;
-- namespace isolation;
-- serialization round trip;
-- app.cache handler access;
-- Redis adapter missing dependency path is readable.
-
-### 4.6 V1-04 OpenAPI and docs
-
-#### Goal
-
-Expose API documentation for routes.
-
-#### Public behavior target
-
-```text
-GET /openapi.json
-GET /docs
-```
-
-#### Implementation plan
-
-Implement package:
-
-```text
-lingshu/openapi/
-  __init__.py
-  builder.py
-  schema.py
-  docs.py
-```
-
-Required behavior:
-
-- collect registered routes;
-- expose path, method, handler name, summary when provided;
-- allow optional route metadata;
-- generate minimal OpenAPI-compatible JSON;
-- serve a simple docs page that loads `/openapi.json`;
-- integrate with LingShu app through explicit method such as `app.enable_openapi()`.
-
-Target developer API:
+目标入口：
 
 ```python
 app.enable_openapi(title="My API", version="0.1.0")
 
 @app.get("/users", summary="List users")
-async def list_users(request):
+async def users(request):
     return {"data": []}
 ```
 
-#### Tests
+能力表：
 
-- `/openapi.json` returns valid JSON;
-- registered routes appear in schema;
-- summary appears when provided;
-- `/docs` returns HTML;
-- docs endpoints do not break existing routes.
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| OpenAPI JSON | 输出接口 schema | `GET /openapi.json` | JSON 结构测试 |
+| Docs 页面 | 浏览器查看接口 | `GET /docs` | HTML 返回测试 |
+| 路由收集 | 自动读取 app routes | method/path/handler | route schema 测试 |
+| route metadata | 接口说明 | summary、tags、description | metadata 测试 |
+| request schema | 请求参数说明 | 最小支持 query/body metadata | schema 测试 |
+| response schema | 响应说明 | 最小支持 response metadata | schema 测试 |
+| auth 标记 | 文档显示登录要求 | require_login metadata | protected route schema 测试 |
+| permission 标记 | 文档显示权限要求 | require_permission metadata | permission schema 测试 |
 
-### 4.7 V1-05 upload module
+## 7. V1 upload module
 
-#### Goal
+目标：支持后台常用文件上传。
 
-Support common backend file upload.
-
-#### Public API target
+目标 API：
 
 ```python
 @app.post("/upload")
@@ -403,50 +375,25 @@ async def upload(request):
     return {"path": saved.path}
 ```
 
-#### Implementation plan
+能力表：
 
-Implement package:
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| multipart parser | 解析上传请求 | 支持 `multipart/form-data` | 上传请求测试 |
+| single file | 单文件上传 | `request.file(name)` | 文件字段测试 |
+| file metadata | 获取文件信息 | filename、content_type、size | metadata 测试 |
+| size limit | 限制大小 | max size 配置 | 超限测试 |
+| local save | 保存本地 | `file.save(dir)` | 文件存在测试 |
+| safe filename | 防路径穿越 | 清理文件名或生成安全名 | path traversal 测试 |
+| error response | 上传错误可读 | missing/too large/invalid multipart | 错误码测试 |
 
-```text
-lingshu/upload/
-  __init__.py
-  file.py
-  parser.py
-  storage.py
-  errors.py
-```
+## 8. V1 auth module
 
-Required behavior:
+目标：让框架能做最基础登录鉴权。
 
-- parse `multipart/form-data`;
-- support single file field;
-- expose filename, content_type, size;
-- enforce max file size;
-- save to local directory;
-- return safe saved path;
-- reject path traversal;
-- provide readable error response.
-
-#### Tests
-
-- upload small file;
-- reject oversized file;
-- reject missing file field;
-- preserve safe filename or generate safe name;
-- prevent path traversal;
-- save file to temp directory in tests.
-
-### 4.8 V1-06 auth module
-
-#### Goal
-
-Provide basic login/token/current-user capability.
-
-#### Public API target
+目标 API：
 
 ```python
-from lingshu.auth import Auth, require_login
-
 @app.post("/login")
 async def login(request):
     return await auth.login(request)
@@ -457,503 +404,217 @@ async def me(request):
     return request.user
 ```
 
-#### Implementation plan
+能力表：
 
-Implement package:
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| password hash | 安全保存密码 | hash/verify helper | hash verify 测试 |
+| login | 用户登录 | username/password -> token | 成功/失败测试 |
+| token create | 生成 token | 带用户 ID、过期时间 | token 测试 |
+| token verify | 校验 token | 解析并验证 | invalid/expired 测试 |
+| request.user | 当前用户 | middleware 写入 request.user | handler 测试 |
+| require_login | 登录保护 | decorator/middleware | 未登录失败、已登录成功 |
+| auth error | 稳定错误 | `auth.required`、`auth.invalid_token` | 错误响应测试 |
+| DB user repo | 用户数据来源 | 基于 `lingshu.db` 的最小用户仓库 | 登录查用户测试 |
 
-```text
-lingshu/auth/
-  __init__.py
-  config.py
-  password.py
-  token.py
-  middleware.py
-  decorators.py
-  errors.py
-```
+## 9. V1 RBAC module
 
-Required behavior:
+目标：让内部后台能做基础权限控制。
 
-- password hashing helper;
-- password verification helper;
-- token creation;
-- token verification;
-- auth middleware that populates `request.user`;
-- `require_login` decorator;
-- login failure returns stable error;
-- missing/invalid token returns stable error.
-
-V1 can store users through the database API and a minimal user repository used by examples.
-
-#### Tests
-
-- password hash/verify;
-- login success;
-- login failure;
-- token verification;
-- `/me` with token succeeds;
-- `/me` without token fails;
-- request.user is available after authentication.
-
-### 4.9 V1-07 RBAC module
-
-#### Goal
-
-Provide role/permission checks for internal admin services.
-
-#### Public API target
+目标 API：
 
 ```python
-from lingshu.rbac import require_permission
-
 @app.post("/assets")
 @require_permission("asset:create")
 async def create_asset(request):
     return {"ok": True}
 ```
 
-#### Implementation plan
-
-Implement package:
-
-```text
-lingshu/rbac/
-  __init__.py
-  models.py
-  repository.py
-  decorators.py
-  errors.py
-```
-
-Required behavior:
-
-- user has roles;
-- role has permissions;
-- `require_permission(name)` checks current user;
-- missing login returns auth error;
-- missing permission returns permission error;
-- admin example includes tables and seed data.
-
-#### Tests
-
-- user with permission can access;
-- user without permission is rejected;
-- unauthenticated user is rejected;
-- multiple roles merge permissions;
-- permission checks use database-backed repository in example tests.
-
-### 4.10 V1-08 examples
-
-#### Goal
-
-Provide runnable business examples for developers and for acceptance.
-
-#### Required examples
-
-```text
-examples/basic_api/
-  app.py
-  schema.sql
-  README.md
-
-examples/admin/
-  app.py
-  schema.sql
-  seed.py
-  README.md
-```
-
-#### basic_api must include
-
-- database initialization;
-- `/users` list;
-- `/users` create;
-- `/users/{id}` read/update/delete if routing supports it;
-- `/openapi.json`;
-- `/docs`.
-
-#### admin must include
-
-- user table;
-- role table;
-- permission table;
-- login;
-- `/me`;
-- protected route;
-- permission-protected route;
-- cache usage where appropriate;
-- upload route.
-
-#### Tests
-
-- example imports safely;
-- example app can be created;
-- key routes return expected status/body through test client.
-
-### 4.11 V1 final acceptance
-
-V1 is accepted only when these are true:
-
-- database module works;
-- SQLite works;
-- MySQL public entry exists over accepted boundary;
-- app.db works;
-- cache works with memory backend;
-- Redis backend exists as optional path;
-- OpenAPI JSON works;
-- `/docs` works;
-- upload works;
-- auth works;
-- RBAC works;
-- examples/basic_api works;
-- examples/admin works;
-- validation chain passes.
-
-Required validation:
-
-```powershell
-.\.venv\Scripts\python.exe -m ruff check .
-.\.venv\Scripts\python.exe -m ruff format --check .
-.\.venv\Scripts\python.exe -m mypy lingshu tests
-.\.venv\Scripts\python.exe -m pytest
-```
-
-## 5. V2: CLI and project generation
-
-### 5.1 V2 goal
-
-V2 must make LingShu fast to start new projects with.
-
-A developer must be able to run:
-
-```powershell
-lingshu new myapp
-cd myapp
-lingshu run app:app
-```
-
-And for admin projects:
-
-```powershell
-lingshu new-admin myadmin
-cd myadmin
-lingshu db init
-lingshu run app:app
-```
-
-### 5.2 V2 module list
-
-V2 includes:
-
-1. `lingshu new`
-2. `lingshu new-api`
-3. `lingshu new-admin`
-4. `lingshu run`
-5. `lingshu routes`
-6. `lingshu check`
-7. `lingshu db init`
-8. generated project templates
-9. generated tests
-10. generated `.env.example`
-11. generated config file
-12. Windows and Linux run instructions
-
-### 5.3 V2-01 project generator
-
-#### Goal
-
-Generate a minimal runnable project.
-
-#### Command target
-
-```powershell
-lingshu new myapp
-```
-
-Generated structure:
-
-```text
-myapp/
-  app.py
-  config.py
-  .env.example
-  README.md
-  tests/
-    test_app.py
-```
-
-Generated app must include:
-
-- app creation;
-- one health route;
-- database config placeholder;
-- basic test.
-
-### 5.4 V2-02 API project generator
-
-#### Goal
-
-Generate an API starter project.
-
-#### Command target
-
-```powershell
-lingshu new-api myapi
-```
-
-Generated structure:
-
-```text
-myapi/
-  app.py
-  config.py
-  routes/
-    users.py
-  db/
-    schema.sql
-  .env.example
-  README.md
-  tests/
-    test_users.py
-```
-
-Generated app must include:
-
-- database initialization instruction;
-- `/users` list/create routes;
-- OpenAPI enabled;
-- tests for core API route.
-
-### 5.5 V2-03 admin project generator
-
-#### Goal
-
-Generate a usable internal admin starter.
-
-#### Command target
-
-```powershell
-lingshu new-admin myadmin
-```
-
-Generated structure:
-
-```text
-myadmin/
-  app.py
-  config.py
-  auth.py
-  routes/
-    auth.py
-    users.py
-    admin.py
-  db/
-    schema.sql
-    seed.sql
-  uploads/
-    .gitkeep
-  .env.example
-  README.md
-  tests/
-    test_login.py
-    test_permissions.py
-```
-
-Generated admin must include:
-
-- database schema;
-- seed admin user instructions;
-- login route;
-- `/me` route;
-- permission-protected route;
-- docs enabled;
-- upload route.
-
-### 5.6 V2-04 run/check/routes commands
-
-#### `lingshu run`
-
-Target:
-
-```powershell
-lingshu run app:app
-```
-
-Behavior:
-
-- loads target app;
-- validates import target;
-- starts local dev server;
-- prints host/port/routes/docs URL.
-
-#### `lingshu check`
-
-Target:
-
-```powershell
-lingshu check app:app
-```
-
-Behavior:
-
-- validates app import;
-- validates route registration;
-- validates config shape;
-- validates database URL format when present;
-- returns readable diagnostics.
-
-#### `lingshu routes`
-
-Target:
-
-```powershell
-lingshu routes app:app
-```
-
-Behavior:
-
-- prints method/path/handler name;
-- marks auth-required routes when metadata exists;
-- marks permission-required routes when metadata exists.
-
-### 5.7 V2-05 db init command
-
-#### Goal
-
-Initialize generated project database.
-
-#### Command target
-
-```powershell
-lingshu db init
-```
-
-Behavior:
-
-- reads project config;
-- finds schema file;
-- initializes SQLite by default;
-- prints created database path;
-- for admin template, optionally applies seed file.
-
-### 5.8 V2 final acceptance
-
-V2 is accepted only when:
-
-- `lingshu new myapp` generates runnable project;
-- `lingshu new-api myapi` generates runnable API project;
-- `lingshu new-admin myadmin` generates runnable admin project;
-- generated projects include tests;
-- generated projects include `.env.example`;
-- generated projects can run on Windows PowerShell;
-- generated projects can run on Linux shell;
-- `lingshu run`, `lingshu check`, `lingshu routes`, `lingshu db init` work;
-- validation chain passes.
-
-## 6. V3: Testing, stability, and acceptance hardening
-
-### 6.1 V3 goal
-
-V3 must make V1 and V2 reliable enough for internal project use.
-
-The target is not to add more feature surface. The target is to make database/cache/auth/rbac/upload/openapi/cli/templates pass real usage tests together.
-
-### 6.2 V3 test areas
-
-V3 must cover:
-
-1. database unit tests;
-2. database integration tests;
-3. cache unit tests;
-4. Redis optional path tests or missing dependency tests;
-5. OpenAPI route generation tests;
-6. docs page tests;
-7. upload parser/storage tests;
-8. auth token tests;
-9. request.user tests;
-10. RBAC permission tests;
-11. CLI command tests;
-12. project generation tests;
-13. generated project pytest tests;
-14. admin starter end-to-end tests;
-15. Windows path tests;
-16. Linux path tests;
-17. error response tests;
-18. config missing/invalid tests;
-19. shutdown/cleanup tests;
-20. regression tests for previously fixed issues.
-
-### 6.3 V3-01 database stability tests
-
-Required tests:
-
-- SQLite file database;
-- SQLite memory database;
-- connection close;
-- transaction commit;
-- transaction rollback;
-- nested transaction behavior decision test;
-- invalid SQL error wrapping;
-- params forwarding;
-- row conversion.
-
-### 6.4 V3-02 cache stability tests
-
-Required tests:
-
-- memory cache set/get/delete;
-- TTL expiry;
-- namespace isolation;
-- JSON serializer;
-- invalid value serialization error;
-- Redis missing dependency diagnostic;
-- app.cache lifecycle.
-
-### 6.5 V3-03 auth/rbac stability tests
-
-Required tests:
-
-- password hash and verify;
-- token create/verify;
-- invalid token;
-- expired token if TTL is supported;
-- request.user population;
-- require_login success/failure;
-- require_permission success/failure;
-- multi-role permission merge;
-- admin seed login.
-
-### 6.6 V3-04 upload/openapi stability tests
-
-Required tests:
-
-- valid upload;
-- oversized upload rejection;
-- missing field rejection;
-- unsafe filename handling;
-- docs endpoint;
-- OpenAPI JSON route list;
-- OpenAPI metadata preservation;
-- protected route metadata where available.
-
-### 6.7 V3-05 CLI/template tests
-
-Required tests:
-
-- `lingshu new` creates expected files;
-- `lingshu new-api` creates expected files;
-- `lingshu new-admin` creates expected files;
-- generated basic project imports;
-- generated API project tests pass;
-- generated admin project tests pass;
-- `lingshu db init` creates database;
-- `lingshu routes` lists routes;
-- `lingshu check` reports success;
-- invalid target reports readable error.
-
-### 6.8 V3 acceptance demo
-
-V3 final acceptance requires a fresh generated admin project to pass this flow:
+能力表：
+
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| user | 用户主体 | 用户 ID、状态、角色 | 用户表/模型测试 |
+| role | 角色 | 角色名称、描述 | role 测试 |
+| permission | 权限点 | 字符串权限，如 `asset:create` | permission 测试 |
+| user-role | 用户绑定角色 | 多角色支持 | 多角色测试 |
+| role-permission | 角色绑定权限 | 多权限支持 | 权限合并测试 |
+| require_permission | 接口权限校验 | decorator/middleware | 有/无权限测试 |
+| permission error | 稳定错误 | `permission.denied` | 错误响应测试 |
+| admin seed | 初始化管理员 | admin 示例提供 seed | seed login 测试 |
+
+## 10. V1 config module
+
+目标：让业务配置能直接用，不需要每个项目自己乱写。
+
+能力表：
+
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| `.env` | 本地配置 | 加载 `.env` 或 `.env.example` 约定 | env 测试 |
+| environment variables | 线上配置 | 环境变量覆盖默认值 | 覆盖测试 |
+| DATABASE_URL | 数据库配置 | sqlite/mysql/postgresql URL | URL 解析测试 |
+| REDIS_URL | Redis 配置 | Redis optional backend | URL 解析测试 |
+| MONGO_URL | MongoDB 配置 | Mongo optional backend | URL 解析测试 |
+| APP_SECRET | token 密钥 | auth 使用 | 缺失/存在测试 |
+| redaction | 隐藏敏感值 | 日志/错误不暴露密码密钥 | redaction 测试 |
+| typed config | 类型化配置 | int/bool/path/list 基础转换 | 类型转换测试 |
+
+## 11. V1 errors module
+
+目标：统一错误返回，避免 traceback、SQL、路径、密钥泄露给客户端。
+
+能力表：
+
+| 能力 | 作用 | V1 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| error code | 稳定错误码 | `db.execution_failed` 等 | code 测试 |
+| safe message | 安全提示 | 不暴露内部异常细节 | response 测试 |
+| HTTP mapping | 映射状态码 | auth 401、permission 403、db 500 | status 测试 |
+| details | 安全详情 | 只放白名单字段 | 敏感字段测试 |
+| internal cause | 内部保留异常 | 不返回客户端 | traceback 不泄露测试 |
+| problem JSON | 标准错误格式 | JSON error body | body 测试 |
+
+## 12. V1 examples
+
+V1 必须提供两个可运行示例。
+
+### 12.1 `examples/basic_api`
+
+能力表：
+
+| 能力 | 作用 | 内容 |
+| --- | --- | --- |
+| app.py | 启动示例 API | 创建 app，启用 db/openapi |
+| users API | 演示数据库 CRUD | list/create/read/update/delete |
+| schema | 建表 SQL/迁移 | users 表 |
+| docs | 接口文档 | `/docs`、`/openapi.json` |
+| tests | 示例可测 | users route 测试 |
+
+### 12.2 `examples/admin`
+
+能力表：
+
+| 能力 | 作用 | 内容 |
+| --- | --- | --- |
+| login | 管理员登录 | `/login` |
+| me | 当前用户 | `/me` |
+| users | 用户管理示例 | list/create |
+| roles | 角色权限示例 | role/permission 表 |
+| protected route | 登录保护 | require_login |
+| permission route | 权限保护 | require_permission |
+| upload | 文件上传 | `/upload` |
+| cache | 缓存示例 | app.cache 使用 |
+| docs | 接口文档 | `/docs` |
+| tests | 示例验收 | login/permission/upload 测试 |
+
+## 13. V1 issue breakdown
+
+| Issue | 模块 | 主要交付 |
+| --- | --- | --- |
+| V1-01 | `lingshu.db` foundation | 统一 db 入口、SQL/NoSQL 目录、错误、配置 |
+| V1-02 | SQL adapters | SQLite、MySQL、PostgreSQL 入口、连接、执行 SQL、连接池 |
+| V1-03 | Query builder | select/where/insert/update/delete/参数绑定 |
+| V1-04 | ORM minimal | Model、field、save/get/update/delete |
+| V1-05 | Migration | migrations apply/status/rollback |
+| V1-06 | NoSQL Redis | Redis 基础能力、cache 绑定 |
+| V1-07 | NoSQL MongoDB | MongoDB 基础 CRUD、index、aggregate 接口 |
+| V1-08 | Cache | MemoryCache、RedisCache、app.cache |
+| V1-09 | OpenAPI/docs | `/openapi.json`、`/docs` |
+| V1-10 | Upload | multipart、本地保存、大小限制、安全文件名 |
+| V1-11 | Auth | password、token、request.user、require_login |
+| V1-12 | RBAC | user/role/permission、require_permission |
+| V1-13 | Config/errors | env、URL、redaction、统一错误返回 |
+| V1-14 | Examples | basic_api、admin |
+| V1-15 | V1 acceptance | V1 全模块集成验收 |
+
+## 14. V1 final acceptance
+
+V1 结束时必须能证明：
+
+| 验收项 | 要求 |
+| --- | --- |
+| SQL | SQLite 可完整 CRUD；MySQL/PostgreSQL 有统一入口和适配边界 |
+| SQL 安全 | 所有查询支持参数绑定 |
+| Query builder | 能完成 select/insert/update/delete |
+| ORM | 能定义 User 模型并增删改查 |
+| Migration | 能建表、记录迁移、查看状态、回滚 |
+| Redis | 基础 key/hash/list/set/ttl/counter/lock 接口可用或 fake 可测 |
+| MongoDB | collection CRUD/index/aggregate 接口可用或 fake 可测 |
+| Cache | MemoryCache 可用，RedisCache 接口可用 |
+| OpenAPI | `/openapi.json` 和 `/docs` 可访问 |
+| Upload | 文件上传和保存可用 |
+| Auth | 登录、token、request.user、require_login 可用 |
+| RBAC | 角色权限和 require_permission 可用 |
+| Examples | basic_api 和 admin 可运行 |
+| Validation | ruff、format、mypy、pytest 全过 |
+
+## 15. V2: CLI and project generation
+
+V2 专门解决项目生成和开发体验。
+
+### 15.1 V2 CLI capability table
+
+| 能力 | 作用 | V2 实现要求 | 验收方式 |
+| --- | --- | --- | --- |
+| `lingshu new` | 创建最小项目 | app.py、config.py、tests、README、.env.example | 生成后能启动和测试 |
+| `lingshu new-api` | 创建 API 项目 | users API、db schema、openapi、tests | 生成后 users API 测试通过 |
+| `lingshu new-admin` | 创建后台项目 | login、me、rbac、upload、docs、db seed | 生成后 admin 验收通过 |
+| `lingshu run` | 启动项目 | 加载 `module:app`，启动服务 | 本地启动测试 |
+| `lingshu check` | 检查项目 | 检查 import、routes、config、db URL | 成功/失败诊断测试 |
+| `lingshu routes` | 查看路由 | 输出 method/path/handler/auth/permission | 路由列表测试 |
+| `lingshu db init` | 初始化数据库 | 执行 schema/migrations/seed | 生成 db 文件/表测试 |
+| Windows 命令 | Windows 开发可用 | PowerShell 示例 | Windows 路径测试 |
+| Linux 命令 | Linux 部署可用 | shell 示例 | Linux 路径测试 |
+
+### 15.2 V2 generated project templates
+
+| 模板 | 作用 | 必须包含 |
+| --- | --- | --- |
+| basic | 最小项目 | health route、config、tests |
+| api | 数据 API 项目 | database、users CRUD、openapi、tests |
+| admin | 后台项目 | auth、rbac、upload、cache、docs、db init、tests |
+
+### 15.3 V2 final acceptance
+
+| 验收项 | 要求 |
+| --- | --- |
+| new | `lingshu new myapp` 后项目能跑 |
+| new-api | `lingshu new-api myapi` 后 users API 能跑 |
+| new-admin | `lingshu new-admin myadmin` 后登录/权限/docs/upload 能跑 |
+| db init | 生成项目可初始化数据库 |
+| routes | 可列出路由 |
+| check | 可检查项目配置和导入 |
+| tests | 生成项目自带测试可通过 |
+
+## 16. V3: testing, stability, and acceptance hardening
+
+V3 专门做测试和稳定性，不再扩主功能。
+
+### 16.1 V3 test capability table
+
+| 测试模块 | 作用 | 必须覆盖 |
+| --- | --- | --- |
+| SQL database tests | 保证数据库可靠 | connection、execute、query、transaction、pool、safety |
+| Query builder tests | 保证构造 SQL 正确 | select、where、insert、update、delete、params |
+| ORM tests | 保证模型映射可用 | field、save、get、update、delete、to_dict |
+| Migration tests | 保证迁移可用 | apply、status、rollback、幂等 |
+| Redis tests | 保证 Redis 接口可靠 | get/set/hash/list/set/ttl/counter/lock |
+| MongoDB tests | 保证 Mongo 接口可靠 | insert/find/update/delete/index/aggregate |
+| Cache tests | 保证缓存业务入口可靠 | memory、redis、namespace、serializer、ttl |
+| OpenAPI tests | 保证接口文档可靠 | schema、metadata、auth/permission tags |
+| Upload tests | 保证上传安全 | multipart、size limit、safe filename、save |
+| Auth tests | 保证登录可靠 | password、token、request.user、require_login |
+| RBAC tests | 保证权限可靠 | role、permission、require_permission |
+| Config tests | 保证配置可靠 | env、url parse、redaction、missing config |
+| Error tests | 保证错误安全 | code、safe message、status、no secret leak |
+| CLI tests | 保证命令可靠 | new、new-api、new-admin、run、check、routes、db init |
+| Template tests | 保证生成项目可靠 | generated project import、pytest、acceptance flow |
+| End-to-end tests | 保证业务链路可靠 | admin 登录、权限、上传、docs、db/cache 一起跑 |
+
+### 16.2 V3 final acceptance flow
+
+Fresh admin project must pass:
 
 ```powershell
 lingshu new-admin demo_admin
@@ -966,31 +627,19 @@ lingshu run app:app
 
 Then verify:
 
-```text
-GET /docs
-GET /openapi.json
-POST /login
-GET /me
-POST /upload
-GET protected route without token -> auth error
-GET protected route with token -> success
-POST permission route without permission -> permission error
-POST permission route with permission -> success
-```
+| 请求 | 预期 |
+| --- | --- |
+| `GET /docs` | 返回文档页 |
+| `GET /openapi.json` | 返回 schema |
+| `POST /login` | 返回 token |
+| `GET /me` without token | auth error |
+| `GET /me` with token | 当前用户 |
+| protected route without token | auth error |
+| permission route without permission | permission error |
+| permission route with permission | success |
+| upload route | 保存文件并返回路径 |
 
-### 6.9 V3 final acceptance
-
-V3 is accepted only when:
-
-- all V1 modules are tested;
-- all V2 commands are tested;
-- generated projects can run their own tests;
-- examples/basic_api passes;
-- examples/admin passes;
-- fresh generated admin demo passes acceptance flow;
-- validation chain passes.
-
-Required validation:
+### 16.3 V3 final validation
 
 ```powershell
 .\.venv\Scripts\python.exe -m ruff check .
@@ -999,96 +648,67 @@ Required validation:
 .\.venv\Scripts\python.exe -m pytest
 ```
 
-## 7. Issue breakdown
+## 17. Execution order
 
-### V1 issues
-
-```text
-V1-01 database core API
-V1-02 app.db and DATABASE_URL integration
-V1-03 cache module and app.cache
-V1-04 OpenAPI JSON and /docs
-V1-05 upload module
-V1-06 auth login/token/request.user
-V1-07 RBAC role/permission decorators
-V1-08 basic_api and admin examples
-V1-09 V1 integration acceptance
-```
-
-### V2 issues
+Current execution starts from existing issue:
 
 ```text
-V2-01 lingshu new project generator
-V2-02 lingshu new-api generator
-V2-03 lingshu new-admin generator
-V2-04 lingshu run/check/routes
-V2-05 lingshu db init
-V2-06 V2 generated project acceptance
+#146: P6-DB-01 / V1-01 database core foundation
 ```
 
-### V3 issues
+Immediate order:
 
 ```text
-V3-01 database hardening tests
-V3-02 cache hardening tests
-V3-03 auth/rbac hardening tests
-V3-04 upload/openapi hardening tests
-V3-05 CLI/template hardening tests
-V3-06 generated admin end-to-end acceptance
+V1-01 lingshu.db foundation
+V1-02 SQL adapters
+V1-03 Query builder
+V1-04 ORM minimal
+V1-05 Migration
+V1-06 Redis
+V1-07 MongoDB
+V1-08 Cache
+V1-09 OpenAPI/docs
+V1-10 Upload
+V1-11 Auth
+V1-12 RBAC
+V1-13 Config/errors
+V1-14 Examples
+V1-15 V1 acceptance
+V2-01 CLI new
+V2-02 CLI new-api
+V2-03 CLI new-admin
+V2-04 run/check/routes/db init
+V2-05 V2 acceptance
+V3-01 module tests
+V3-02 CLI/template tests
+V3-03 admin end-to-end tests
+V3-04 final hardening
 ```
 
-## 8. Execution order
+## 18. Developer task format
 
-Start immediately with:
-
-```text
-V1-01 database core API
-```
-
-Mapping:
-
-```text
-Current GitHub issue: #146
-Suggested branch: human/dodo/p6-db-01-database-core-foundation
-```
-
-After V1-01 is merged, continue in this order:
-
-```text
-V1-02 app.db and DATABASE_URL integration
-V1-03 cache module and app.cache
-V1-04 OpenAPI JSON and /docs
-V1-05 upload module
-V1-06 auth login/token/request.user
-V1-07 RBAC role/permission decorators
-V1-08 examples
-V1-09 V1 integration acceptance
-```
-
-## 9. Developer task format
-
-Each developer task must use this short format:
+Every issue given to developers must use this format:
 
 ```text
 Goal:
 Deliver:
+API:
 Tests:
 Validation:
 Branch:
 Report:
 ```
 
-No long planning text should be assigned to developers.
+No long planning prose should be assigned to developers.
 
-## 10. Progress rule
+## 19. Progress rule
 
-A task is not considered progress unless it delivers at least one of:
+A task is not progress unless it delivers one of:
 
 - callable framework API;
+- database/cache/auth/rbac/openapi/upload behavior;
 - runnable command;
 - runnable example;
-- test coverage;
 - generated project template;
+- automated test coverage;
 - fixed integration failure.
-
-Documentation-only tasks are allowed only when they are PM-owned and support already-delivered capabilities.
