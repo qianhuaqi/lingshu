@@ -82,6 +82,15 @@ This is intentionally not a query API, ORM, cursor API, or transaction API.
 - If local dependency installation is blocked or baseline toolchain issues happen,
   record them and rely on Draft PR + GitHub CI for final verification.
 
+### Baseline task update
+
+- 2026-07-07: Fixed baseline mypy error `Duplicate module named "test_config"` by
+  renaming:
+  - `tests/core/test_config.py` -> `tests/core/test_core_config.py`
+  - `tests/server/test_config.py` -> `tests/server/test_server_config.py`
+  - This keeps pytest discovery unchanged and remains an internal test-only
+    correction (no runtime logic changes).
+
 ## Next action
 
 Finish remaining P5-08 validation for adapter boundary behavior, then prepare
