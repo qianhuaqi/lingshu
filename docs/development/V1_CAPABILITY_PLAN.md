@@ -9,7 +9,7 @@ Status: active V1 plan
 
 V1 must complete the framework business capability modules that are currently missing.
 
-V1 is accepted only when LingShu can support a real internal backend/API project without every business project re-implementing database access, cache, validation, response shape, auth, permission, upload, storage, health checks, and test helpers.
+V1 is accepted only when LingShu can support a real internal backend/API project without every business project re-implementing database access, cache, validation, response shape, auth, permission, upload, storage, health checks, scheduled jobs, background tasks, and test helpers.
 
 ## 1. V1 delivery rule
 
@@ -51,6 +51,7 @@ A V1 task is progress only if it delivers at least one of:
 | `lingshu.health` | required | `/health`, `/ready`, dependency checks. |
 | `lingshu.pagination` | required | Pagination params and response helpers. |
 | `lingshu.tasks` | required minimal | Background task interface, local execution, retry boundary. |
+| `lingshu.crontab` | required minimal | Scheduled jobs by interval/cron-like rules. |
 | `lingshu.testing` practical helpers | required | Test client helpers, temp db, auth token, upload helpers. |
 | `examples/basic_api` | required | Runnable API example. |
 | `examples/admin` | required | Runnable admin example. |
@@ -513,18 +514,36 @@ async def create_user(request):
 | max page size | protect service | configurable limit. |
 | response helper | return paged data | integrates `lingshu.response`. |
 
-## 22. Tasks: `lingshu.tasks`
+## 22. Background tasks and scheduled jobs
 
-V1 only needs local/minimal tasks, not distributed queue.
+### `lingshu.tasks`
+
+`lingshu.tasks` is for immediate or deferred background work. It is not the scheduled job module.
 
 | Capability | Purpose | Requirement |
 | --- | --- | --- |
-| background task | run after request | local task scheduler. |
-| task registry | define tasks | named task function. |
+| background task | run after request | local task runner. |
+| task registry | define reusable tasks | named task function. |
 | retry boundary | simple retries | retry count/backoff config. |
 | result | record outcome | success/failure metadata. |
 | startup task | run at startup | app lifecycle integration. |
 | cleanup | shutdown cleanup | cancel/wait tasks. |
+
+### `lingshu.crontab`
+
+`lingshu.crontab` is the V1 scheduled job module.
+
+| Capability | Purpose | Requirement |
+| --- | --- | --- |
+| interval job | run every N seconds/minutes/hours | local interval scheduler. |
+| cron-like job | run by time rule | minute/hour/day/week style rule. |
+| job registry | register scheduled jobs | named crontab job function. |
+| enable/disable | control scheduled jobs | config flag or runtime state. |
+| pause/resume | temporarily stop/resume jobs | local state support. |
+| overlap policy | avoid duplicate runs | skip/allow/queue policy. |
+| error policy | handle job failures | log, retry, and continue scheduler. |
+| lifecycle | app startup/shutdown integration | start on startup, stop on shutdown. |
+| test clock | deterministic tests | fake clock/manual tick support. |
 
 ## 23. Testing helpers: `lingshu.testing`
 
@@ -536,6 +555,7 @@ V1 only needs local/minimal tasks, not distributed queue.
 | auth helper | test auth routes | create token/login helper. |
 | temp db fixture | DB tests | sqlite temp DB fixture. |
 | app factory helper | create test app | lifecycle-safe app creation. |
+| fake clock | crontab tests | deterministic scheduled job tests. |
 
 ## 24. Examples
 
@@ -566,6 +586,7 @@ Must include:
 - cache;
 - health;
 - audit example;
+- crontab example;
 - docs;
 - tests.
 
@@ -593,9 +614,11 @@ Must include:
 | V1-18 | `lingshu.config` + `lingshu.errors` | env, URLs, redaction, safe errors. |
 | V1-19 | `lingshu.logging` + `lingshu.audit` | logs, trace ID, operation audit. |
 | V1-20 | `lingshu.health` + `lingshu.pagination` | health/readiness and pagination helpers. |
-| V1-21 | `lingshu.tasks` + `lingshu.testing` | local tasks and test helpers. |
-| V1-22 | examples | basic_api and admin examples. |
-| V1-23 | V1 acceptance | full V1 integration acceptance. |
+| V1-21 | `lingshu.tasks` | local background tasks and retry boundary. |
+| V1-22 | `lingshu.crontab` | interval jobs, cron-like jobs, lifecycle, fake clock tests. |
+| V1-23 | `lingshu.testing` | test helpers, temp DB, auth/upload helpers, fake clock. |
+| V1-24 | examples | basic_api and admin examples. |
+| V1-25 | V1 acceptance | full V1 integration acceptance. |
 
 ## 26. V1 final acceptance
 
@@ -606,7 +629,7 @@ V1 is accepted only when all are true:
 - MySQL and PostgreSQL have unified backend interfaces and adapter tests.
 - Query builder, minimal ORM, and migrations work on SQLite.
 - Redis and MongoDB have basic APIs with fake/optional-backend tests.
-- Cache, validation, response, OpenAPI, upload, storage, auth, session, RBAC, security, config, errors, logging, audit, health, pagination, tasks, and testing helpers exist with tests.
+- Cache, validation, response, OpenAPI, upload, storage, auth, session, RBAC, security, config, errors, logging, audit, health, pagination, tasks, crontab, and testing helpers exist with tests.
 - `examples/basic_api` and `examples/admin` run.
 - Validation chain passes:
 
