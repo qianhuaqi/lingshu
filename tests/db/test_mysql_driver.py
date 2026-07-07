@@ -17,6 +17,7 @@ class _FakeRawPool:
         self.acquire_called = False
         self.release_called = False
         self.closed = False
+        self.wait_closed_called = False
         self.acquired_connection = object()
         self.released_connection: object | None = None
 
@@ -30,6 +31,9 @@ class _FakeRawPool:
 
     def close(self) -> None:
         self.closed = True
+
+    def wait_closed(self) -> None:
+        self.wait_closed_called = True
 
 
 async def _fake_connect(_: DatabaseConfig) -> object:
@@ -197,6 +201,7 @@ def test_mysql_driver_shutdown_closes_pool_adapter(
         assert raw_pool.closed is False
         await app.shutdown()
         assert raw_pool.closed is True
+        assert raw_pool.wait_closed_called is True
 
     asyncio.run(scenario())
 
@@ -369,6 +374,7 @@ def test_app_startup_uses_aiomysql_create_pool_and_shutdown_calls_close(
     assert captured["kwargs"]["db"] == "mysql_db"
     assert "database" not in captured["kwargs"]
     assert raw_pool.closed is True
+    assert raw_pool.wait_closed_called is True
 
 
 def test_mysql_driver_without_create_pool_raises_pool_unavailable(

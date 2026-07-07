@@ -114,6 +114,11 @@ class _MySQLPoolHandle:
             result = close_callable()
             if inspect.isawaitable(result):
                 await result
+        wait_closed_callable = getattr(self._pool, "wait_closed", None)
+        if callable(wait_closed_callable):
+            wait_result = wait_closed_callable()
+            if inspect.isawaitable(wait_result):
+                await wait_result
 
 
 async def _default_connect(config: DatabaseConfig) -> object:
