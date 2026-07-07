@@ -135,6 +135,9 @@ class _MySQLPoolHandle:
     ) -> object:
         connection = None
         cursor = None
+        primary_error = False
+        cursor_close_error: BaseException | None = None
+        release_error: BaseException | None = None
         try:
             connection = cast(_MySQLConnection, await self.acquire())
             cursor = cast(_MySQLCursor, await _maybe_await(connection.cursor()))
@@ -142,13 +145,30 @@ class _MySQLPoolHandle:
             if fetch == "one":
                 return await _maybe_await(cursor.fetchone())
             if fetch == "all":
-                return await _maybe_await(cursor.fetchall())
+                rows = await _maybe_await(cursor.fetchall())
+                if isinstance(rows, (tuple, list)):
+                    return list(rows)
+                return rows
             return execute_result
+        except BaseException:
+            primary_error = True
+            raise
         finally:
             if cursor is not None:
-                await self._close_cursor(cursor)
+                try:
+                    await self._close_cursor(cursor)
+                except BaseException as exc:
+                    cursor_close_error = exc
             if connection is not None:
-                await self.release(connection)
+                try:
+                    await self.release(connection)
+                except BaseException as exc:
+                    release_error = exc
+            if not primary_error:
+                if cursor_close_error is not None:
+                    raise cursor_close_error
+                if release_error is not None:
+                    raise release_error
 
     async def execute(self, sql: str, params: object | None = None) -> object:
         return await self._execute_internal(sql, params)

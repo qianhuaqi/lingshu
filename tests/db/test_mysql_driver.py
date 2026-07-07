@@ -65,6 +65,9 @@ class _BaseFakeCursor:
         fetch_one_result: object = None,
         fetch_all_result: object = None,
         fail_execute: bool = False,
+        fail_fetch_one: bool = False,
+        fail_fetch_all: bool = False,
+        fail_close: bool = False,
     ) -> None:
         self.execute_called = False
         self.fetchall_called = False
@@ -76,6 +79,9 @@ class _BaseFakeCursor:
         self.fetch_one_result = fetch_one_result
         self.fetch_all_result = fetch_all_result
         self.fail_execute = fail_execute
+        self.fail_fetch_one = fail_fetch_one
+        self.fail_fetch_all = fail_fetch_all
+        self.fail_close = fail_close
 
     def _capture_execute(self, sql: str, params: object | None) -> None:
         self.execute_called = True
@@ -92,14 +98,20 @@ class _FakeCursorAsync(_BaseFakeCursor):
 
     async def fetchone(self) -> object:
         self.fetchone_called = True
+        if self.fail_fetch_one:
+            raise RuntimeError("fetchone failed")
         return self.fetch_one_result
 
     async def fetchall(self) -> object:
         self.fetchall_called = True
+        if self.fail_fetch_all:
+            raise RuntimeError("fetchall failed")
         return self.fetch_all_result
 
     async def close(self) -> None:
         self.close_called = True
+        if self.fail_close:
+            raise RuntimeError("cursor close failed")
 
 
 class _FakeCursorSync(_BaseFakeCursor):
@@ -109,14 +121,20 @@ class _FakeCursorSync(_BaseFakeCursor):
 
     def fetchone(self) -> object:
         self.fetchone_called = True
+        if self.fail_fetch_one:
+            raise RuntimeError("fetchone failed")
         return self.fetch_one_result
 
     def fetchall(self) -> object:
         self.fetchall_called = True
+        if self.fail_fetch_all:
+            raise RuntimeError("fetchall failed")
         return self.fetch_all_result
 
     def close(self) -> None:
         self.close_called = True
+        if self.fail_close:
+            raise RuntimeError("cursor close failed")
 
 
 async def _fake_connect(_: DatabaseConfig) -> object:
@@ -380,6 +398,20 @@ def test_mysql_pool_handle_fetch_all_uses_cursor_and_returns_rows(
     asyncio.run(scenario())
 
 
+def test_mysql_pool_handle_fetch_all_converts_tuple_result_to_list() -> None:
+    cursor = _FakeCursorSync(fetch_all_result=(("r1",), ("r2",)))
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        rows = await adapter.fetch_all("SELECT id, value FROM t")
+        assert isinstance(rows, list)
+        assert rows == [("r1",), ("r2",)]
+
+    asyncio.run(scenario())
+
+
 def test_mysql_pool_handle_execute_releases_connection_when_execution_fails() -> None:
     cursor = _FakeCursorSync(execute_return=None, fail_execute=True)
     connection = _FakeRawConnectionWithAsyncCursor(cursor)
@@ -389,6 +421,54 @@ def test_mysql_pool_handle_execute_releases_connection_when_execution_fails() ->
     async def scenario() -> None:
         with pytest.raises(RuntimeError):
             await adapter.execute("UPDATE t SET v=%s", (1,))
+        assert raw_pool.release_called is True
+        assert raw_pool.released_connection is connection
+        assert cursor.close_called is True
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_execute_releases_connection_when_cursor_close_fails() -> None:
+    cursor = _FakeCursorSync(execute_return=1, fail_close=True)
+    connection = _FakeRawConnectionWithSyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        with pytest.raises(RuntimeError, match="cursor close failed"):
+            await adapter.execute("UPDATE t SET v=%s", (1,))
+        assert raw_pool.release_called is True
+        assert raw_pool.released_connection is connection
+        assert cursor.close_called is True
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_fetch_one_releases_connection_when_fetch_one_fails() -> None:
+    cursor = _FakeCursorAsync(fetch_one_result=("row", 1), fail_fetch_one=True)
+    connection = _FakeRawConnectionWithSyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        with pytest.raises(RuntimeError, match="fetchone failed"):
+            await adapter.fetch_one("SELECT id, value FROM t WHERE id=%s", (1,))
+        assert raw_pool.release_called is True
+        assert raw_pool.released_connection is connection
+        assert cursor.close_called is True
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_fetch_all_releases_connection_when_fetch_all_fails() -> None:
+    cursor = _FakeCursorSync(fetch_all_result=[("r1",), ("r2",)], fail_fetch_all=True)
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        with pytest.raises(RuntimeError, match="fetchall failed"):
+            await adapter.fetch_all("SELECT id, value FROM t")
         assert raw_pool.release_called is True
         assert raw_pool.released_connection is connection
         assert cursor.close_called is True
