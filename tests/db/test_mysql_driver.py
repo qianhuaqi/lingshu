@@ -40,21 +40,81 @@ class _FakeRawPool:
 class _FakeRawConnectionWithAsyncCursor:
     def __init__(self, cursor: _BaseFakeCursor) -> None:
         self.cursor_called = False
+        self.cursor_call_count = 0
         self.cursor_to_return = cursor
+        self.begin_called = False
+        self.begin_call_count = 0
+        self.commit_called = False
+        self.commit_call_count = 0
+        self.rollback_called = False
+        self.rollback_call_count = 0
+        self.fail_begin = False
+        self.fail_commit = False
+        self.fail_rollback = False
 
     async def cursor(self) -> _BaseFakeCursor:
         self.cursor_called = True
+        self.cursor_call_count += 1
         return self.cursor_to_return
+
+    async def begin(self) -> object:
+        self.begin_called = True
+        self.begin_call_count += 1
+        if self.fail_begin:
+            raise RuntimeError("begin failed")
+        return None
+
+    async def commit(self) -> None:
+        self.commit_called = True
+        self.commit_call_count += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
+
+    async def rollback(self) -> None:
+        self.rollback_called = True
+        self.rollback_call_count += 1
+        if self.fail_rollback:
+            raise RuntimeError("rollback failed")
 
 
 class _FakeRawConnectionWithSyncCursor:
     def __init__(self, cursor: _BaseFakeCursor) -> None:
         self.cursor_called = False
+        self.cursor_call_count = 0
         self.cursor_to_return = cursor
+        self.begin_called = False
+        self.begin_call_count = 0
+        self.commit_called = False
+        self.commit_call_count = 0
+        self.rollback_called = False
+        self.rollback_call_count = 0
+        self.fail_begin = False
+        self.fail_commit = False
+        self.fail_rollback = False
 
     def cursor(self) -> _BaseFakeCursor:
         self.cursor_called = True
+        self.cursor_call_count += 1
         return self.cursor_to_return
+
+    def begin(self) -> object:
+        self.begin_called = True
+        self.begin_call_count += 1
+        if self.fail_begin:
+            raise RuntimeError("begin failed")
+        return None
+
+    def commit(self) -> None:
+        self.commit_called = True
+        self.commit_call_count += 1
+        if self.fail_commit:
+            raise RuntimeError("commit failed")
+
+    def rollback(self) -> None:
+        self.rollback_called = True
+        self.rollback_call_count += 1
+        if self.fail_rollback:
+            raise RuntimeError("rollback failed")
 
 
 class _BaseFakeCursor:
@@ -485,6 +545,180 @@ def _extract_cursor(connection: _RawConnection) -> _BaseFakeCursor:
     if isinstance(connection, _FakeRawConnectionWithSyncCursor):
         return connection.cursor_to_return
     raise AssertionError(f"Unexpected connection type: {type(connection)!r}")
+
+
+def test_mysql_pool_handle_transaction_reuses_single_connection_for_multiple_operations() -> None:
+    cursor = _FakeCursorSync(
+        execute_return=1,
+        fetch_one_result=("row", 1),
+        fetch_all_result=[("r1",), ("r2",)],
+    )
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            await tx.execute("INSERT INTO t (id) VALUES (%s)", (1,))
+            await tx.fetch_one("SELECT id FROM t")
+            await tx.fetch_all("SELECT id FROM t")
+            assert raw_pool.acquire_called is True
+            assert raw_pool.release_called is False
+            assert connection.begin_called is True
+            assert connection.cursor_call_count == 3
+            assert connection.begin_call_count == 1
+        assert connection.commit_called is True
+        assert connection.rollback_called is False
+        assert raw_pool.release_called is True
+        assert raw_pool.released_connection is connection
+        assert connection.commit_call_count == 1
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_transaction_calls_begin_when_available() -> None:
+    cursor = _FakeCursorSync()
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            assert tx._connection is connection
+            assert connection.begin_called is True
+        assert connection.begin_call_count == 1
+
+    asyncio.run(scenario())
+
+
+def test_mysql_pool_handle_transaction_begin_failure_releases_connection() -> None:
+    cursor = _FakeCursorSync()
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    connection.fail_begin = True
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        with pytest.raises(RuntimeError, match="begin failed"):
+            async with adapter.transaction():
+                pass
+
+    asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+
+
+def test_mysql_pool_handle_transaction_commit_failure_still_releases_connection() -> None:
+    cursor = _FakeCursorSync()
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    connection.fail_commit = True
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            assert tx._connection is connection
+
+    with pytest.raises(RuntimeError, match="commit failed"):
+        asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+    assert connection.commit_called is True
+    assert connection.commit_call_count == 1
+    assert connection.rollback_called is False
+
+
+def test_mysql_pool_handle_transaction_rollback_on_exception_and_release() -> None:
+    cursor = _FakeCursorSync()
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction():
+            raise RuntimeError("business failed")
+
+    with pytest.raises(RuntimeError, match="business failed"):
+        asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+    assert connection.rollback_called is True
+    assert connection.commit_called is False
+    assert connection.rollback_call_count == 1
+
+
+def test_mysql_pool_handle_transaction_rollback_failure_does_not_swallow_business_error() -> None:
+    cursor = _FakeCursorSync()
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    connection.fail_rollback = True
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction():
+            raise RuntimeError("business failed")
+
+    with pytest.raises(RuntimeError, match="business failed"):
+        asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+    assert connection.rollback_called is True
+
+
+def test_mysql_pool_handle_transaction_cursor_close_error_releases_connection() -> None:
+    cursor = _FakeCursorSync(execute_return=1, fail_close=True)
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            await tx.execute("UPDATE t SET v=%s", (1,))
+
+    with pytest.raises(RuntimeError, match="cursor close failed"):
+        asyncio.run(scenario())
+    assert connection.rollback_called is True
+    assert connection.commit_called is False
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+
+
+def test_mysql_pool_handle_transaction_fetch_one_exception_still_releases_and_rolls_back() -> None:
+    cursor = _FakeCursorSync(fetch_one_result=("row",), fail_fetch_one=True)
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            await tx.fetch_one("SELECT id FROM t")
+
+    with pytest.raises(RuntimeError, match="fetchone failed"):
+        asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+    assert connection.rollback_called is True
+    assert connection.rollback_call_count == 1
+    assert connection.commit_called is False
+
+
+def test_mysql_pool_handle_transaction_fetch_all_exception_still_releases_and_rolls_back() -> None:
+    cursor = _FakeCursorSync(fetch_all_result=[("r1",)], fail_fetch_all=True)
+    connection = _FakeRawConnectionWithAsyncCursor(cursor)
+    raw_pool = _FakeRawPool(connection)
+    adapter = mysql._MySQLPoolHandle(raw_pool)
+
+    async def scenario() -> None:
+        async with adapter.transaction() as tx:
+            await tx.fetch_all("SELECT id FROM t")
+
+    with pytest.raises(RuntimeError, match="fetchall failed"):
+        asyncio.run(scenario())
+    assert raw_pool.release_called is True
+    assert raw_pool.released_connection is connection
+    assert connection.rollback_called is True
+    assert connection.rollback_call_count == 1
+    assert connection.commit_called is False
 
 
 def test_mysql_pool_handle_without_acquire_raises_configuration_error() -> None:
