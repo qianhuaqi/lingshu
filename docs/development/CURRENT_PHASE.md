@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-09 Minimal MySQL execute/fetch boundary
+Current phase: P5-10 Minimal MySQL transaction boundary
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -32,10 +32,10 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #133 - P5-09: Minimal MySQL execute/fetch boundary
-Active branch: human/dodo/p5-09-minimal-mysql-execute-fetch-boundary
+Active Issue: #135 - P5-10: Minimal MySQL transaction boundary
+Active branch: human/dodo/p5-10-minimal-mysql-transaction-boundary
 Primary writer: project lead
-Status: P5-09 is active; it adds a minimal MySQL execute/fetch boundary.
+Status: P5-10 is active; it adds a minimal MySQL transaction boundary.
 Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks after P5-08 and project lead confirmation.
 
 ## P5-06 milestone
@@ -71,6 +71,20 @@ P5-09 adds a minimal execute/fetch adapter boundary:
     in finally.
 - preserve parameterized execution by forwarding `(sql, params)` to cursor methods.
 - keep startup lazy dependency import and lifecycle registration inert.
+
+## P5-10 goal
+
+P5-10 adds a minimal internal transaction boundary:
+
+- Add `transaction()` on `_MySQLPoolHandle`.
+- Add `_MySQLTransactionHandle` with:
+  - `__aenter__()`: acquire one connection, call `connection.begin()` if present.
+  - `execute(sql, params=None)`
+  - `fetch_one(sql, params=None)`
+  - `fetch_all(sql, params=None)`
+  - `__aexit__()`: commit on success, rollback on failure, always attempt release.
+- keep connection usage scoped to one transaction and preserve parameter forwarding.
+- keep exceptions from operations while ensuring cleanup/release still runs.
 
 ## P5-05 lifecycle boundary fact
 

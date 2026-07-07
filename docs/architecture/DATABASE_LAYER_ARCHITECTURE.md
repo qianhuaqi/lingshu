@@ -1,7 +1,7 @@
 # Database Layer Architecture
 
-Status: P5-09 minimal MySQL execute/fetch boundary
-Issue: #133
+Status: P5-10 minimal MySQL transaction boundary
+Issue: #135
 
 ## 1. Why `lingshu.db` comes before backend drivers
 
@@ -96,34 +96,25 @@ P5-05 added the minimal `app.db` boundary:
 - startup rollback and shutdown suppress-and-continue behavior remain owned by
   the existing application lifecycle.
 
-## 7. Minimal MySQL execute/fetch boundary (P5-09)
+## 7. Minimal MySQL transaction boundary (P5-10)
 
-P5-09 updates `lingshu.db.mysql` to add a minimal internal execute/fetch
-boundary on top of the P5-08 pool adapter:
+P5-10 adds a minimal internal transaction boundary on top of the P5-09 execute/fetch
+adapter:
 
-- startup still lazily resolves `aiomysql`;
-- `_MySQLPoolHandle` now also exposes async `execute(sql, params=None)`,
-  `fetch_one(sql, params=None)` and `fetch_all(sql, params=None)`.
-- each query execution is wrapped by internal `acquire` -> `cursor` -> operation ->
-  `close` -> `release` flow.
-- execute/fetch paths support sync or awaitable operations returned by mocked
-  cursor methods to avoid hard-coupling to aiomysql async behavior details.
-- parameterized SQL execution is required (`sql`, `params`) and query text remains
-  an opaque boundary input.
+- `MySQLDriver.startup()` still returns `_MySQLPoolHandle` as an opaque handle.
+- `_MySQLPoolHandle` now exposes `transaction()`.
+- `async with pool.transaction() as tx` acquires one pooled connection for the
+  entire transaction scope and releases it on exit.
+- if `connection.begin()` exists, it is called during `__aenter__()`.
+- `execute(sql, params=None)`, `fetch_one(sql, params=None)`,
+  and `fetch_all(sql, params=None)` reuse the same connection.
+- successful exit attempts commit, failed exit attempts rollback, and both paths always
+  attempt release.
+- cursor close failures inside transaction operations do not block final release.
 
-`MySQLDriver.startup()` still returns `_MySQLPoolHandle` as an opaque handle.
-`MySQLDriver` shutdown still uses `handle.close()`, which preserves the close + 
-`wait_closed()` semantics.
-
-Error handling for adapter boundaries remains local:
-
-- missing `aiomysql` raises `db.mysql.missing_dependency`;
-- invalid DSN still raises `db.mysql.invalid_dsn`;
-- missing `create_pool` still raises `db.mysql.pool_unavailable`.
-
-This remains a minimal execute/fetch boundary only. It does not expose cursor or
-connection APIs, and still does not provide ORM, transaction, query builder, or
-migration behavior.
+This remains a minimal transaction boundary only. It does not expose cursor or
+connection APIs, and still does not provide ORM, query builder, or migration
+behavior.
 
 ## 8. Future backend integration
 

@@ -1,7 +1,7 @@
 ﻿# P5 Roadmap
 
-Status: active for P5-09 implementation
-Context: Issue #133
+Status: active for P5-10 implementation
+Context: Issue #135
 
 ## 1. Why this document exists
 
@@ -30,8 +30,8 @@ rules, and packaging policy that later implementation work must follow.
 - Keep core import-safe and free of mandatory database client dependencies.
 - Keep `lingshu.db` shared contracts in place and only add optional backend
   boundaries.
-- For MySQL, implement a minimal execute/fetch boundary through
-  `MySQLDriver.startup()` returning `_MySQLPoolHandle` with execute/fetch methods.
+- For MySQL, implement minimal execute/fetch and transaction adapter boundaries
+  through `_MySQLPoolHandle` and internal transaction handles.
 - Preserve redaction rules and non-sensitive `repr`/`safe_details` behavior.
 
 ## 4. P5 non-goals
@@ -39,8 +39,6 @@ rules, and packaging policy that later implementation work must follow.
 - implementing full MySQL query APIs;
 - implementing migration frameworks;
 - implementing query builders or ORM;
-- cursor management,
-- transaction handling;
 - production pool tuning;
 - health check;
 - reconnect/retry policy.
@@ -67,6 +65,7 @@ runtime scope.
 8. P5-07: Minimal MySQL connection pool lifecycle boundary
 9. P5-08: Minimal MySQL pool acquire/release adapter boundary
 10. P5-09: Minimal MySQL execute/fetch boundary
+11. P5-10: Minimal MySQL transaction boundary
 
 ## 7. P5-09 implementation objective
 
@@ -86,7 +85,27 @@ Issue #133 adds:
 
 P5-09 is intentionally not a query API, ORM, transaction boundary, or cursor API.
 
-## 8. Validation and CI expectations
+## 8. P5-10 implementation objective
+
+Issue #135 adds:
+
+1. `transaction()` on `_MySQLPoolHandle`.
+2. `_MySQLTransactionHandle` with:
+   - `__aenter__()` that acquires exactly one connection and calls
+     `connection.begin()` when available.
+   - `execute(sql, params=None)`
+   - `fetch_one(sql, params=None)`
+   - `fetch_all(sql, params=None)`
+   - `__aexit__()` that commits on success, rolls back on failure, and releases
+     the connection.
+3. Ensure connections are released even when operations fail; reuse one acquired
+   connection for all statements within a transaction; rollback on failure,
+   commit on success, and keep cursor internals internal.
+
+P5-10 is intentionally not a transaction management public API, ORM, migration,
+or query builder; the boundary remains internal to `lingshu.db.mysql`.
+
+## 9. Validation and CI expectations
 
 - Keep diff within issue scope.
 - Run merge-conflict marker checks before submit.
