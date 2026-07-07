@@ -7,6 +7,7 @@ from lingshu.db import (
     DatabaseManager,
     DatabaseResource,
 )
+
 from tests.db.test_resource import FakeDriver
 
 
