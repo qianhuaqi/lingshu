@@ -3,6 +3,8 @@
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
 Current phase: P5-10 Minimal MySQL transaction boundary (completed / accepted)
+Post-P5 audit: issue #140 closed, PR #141 merged.
+Current phase status: release readiness baseline is recorded and project is entering P6 planning.
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics

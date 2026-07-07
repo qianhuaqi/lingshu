@@ -1,6 +1,8 @@
 ﻿# P5 Roadmap
 
 Status: P5-10 transaction boundary implementation is completed and accepted
+Post-P5 audit status: Issue #140 closed; PR #141 merged.
+Current phase posture: release readiness baseline recorded; next phase enters P6 planning.
 Context: Issue #135
 Acceptance evidence: PR #137 (`7cf533c655ae1a3d829557368e5e84f036b3d0e4`) merged to main.
 Validation: `ruff check`, `ruff format --check`, `mypy`, and `pytest` passed
