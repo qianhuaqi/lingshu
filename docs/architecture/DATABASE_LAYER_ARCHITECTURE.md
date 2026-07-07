@@ -1,14 +1,14 @@
 # Database Layer Architecture
 
-Status: P5-06 minimal MySQL driver boundary
-Issue: #128
+Status: P5-07 minimal MySQL pool lifecycle boundary
+Issue: #130
 
 ## 1. Why `lingshu.db` comes before backend drivers
 
 P5-04 established a shared database-layer foundation before any concrete MySQL,
 Redis, or MongoDB package is implemented. P5-05 wired that foundation into the
-LingShu application lifecycle through a minimal `app.db` developer API while
-keeping core free of mandatory database client dependencies.
+LingShu application lifecycle through a minimal `app.db` API while keeping core
+free of mandatory database client dependencies.
 
 Starting with `lingshu.db` keeps the foundation narrow:
 
@@ -34,15 +34,17 @@ instances.
 `repr` and `safe_details` expose only coarse diagnostics.
 
 `DatabaseDriver` is a protocol for async startup and shutdown. It does not
-define query execution, pooling, migration, ORM, ODM, or policy behavior.
+define query execution, pooling APIs beyond lifecycle boundaries, migration,
+ORM, ODM, or policy behavior.
 
 `DatabaseResource` binds a config to a driver and owns the lifecycle boundary.
 Registration is inert. Startup may acquire resources. Shutdown releases anything
 startup acquired.
 
 `DatabaseManager` is a small registry with `register(resource)`, `get(name)`, and
-`names()`. `LingShu.db` exposes the application-owned manager for developer code.
-It is not an ORM, connection pool, query builder, or permission boundary.
+`names()` methods. `LingShu.db` exposes the application-owned manager for
+developer code. It is not an ORM, query builder, connection pool API, or policy
+boundary.
 
 `LingShu.add_database_resource(resource, *, dependencies=())` is the
 configuration-time registration entry point. It registers the resource as an
@@ -94,24 +96,28 @@ P5-05 added the minimal `app.db` boundary:
 - startup rollback and shutdown suppress-and-continue behavior remain owned by
   the existing application lifecycle.
 
-## 7. Minimal MySQL driver integration (P5-06)
+## 7. Minimal MySQL driver lifecycle boundary (P5-07)
 
-P5-06 adds `lingshu.db.mysql` with:
+P5-07 updates `lingshu.db.mysql` to use `aiomysql.create_pool(...)` for startup:
 
-- `MySQLDriver` implementing the shared `DatabaseDriver` protocol;
-- `make_mysql_resource(config, *, driver=...)` helper for registered resources;
-- registration-inert behavior preserved through `LingShu.add_database_resource()`;
-- startup/shutdown call points that use optional dependency `aiomysql`.
+- `MySQLDriver.startup()` lazily resolves `aiomysql`.
+- startup builds MySQL connection kwargs with `db` parameter and defaults `port`
+  to `3306`.
+- when `create_pool` callable is missing, startup raises
+  `DatabaseConfigurationError("db.mysql.pool_unavailable")`.
+- startup returns the pool handle as an opaque object.
+- `shutdown()` calls `close()`, then `wait_closed()` when available.
 
-Dependency policy:
+Error handling remains boundary-local:
 
-- `lingshu.db.mysql` is import-safe and may be imported even when `aiomysql`
-  is absent.
-- `aiomysql` is only loaded when startup attempts to establish a MySQL handle.
-- a focused `DatabaseConfigurationError` is raised when dependency is missing.
+- missing `aiomysql` raises `db.mysql.missing_dependency`;
+- invalid DSN shape still raises `db.mysql.invalid_dsn`;
+- `create_pool` exceptions during startup are wrapped by app lifecycle startup
+  as `DatabaseLifecycleError` through existing resource/application contracts.
 
-`shutdown` attempts to close acquired handles and is wrapped by existing resource
-lifecycle error handling.
+Backend-specific lifecycle details above are intentionally narrow: no query,
+acquire/release, transaction, health-check, reconnect, or tuning APIs are added
+at this stage.
 
 ## 8. Future backend integration
 
@@ -124,4 +130,3 @@ Redis, MongoDB, and other backends consume the same contract boundary with:
 
 Backends must continue to keep secret redaction and failure semantics at the
 `DatabaseConfig`, `DatabaseResource`, and `DatabaseError` contract boundary.
-

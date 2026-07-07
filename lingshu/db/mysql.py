@@ -81,14 +81,14 @@ async def _default_connect(config: DatabaseConfig) -> object:
             safe_details={"backend": config.backend, "name": config.name},
         )
     kwargs.setdefault("port", 3306)
-    connector = getattr(aiomysql, "connect", None)
-    if not callable(connector):
+    create_pool = getattr(aiomysql, "create_pool", None)
+    if not callable(create_pool):
         raise DatabaseConfigurationError(
-            "db.mysql.connector_unavailable",
-            "aiomysql client module does not provide 'connect'.",
+            "db.mysql.pool_unavailable",
+            "aiomysql client module does not provide 'create_pool'.",
             safe_details={"backend": config.backend, "name": config.name},
         )
-    result = connector(**kwargs)
+    result = create_pool(**kwargs)
     if inspect.isawaitable(result):
         return await result
     return result
