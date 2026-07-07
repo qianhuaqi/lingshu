@@ -2,7 +2,7 @@
 
 Updated at: 2026-07-06
 Project: LingShu Framework
-Phase: P5-05 Application lifecycle and app.db injection boundary
+Phase: P5-06 Minimal MySQL data extension driver
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -20,10 +20,12 @@ P3 final merge commit: `b94da7c9f59cacf00a9ab497c14ffc4507a2661a`
 Completed final P4 Issue: #112
 Completed final P4 Pull Request: #113
 P4 final merge commit: `65488f73383d043776ea48b0ab5a2c3cd201600b`
-Active Issue: #126 - P5-05: Application lifecycle and app.db injection boundary
-Active branch: human/dodo/p5-05-app-db-lifecycle-boundary
-Primary writer: project lead / 小顾
-Status: P5-05 is active; it wires `lingshu.db` into the Application lifecycle through a minimal `app.db` developer API.
+Active Issue: #128 - P5-06: Minimal MySQL data extension driver
+Active branch: human/dodo/p5-06-minimal-mysql-driver
+Primary writer: project lead
+Status: P5-06 is active; it adds the minimal optional MySQL integration boundary in
+`lingshu.db.mysql` using existing `lingshu.db` contracts and application
+lifecycle hooks.
 
 ## P4 closeout
 
@@ -43,19 +45,20 @@ Accepted P4 contracts:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5-05 scope
+## P5-06 scope
 
-P5-05 exposes `LingShu.db` as the application-owned `DatabaseManager` and adds
-`LingShu.add_database_resource(resource, *, dependencies=())` as the inert
-configuration-time registration entry point. Database resources use the existing
-extension lifecycle for startup, shutdown, dependency ordering, and startup
-rollback.
+P5-06 introduces `lingshu.db.mysql` as the minimal optional MySQL boundary:
 
-It does not implement `lingshu.db.mysql`, Redis, MongoDB, ORM/ODM integration,
-query builders, migration frameworks, connection pooling, database permissions,
-untrusted plugin isolation, identity/access, OpenAPI, multi-worker,
-reload/watch, adapters, public package publication, or production/performance
-claims.
+- `MySQLDriver` implementing `DatabaseDriver`;
+- `make_mysql_resource(config, *, driver)` factory for `DatabaseResource`;
+- `LingShu.add_database_resource()` integration remains inert at registration and
+  startup/shutdown-bound at lifecycle;
+- registration is not network-connected and startup is the first boundary where
+  concrete acquisition may happen.
+
+It does not implement ORM/ODM, query builder, migration, connection pooling,
+untrusted plugin isolation, identity/access, OpenAPI, multi-worker, reload/watch,
+HTTP adapters, or production performance claims.
 
 ## P5 roadmap
 
@@ -65,14 +68,17 @@ claims.
 4. P5-03: repository cleanup and documentation synchronization before implementation.
 5. P5-04: lingshu.db database layer foundation.
 6. P5-05: Application lifecycle and app.db injection boundary.
+7. P5-06: Minimal MySQL data extension driver.
 
 ## Validation and CI
 
-- Keep the diff within the Issue #126 allowed files.
-- Run the merge-conflict marker grep before submit.
-- When local Python 3.12+ dependencies are available, run `ruff format --check`, `ruff check`, `mypy`, and `pytest`.
-- If Windows local dependency installation is blocked by `WinError 10013`, record it and rely on Draft PR plus GitHub CI for final verification.
+- Keep the diff within the current issue write scope.
+- Run merge-conflict marker checks before submit.
+- Run `ruff check`, `mypy`, and `pytest`.
+- If local dependency installation is blocked or baseline toolchain issues happen,
+  record them and rely on Draft PR + GitHub CI for final verification.
 
 ## Next action
 
-Continue with P5-05 review, then decide which backend-specific driver track should consume the lifecycle boundary first.
+Finish remaining P5-06 validation, then prepare Draft PR summary for review.
+

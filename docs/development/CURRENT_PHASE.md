@@ -2,7 +2,7 @@
 
 Project: LingShu Framework
 Canonical repository: `qianhuaqi/lingshu`
-Current phase: P5-05 Application lifecycle and app.db injection boundary
+Current phase: P5-06 Minimal MySQL data extension driver
 Completed milestone: P1 - Single-Worker Minimum Vertical Slice
 Completed track: P2 - roadmap, audit, tooling, config, server operations, and developer ergonomics
 Completed track: P3 - developer-facing API ergonomics
@@ -31,23 +31,28 @@ P4-04 #111 / PR #111 / merge commit `dcb069836d6860a2a03cb040caf98dcd95ec9ee5`: 
 P4-05 #113 / PR #113 / merge commit `65488f73383d043776ea48b0ab5a2c3cd201600b`: official extension packaging and dependency policy
 ```
 
-Active Issue: #126 - P5-05: Application lifecycle and app.db injection boundary
-Active branch: human/dodo/p5-05-app-db-lifecycle-boundary
-Primary writer: project lead / 小顾
-Status: P5-05 is active; it wires the import-safe `lingshu.db` foundation into the LingShu Application lifecycle without real database drivers.
-Next dependent phase allowed: backend-specific MySQL, Redis, or MongoDB driver integration only after P5-05 merge and project-lead confirmation.
+Active Issue: #128 - P5-06: Minimal MySQL data extension driver
+Active branch: human/dodo/p5-06-minimal-mysql-driver
+Primary writer: project lead
+Status: P5-06 is active; it adds a minimal optional MySQL driver boundary while
+keeping core free of mandatory MySQL client dependencies.
+Next dependent phase allowed: backend-specific Redis or MongoDB driver tracks
+after P5-06 and project lead confirmation.
 
-## P5-05 lifecycle boundary goal
+## P5-06 goal
 
-P5-05 exposes `LingShu.db` as a `DatabaseManager` and adds
-`LingShu.add_database_resource(resource, *, dependencies=())` so database
-resources can use the existing extension lifecycle. Registration remains inert;
-startup is the earliest future driver resource acquisition point; shutdown
-releases startup-acquired resources.
+P5-06 adds the first official MySQL boundary implementation:
 
-P5-05 does not implement MySQL, Redis, MongoDB, ORM, ODM, query builder,
-migrations, connection pooling, database permissions, untrusted plugin
-isolation, or real network I/O.
+- `lingshu.db.mysql` boundary module,
+- `MySQLDriver` implementing `DatabaseDriver` without changing public lifecycle
+  semantics,
+- resource factory helpers that produce `DatabaseResource`,
+- startup/shutdown integration through `LingShu.add_database_resource()`.
+
+## P5-05 lifecycle boundary fact
+
+P5-05 exposed `LingShu.db` as the application-owned `DatabaseManager` and added
+`add_database_resource()` as an inert registration entry point.
 
 ## P4 closeout facts
 
@@ -60,11 +65,6 @@ P4 delivered the extension foundation:
 - configuration redaction contract for extensions;
 - official extension packaging and dependency policy.
 
-## P5 roadmap goal
-
-P5 should grow data-extension foundations through explicit contracts while
-keeping core free of mandatory database client dependencies.
-
 ## P5 sequencing
 
 ```text
@@ -74,6 +74,7 @@ P5-02 MySQL data extension track
 P5-03 repository cleanup and documentation synchronization before implementation
 P5-04 lingshu.db database layer foundation
 P5-05 Application lifecycle and app.db injection boundary
+P5-06 Minimal MySQL data extension driver
 ```
 
 ## Deferred until later authorization
@@ -88,3 +89,4 @@ public package publication
 production-ready or performance claims
 new mandatory runtime dependencies in core
 ```
+
